@@ -1,10 +1,11 @@
 # **Midnight Improvement Proposal (MIP) Process**
 
-This document outlines the process for proposing, discussing, and implementing improvements to the Midnight Blockchain. This process is designed to be transparent, community-driven, and managed within GitHub in the Midnight Architecture Repo.
+A Midnight Improvement Proposal (MIP) is a formalised design document for the Midnight community and the name of the process by which such documents are produced and listed. A MIP provides information or describes a change to the Midnight ecosystem, processes, or environment concisely and in sufficient technical detail. In this MIP, we explain what a MIP is, how the MIP process functions, the role of the MIP Editors, and how users should go about proposing, discussing, and structuring a MIP.
+
+The Midnight Foundation intends MIPs to be the primary mechanisms for proposing new features, collecting community input on an issue, and documenting design decisions that have gone into Midnight. Plus, because MIPs are text files in a versioned repository, their revision history is the historical record of significant changes affecting Midnight.
 
 
 ### **Goals of the MIP**
-
 
 
 * **Transparency:** All proposed changes should be publicly visible and accessible.
@@ -48,14 +49,10 @@ MIPs can have the following statuses:
 
 
 
-* **Idea:** The initial stage where an idea is being discussed before a formal MIP is drafted. (Primarily on Midnight forums, Discord, etc.)
-* **Draft:** The MIP is under active development and being written.
 * **Proposed:** The MIP has been formally submitted as a PR to the MIPs repository.
 * **Review:** The MIP is undergoing community and editor review.
-* **Last Call:** A final review period before a decision on acceptance.
 * **Accepted:** The MIP is accepted and considered for implementation.
 * **Implemented:** The MIP has been implemented in Midnight client software.
-* **Active:** The MIP is part of the active Midnight network (for protocol changes) or is widely adopted in the ecosystem (for standards).
 * **Superseded:** A newer MIP replaces this MIP.
 * **Obsolete:** The MIP is no longer considered relevant.
 * **Rejected:** The MIP was not accepted.
@@ -66,8 +63,12 @@ MIPs can have the following statuses:
 
 
 
-* A MIP should be submitted as a Pull Request (PR) to the[ Midnight Improvements Proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) (this) repository of the Midnight GitHub organization.
-* The PR title should be: MIP-XXXX: [MIP Title] (where XXXX is the next available MIP number, assigned by a MIP Editor).
+* A Finalized MIP should be submitted as a Pull Request (PR) to the[ Midnight Improvements Proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) (this) repository of the Midnight GitHub organization as a pull request named after the proposal's title. The pull request title should not include a MIP number (and use ? instead as number); the editors will assign one. Discussions may precede a proposal. Early reviews and discussions streamline the process down the line.
+* Upon review, the PR title should be: MIP-XXXX: [MIP Title] (where XXXX is the next available MIP number, assigned by a MIP Editor). 
+
+Note Pull requests should not include implementation code: any code bases should instead be provided as links to a code repository.
+
+Note Proposals addressing a specific CPS should also be listed in the corresponding CPS header, in 'Proposed Solutions', to keep track of ongoing work.
 
 
 #### **Review and Discussion**
