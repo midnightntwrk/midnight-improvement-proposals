@@ -1,4 +1,6 @@
 ---
+name: Midnight Improvement Proposal
+about: Submit a proposal for a new or enhanced capability
 MIP: <MIP Number> (assigned by a MIP Editor)
 Title: <MIP Title>
 Authors: <Author Name> <Author Email/GitHub username>
