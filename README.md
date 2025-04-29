@@ -160,8 +160,8 @@ All MIP documents *must* adhere to the following Markdown template:
 ---
 MIP: <MIP Number> (assigned by a MIP Editor)
 Title: <MIP Title>
-Authors: <Author Name> <Author Email/GitHub username>
-Status: <Status> (Draft, Proposed, Accepted, Obsolete, Rejected, Final)
+Authors: <Author Name> <Author GitHub username>
+Status: <Status> (All new MIPs will assigned Proposed)
 Category: <Category> (Core, Standards, Networking, Governance, Informational)
 Created: <Date Created>
 Requires: <List of other MIPS this MIP depends on>
