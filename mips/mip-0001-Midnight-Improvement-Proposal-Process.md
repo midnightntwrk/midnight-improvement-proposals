@@ -15,14 +15,14 @@
 -->
 
 ---
-MIP: 0001
-Title: Midnight Improvement Proposal Processess
-Authors: Bob Blessing-Hartley bob.blessing-har
-Status: Proposed
-Category: Governance
-Created: 29-APR-2025
-Requires: none
-Replaces: none
+MIP: 0001 \
+Title: Midnight Improvement Proposal Process \
+Authors: Bob Blessing-Hartley bobblessinghartley \
+Status: Proposed \
+Category: Governance \
+Created: 29-APR-2025 \
+Requires: none \
+Replaces: none 
 ---
 
 ## Abstract
