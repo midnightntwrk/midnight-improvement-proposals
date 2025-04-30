@@ -68,7 +68,7 @@ MIPs can have the following statuses:
 
 Note Pull requests should not include implementation code: any code bases should instead be provided as links to a code repository.
 
-Note Proposals addressing a specific CPS should also be listed in the corresponding CPS header, in 'Proposed Solutions', to keep track of ongoing work.
+Note Proposals addressing a specific MPS should also be listed in the corresponding MPS header, in 'Proposed Solutions', to keep track of ongoing work.
 
 
 #### **Review and Discussion**
