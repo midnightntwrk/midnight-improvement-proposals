@@ -182,6 +182,25 @@ MIP Editors should be selected based on the following criteria:
 
 The initial set of MIP Editors will be appointed by the Midnight Foundation and Shielded. A process for electing or appointing new editors should be established and documented in a Governance MIP.
 
+## Path to Active
+
+Every MIP must define the criteria it must meet to transition from "Accepted" to "Active".
+
+### Acceptance Criteria
+
+Define objective criteria such as:
+- Adoption by core client implementations
+- Implementation by community projects
+- Community consensus in workshop sessions
+- Endorsement by Midnight maintainers or validators
+
+### Implementation Plan
+
+Describe how the MIP will be executed. This may include:
+- Timeline for integration into Midnight core software
+- Teams responsible for development
+- Testing and audit milestones
+
 
 ### **MIP Template**
 
