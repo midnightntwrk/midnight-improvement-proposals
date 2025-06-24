@@ -45,6 +45,11 @@ This document outlines the technical structure of the MIP and the technical requ
 
 ## Specification
 
+### Versioning
+
+The specification in this MIP will be versioned using semantic versioning (SemVer). Any changes to the specification must be submitted as a new MIP if they affect backwards compatibility or introduce new requirements.
+
+
 ### **Process Overview**
 
 The Midnight Improvement Proposal (MIP) process consists of the following stages:
