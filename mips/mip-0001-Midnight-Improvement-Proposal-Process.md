@@ -31,6 +31,7 @@ A Midnight Improvement Proposal (MIP) is a formalised design document for the Mi
 
 The Midnight Foundation intends MIPs to be the primary mechanisms for proposing new features, collecting community input on an issue, and documenting design decisions that have gone into Midnight. Plus, because MIPs are text files in a versioned repository, their revision history is the historical record of significant changes affecting Midnight.
 
+
 ## Motivation
 
 MIPs aim to address two challenges mainly:
@@ -80,8 +81,8 @@ MIPs can have the following statuses:
 
 * **Proposed:** The MIP has been formally submitted as a PR to the MIPs repository.
 * **Review:** The MIP is undergoing community and editor review.
-* **Accepted:** The MIP is accepted and considered for implementation.
-* **Implemented:** The MIP has been implemented in Midnight client software.
+* **Accepted:** The MIP is accepted as meeting the MIP standards by editors.
+* **Active:** The MIP has been accepted and meets its "Path to Active" criteria.
 * **Superseded:** A newer MIP replaces this MIP.
 * **Obsolete:** The MIP is no longer considered relevant.
 * **Rejected:** The MIP was not accepted.
