@@ -185,7 +185,19 @@ MIP Editors should be selected based on the following criteria:
 * **Communication Skills:** Excellent written and verbal communication skills.
 * **Availability:** Willingness to dedicate sufficient time to review and process MIPs.
 
-The initial set of MIP Editors will be appointed by the Midnight Foundation and Shielded. A process for electing or appointing new editors should be established and documented in a Governance MIP.
+### Nomination and Rotation of Editors
+
+The initial set of MIP Editors will be appointed by the Midnight Foundation and Shielded. Subsequently the below set of rules will apply to the addition and removal of MIP Editors. 
+
+To become a MIP Editor one must be:
+- Nominated by anyone.
+- All sitting MIP Editors must agree to their becoming a MIP Editor by public vote at a MIP Editors' meeting either by expressing support in person or in a written submission to the meeting. 
+
+The Midnight Foundation will revoke the administrator rights of a MIP Editor over the MIP repository (and they will cease to be a MIP Editor) if one of the following happens:
+- The MIP Editor themselves asks to resign
+- The MIP Editor fails to attend X MIP Editor meetings in a row and a petition is sent to the Midnight Foundation
+- All other MIP Editors vote to remove that specific Editor. 
+
 
 ## Path to Active
 
