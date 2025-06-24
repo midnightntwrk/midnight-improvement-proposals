@@ -219,8 +219,6 @@ Describe how the MIP will be executed. This may include:
 - Testing and audit milestones
 
 
-### **MIP Template**
-
 ### MIP Template
 
 All MIP documents *must* follow this Markdown template and use YAML front matter:
@@ -251,6 +249,15 @@ Describe the proposed change in detail. This section should be technically preci
 
 Explain the design decisions behind the proposed change. Why was this particular approach chosen? What alternatives were considered, and why were they rejected?
 
+## Path to Active
+What does it mean to get from Accepted to Active, and how this will be achieved.
+
+### Acceptance Criteria
+Explain what objective milestones need to be achieved in order for the MIP to achieve Active status.
+
+### Implementation Plan 
+Describe how the MIP will be put into practice.
+
 ## Backwards Compatibility Assessment
 
 Describe how the proposed change affects existing systems, applications, and users. Will it require a hard fork? Are there any compatibility issues? How will they be addressed?
@@ -267,31 +274,13 @@ Describe how the proposed change will be implemented. Which parts/components of 
 
 Describe the testing procedures for the proposed change. What tests will be performed to ensure that it works as expected and does not introduce any regressions?
 
-## Copyright Waiver
+## References (Optional)
+Are there any external sources that are referenced in thei document, or that add to the efficacy of this MIP?
 
-All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0. Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
-```
-
-## Rationale
-
-Github was selected because of the ability to track submissions and edits and is very accessible. The PR approach was chosed to enhance the tracking. 
-
-## Backwards Compatibility Assessment
-
-There is no prior system
-
-## Security Considerations
-
-Not Applicable, each improvement involving code or governance shall have its own security considerations. 
-
-## Implementation
-
-The process will be documented in the Midnight Improvement Proposals repository. 
-
-## Testing
-
-Not applicable.
+## Acknowlegements 
+List the contributors that were not the Authors, this will include any workshop participants. 
 
 ## Copyright Waiver
 
 All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0. Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
+
