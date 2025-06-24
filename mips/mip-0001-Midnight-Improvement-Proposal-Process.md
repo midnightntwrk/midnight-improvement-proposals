@@ -221,18 +221,19 @@ Describe how the MIP will be executed. This may include:
 
 ### **MIP Template**
 
-All MIP documents *must* adhere to the following Markdown template:
-```
----
-MIP: <MIP Number> (assigned by a MIP Editor)
-Title: <MIP Title>
-Authors: <Author Name> <Author GitHub username>
-Status: <Status> (All new MIPs will assigned Proposed)
-Category: <Category> (Core, Standards, Networking, Governance, Informational)
-Created: <Date Created>
-Requires: <List of other MIPS this MIP depends on>
-Replaces:<List of a MIP that this one replaces>
----
+### MIP Template
+
+All MIP documents *must* follow this Markdown template and use YAML front matter:
+
+MIP: <Number> # assigned by editors
+Title: <Proposal Title>
+Authors: <Name> <github-username>
+Status: <Status> # All new MIPs will assigned Proposed
+Category: <Core | Standards | Networking | Governance | Informational>
+Created: YYYY-MM-DD
+Requires: [List of other MIPS this MIP depends on]
+Replaces: [List of a MIP that this one replaces]
+License: Apache-2.0
 
 ## Abstract
 
