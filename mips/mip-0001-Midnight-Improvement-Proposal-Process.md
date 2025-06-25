@@ -277,7 +277,7 @@ Describe the testing procedures for the proposed change. What tests will be perf
 ## References (Optional)
 Are there any external sources that are referenced in this document, or that add to the efficacy of this MIP?
 
-## Acknowlegements 
+## Acknowledgements 
 List the contributors that were not the Authors, this will include any workshop participants. 
 
 ## Copyright Waiver
