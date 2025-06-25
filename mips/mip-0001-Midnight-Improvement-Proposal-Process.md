@@ -275,7 +275,7 @@ Describe how the proposed change will be implemented. Which parts/components of 
 Describe the testing procedures for the proposed change. What tests will be performed to ensure that it works as expected and does not introduce any regressions?
 
 ## References (Optional)
-Are there any external sources that are referenced in thei document, or that add to the efficacy of this MIP?
+Are there any external sources that are referenced in this document, or that add to the efficacy of this MIP?
 
 ## Acknowlegements 
 List the contributors that were not the Authors, this will include any workshop participants. 
