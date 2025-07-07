@@ -66,9 +66,9 @@ MIPs can have the following statuses:
 * A Finalized MIP should be submitted as a Pull Request (PR) to the[ Midnight Improvements Proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) (this) repository of the Midnight GitHub organization as a pull request named after the proposal's title. The pull request title should not include a MIP number (and use ? instead as number); the editors will assign one. Discussions may precede a proposal. Early reviews and discussions streamline the process down the line.
 * Upon review, the PR title should be: MIP-XXXX: [MIP Title] (where XXXX is the next available MIP number, assigned by a MIP Editor). 
 
-Note Pull requests should not include implementation code: any code bases should instead be provided as links to a code repository.
+Note: Pull requests should not include implementation code: any code bases should instead be provided as links to a code repository.
 
-Note Proposals addressing a specific CPS should also be listed in the corresponding CPS header, in 'Proposed Solutions', to keep track of ongoing work.
+Note: Proposals addressing a specific MPS should also be listed in the corresponding MPS header, in 'Proposed Solutions', to keep track of ongoing work.
 
 
 #### **Review and Discussion**
