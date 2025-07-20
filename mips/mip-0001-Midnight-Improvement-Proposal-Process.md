@@ -31,6 +31,7 @@ A Midnight Improvement Proposal (MIP) is a formalised design document for the Mi
 
 The Midnight Foundation intends MIPs to be the primary mechanisms for proposing new features, collecting community input on an issue, and documenting design decisions that have gone into Midnight. Plus, because MIPs are text files in a versioned repository, their revision history is the historical record of significant changes affecting Midnight.
 
+
 ## Motivation
 
 MIPs aim to address two challenges mainly:
@@ -43,6 +44,11 @@ The process detailed herein is intentionally light weight and is expected to exp
 This document outlines the technical structure of the MIP and the technical requirements of the submission and review process. 
 
 ## Specification
+
+### Versioning
+
+The specification in this MIP will be versioned using semantic versioning (SemVer). Any changes to the specification must be submitted as a new MIP if they affect backwards compatibility or introduce new requirements.
+
 
 ### **Process Overview**
 
@@ -80,8 +86,8 @@ MIPs can have the following statuses:
 
 * **Proposed:** The MIP has been formally submitted as a PR to the MIPs repository.
 * **Review:** The MIP is undergoing community and editor review.
-* **Accepted:** The MIP is accepted and considered for implementation.
-* **Implemented:** The MIP has been implemented in Midnight client software.
+* **Accepted:** The MIP is accepted as meeting the MIP standards by editors.
+* **Active:** The MIP has been accepted and meets its "Path to Active" criteria.
 * **Superseded:** A newer MIP replaces this MIP.
 * **Obsolete:** The MIP is no longer considered relevant.
 * **Rejected:** The MIP was not accepted.
@@ -95,9 +101,9 @@ MIPs can have the following statuses:
 * A Finalized MIP should be submitted as a Pull Request (PR) to the[ Midnight Improvements Proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) (this) repository of the Midnight GitHub organization as a pull request named after the proposal's title. The pull request title should not include a MIP number (and use ? instead as number); the editors will assign one. Discussions may precede a proposal. Early reviews and discussions streamline the process down the line.
 * Upon review, the PR title should be: MIP-XXXX: [MIP Title] (where XXXX is the next available MIP number, assigned by a MIP Editor). 
 
-Note Pull requests should not include implementation code: any code bases should instead be provided as links to a code repository.
+Note: Pull requests should not include implementation code: any code bases should instead be provided as links to a code repository.
 
-Note Proposals addressing a specific CPS should also be listed in the corresponding CPS header, in 'Proposed Solutions', to keep track of ongoing work.
+Note: Proposals addressing a specific MPS should also be listed in the corresponding MPS header, in 'Proposed Solutions', to keep track of ongoing work.
 
 
 #### **Review and Discussion**
@@ -179,23 +185,53 @@ MIP Editors should be selected based on the following criteria:
 * **Communication Skills:** Excellent written and verbal communication skills.
 * **Availability:** Willingness to dedicate sufficient time to review and process MIPs.
 
-The initial set of MIP Editors will be appointed by the Midnight Foundation and Shielded. A process for electing or appointing new editors should be established and documented in a Governance MIP.
+### Nomination and Rotation of Editors
+
+The initial set of MIP Editors will be appointed by the Midnight Foundation and Shielded. Subsequently the below set of rules will apply to the addition and removal of MIP Editors. 
+
+To become a MIP Editor one must be:
+- Nominated by anyone.
+- All sitting MIP Editors must agree to their becoming a MIP Editor by public vote at a MIP Editors' meeting either by expressing support in person or in a written submission to the meeting. 
+
+The Midnight Foundation will revoke the administrator rights of a MIP Editor over the MIP repository (and they will cease to be a MIP Editor) if one of the following happens:
+- The MIP Editor themselves asks to resign
+- The MIP Editor fails to attend X MIP Editor meetings in a row and a petition is sent to the Midnight Foundation
+- All other MIP Editors vote to remove that specific Editor. 
 
 
-### **MIP Template**
+## Path to Active
 
-All MIP documents *must* adhere to the following Markdown template:
-```
----
-MIP: <MIP Number> (assigned by a MIP Editor)
-Title: <MIP Title>
-Authors: <Author Name> <Author GitHub username>
-Status: <Status> (All new MIPs will assigned Proposed)
-Category: <Category> (Core, Standards, Networking, Governance, Informational)
-Created: <Date Created>
-Requires: <List of other MIPS this MIP depends on>
-Replaces:<List of a MIP that this one replaces>
----
+Every MIP must define the criteria it must meet to transition from "Accepted" to "Active".
+
+### Acceptance Criteria
+
+Define objective criteria such as:
+- Adoption by core client implementations
+- Implementation by community projects
+- Community consensus in workshop sessions
+- Endorsement by Midnight maintainers or validators
+
+### Implementation Plan
+
+Describe how the MIP will be executed. This may include:
+- Timeline for integration into Midnight core software
+- Teams responsible for development
+- Testing and audit milestones
+
+
+### MIP Template
+
+All MIP documents *must* follow this Markdown template and use YAML front matter:
+
+MIP: <Number> # assigned by editors
+Title: <Proposal Title>
+Authors: <Name> <github-username>
+Status: <Status> # All new MIPs will assigned Proposed
+Category: <Core | Standards | Networking | Governance | Informational>
+Created: YYYY-MM-DD
+Requires: [List of other MIPS this MIP depends on]
+Replaces: [List of a MIP that this one replaces]
+License: Apache-2.0
 
 ## Abstract
 
@@ -213,6 +249,15 @@ Describe the proposed change in detail. This section should be technically preci
 
 Explain the design decisions behind the proposed change. Why was this particular approach chosen? What alternatives were considered, and why were they rejected?
 
+## Path to Active
+What does it mean to get from Accepted to Active, and how this will be achieved.
+
+### Acceptance Criteria
+Explain what objective milestones need to be achieved in order for the MIP to achieve Active status.
+
+### Implementation Plan 
+Describe how the MIP will be put into practice.
+
 ## Backwards Compatibility Assessment
 
 Describe how the proposed change affects existing systems, applications, and users. Will it require a hard fork? Are there any compatibility issues? How will they be addressed?
@@ -229,31 +274,13 @@ Describe how the proposed change will be implemented. Which parts/components of 
 
 Describe the testing procedures for the proposed change. What tests will be performed to ensure that it works as expected and does not introduce any regressions?
 
-## Copyright Waiver
+## References (Optional)
+Are there any external sources that are referenced in this document, or that add to the efficacy of this MIP?
 
-All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0. Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
-```
-
-## Rationale
-
-Github was selected because of the ability to track submissions and edits and is very accessible. The PR approach was chosed to enhance the tracking. 
-
-## Backwards Compatibility Assessment
-
-There is no prior system
-
-## Security Considerations
-
-Not Applicable, each improvement involving code or governance shall have its own security considerations. 
-
-## Implementation
-
-The process will be documented in the Midnight Improvement Proposals repository. 
-
-## Testing
-
-Not applicable.
+## Acknowledgements 
+List the contributors that were not the Authors, this will include any workshop participants. 
 
 ## Copyright Waiver
 
 All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0. Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
+
