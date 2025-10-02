@@ -17,7 +17,7 @@
 ---
 MIP: <MIP Number> (assigned by a MIP Editor)
 Title: Contract Metadata Convention
-Authors: Andrew Fleming <@andrew-fleming>
+Authors: Andrew Fleming andrew-fleming
 Status: Proposed
 Category: Standards
 Created: 2025-10-02
