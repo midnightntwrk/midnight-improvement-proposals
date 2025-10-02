@@ -15,7 +15,7 @@
 -->
 
 ---
-MIP: <MIP Number> (assigned by a MIP Editor)
+MIP: ?
 Title: Contract Metadata Convention
 Authors: Andrew Fleming andrew-fleming
 Status: Proposed
