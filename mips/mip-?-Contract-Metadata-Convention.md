@@ -66,8 +66,8 @@ All standard-compliant ledger fields **MUST** follow this pattern:
 
 Where:
 
-- `<STANDARD_NAME>` is the identifier for the standard i.e. `MRC123`, `MRC456`, `MRC789`.
-- `<STANDARD_NAME>` MUST use uppercase letters (e.g., `MRC` not `mrc`).
+- `<STANDARD_NAME>` is the identifier for the standard e.g. `MRC123`, `MRC456`, `MRC789`.
+- `<STANDARD_NAME>` MUST use uppercase letters e.g. `MRC` not `mrc`.
 - `__` is a double underscore separator.
 - `<fieldName>` is the specific field name.
 
@@ -173,12 +173,12 @@ Prefixes are the better choice because:
 
 #### Special character prefix
 
-The use of `$` or other special character domains i.e. `$fieldName`.
+The use of `$` or other special character domains e.g. `$fieldName`.
 This may cause semantic conflicts with other languages.
 
 #### Dedicated Storage Struct
 
-Contracts export a ledger API interface which enforces the required fields i.e.
+Contracts export a ledger API interface which enforces the required fields:
 
 ```ts
 struct MRCX_Storage {
