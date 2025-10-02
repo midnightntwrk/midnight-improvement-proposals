@@ -42,7 +42,7 @@ making it impractical for wallets, block explorers, and other off-chain services
 
 Without a standardized approach, each contract could expose metadata differently,
 forcing wallet developers to implement custom logic for every token or contract type.
-This fragmentation would severely limit ecosystem growth and user experience.
+This fragmentation would create significant barriers to ecosystem growth and poor user experience.
 
 This standard establishes a uniform ledger naming convention that:
 
@@ -74,17 +74,17 @@ Where:
 ### Examples
 
 ```ts
-// MRC-X Fungible Token Standard
+// MIP-X Fungible Token Standard
 export ledger MRCX__balances: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<256>>;
 export ledger MRCX__allowances: Map<Either<ZswapCoinPublicKey, ContractAddress>, Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<256>>>;
 export sealed ledger MRCX__name: Opaque<"string">;
 export sealed ledger MRCX__symbol: Opaque<"string">;
 
-// MRC-721 NFT Standard
+// MIP-Y NFT Standard
 export ledger MRCY__owners: Map<Uint<256>, Either<ZswapCoinPublicKey, ContractAddress>>;
 export ledger MRCY__tokenURIs: Map<Uint<256>, Opaque<"string">>;
 
-// Custom protocol
+// MIP-Z Custom protocol
 export ledger MRCZ__liquidityPools: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<256>>;
 ```
 
