@@ -75,17 +75,17 @@ Where:
 
 ```ts
 // MIP-X Fungible Token Standard
-export ledger MRCX__balances: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<256>>;
-export ledger MRCX__allowances: Map<Either<ZswapCoinPublicKey, ContractAddress>, Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<256>>>;
+export ledger MRCX__balances: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<128>>;
+export ledger MRCX__allowances: Map<Either<ZswapCoinPublicKey, ContractAddress>, Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<128>>>;
 export sealed ledger MRCX__name: Opaque<"string">;
 export sealed ledger MRCX__symbol: Opaque<"string">;
 
 // MIP-Y NFT Standard
-export ledger MRCY__owners: Map<Uint<256>, Either<ZswapCoinPublicKey, ContractAddress>>;
-export ledger MRCY__tokenURIs: Map<Uint<256>, Opaque<"string">>;
+export ledger MRCY__owners: Map<Uint<128>, Either<ZswapCoinPublicKey, ContractAddress>>;
+export ledger MRCY__tokenURIs: Map<Uint<128>, Opaque<"string">>;
 
 // MIP-Z Custom protocol
-export ledger MRCZ__liquidityPools: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<256>>;
+export ledger MRCZ__liquidityPools: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<128>>;
 ```
 
 ### Reserved Prefixes
@@ -120,9 +120,9 @@ A contract implementing multiple standards will have ledger fields with multiple
 ```ts
 // A wrapped token contract might implement multiple standards
 // (MRCX and MRCY are placeholder names for illustration—exact MRC number TBD)
-export ledger MRCX__balances: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<256>>;
+export ledger MRCX__balances: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<128>>;
 export ledger MRCX__name: Opaque<"string">;
-export ledger MRCY__deposits: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<256>>;
+export ledger MRCY__deposits: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<128>>;
 export ledger MRCY__depositTimestamps: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<64>>;
 ```
 
@@ -182,7 +182,7 @@ Contracts export a ledger API interface which enforces the required fields i.e.
 
 ```ts
 struct MRCX_Storage {
-  balances: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<256>>
+  balances: Map<Either<ZswapCoinPublicKey, ContractAddress>, Uint<128>>
   name: Opaque<"string">
   ...
 }
