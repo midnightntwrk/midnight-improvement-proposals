@@ -1,0 +1,184 @@
+##   Abstract
+
+This document provides the formal specification for a unidirectional, protocol-level bridge to transfer the canonical NIGHT token from the Cardano network to the Midnight network. The protocol facilitates the conversion of the Cardano representation (cNIGHT) to the Midnight representation (mNIGHT). The architecture is defined as a trustless "Observed State Bridge," leveraging the native capability of Midnight nodes to directly follow and verify the state of the Cardano ledger. This design eliminates the need for an external validator set for this transfer direction. This specification defines an open-source protocol intended as a foundational component for the ecosystem. It prioritizes cryptographic security and token-supply invariance over latency, resulting in a necessary transaction finality delay of approximately 12 hours, which is inherited from the security parameters of the observed Cardano chain.
+
+
+
+##   Motivation
+
+The NIGHT token is a canonical asset that must exist on both the Cardano and Midnight networks while preserving a single, invariant total supply. A protocol is required to facilitate the movement of this asset from Cardano to Midnight. This protocol must satisfy the following technical requirements:
+
+1. **Supply Invariance**: The protocol must guarantee that for every unit of cNIGHT locked on Cardano, exactly one unit of mNIGHT becomes available on Midnight, ensuring the total circulating supply remains constant. 
+2. **Utility Preservation**: The transfer mechanism must result in the creation of canonical mNIGHT on Midnight, which possesses the intrinsic utility of generating DUST. Wrapped token representations are insufficient as they would not fulfill this core tokenomic function.
+3. **Trustlessness**: The verification of transfers from Cardano to Midnight must not introduce new trust assumptions beyond the security of the two respective ledgers. The protocol should rely on direct, cryptographic verification of Cardano's state by the Midnight protocol itself.
+4. **Permissionless Foundation**: The on-chain components of the protocol must be open-source and permissionless, enabling any third-party application to build user-facing interfaces without requiring special approval.
+
+This MIP specifies such a protocol to solve this defined interoperability problem.
+
+
+##   Specification
+
+The protocol is defined as a state machine that transitions assets from a "locked" state on Cardano to a "claimable" state on Midnight.
+
+**Architecture Overview**
+The system is composed of four primary components:
+1. **Cardano Lock Contract**: A Plutus smart contract that accepts and locks deposits of cNIGHT.
+2. **Midnight Observation Service**: A component integrated into every Midnight full node that follows the Cardano chain state via db-sync.
+3. **Midnight `native-token-management` Pallet**: A runtime module responsible for processing validated observations and creating System Transactions.
+4. **Midnight Ledger**: The core state machine of Midnight, which processes System Transactions to update account balances.
+
+**End-to-End Protocol Flow**
+
+**Phase 1: Deposit and Lock (Cardano)**
+1. A user transaction (`Tx_C`) is submitted to the Cardano Lock Contract.
+2. `Tx_C` must lock a UTXO containing a specified quantity of cNIGHT.
+3. The redeemer for `Tx_C` must contain the 32-byte destination address on the Midnight network.
+4. The Lock Contract's validator script must be designed to permit concurrent, independent deposit transactions to prevent UTXO contention.
+
+**Phase 2: Observation and Verification (Midnight Node)**
+1. The Observation Service detects `Tx_C` on the Cardano chain.
+2. The service waits for a configurable number of blocks (k) to pass, ensuring finality of `Tx_C` against chain reorganizations. The default value for k corresponds to a delay of approximately 12 hours.
+3. Upon finality, the service performs Boundary Validation: it parses the locked amount and destination address from `Tx_C` and validates them against their expected formats and constraints. Invalid data results in the event being discarded.
+4. Verified deposit events are aggregated into a batch.
+
+**Phase 3: System Transaction Generation (Midnight Runtime)**
+1. A Midnight block producer's runtime invokes the `native-token-management` pallet.
+2. The pallet constructs a `BridgeSettlementV1` System Transaction, populating it with the batch of verified deposits.
+3. A deterministic `IdempotencyKey` is generated for the batch, typically the hash of the Cardano block header at which the batch was finalized. This key is crucial for preventing replay attacks.
+4. A protocol fee, determined by a governable on-chain parameter, is calculated for each deposit.
+
+**Data Structure:** `BridgeSettlementV1`
+
+Rust
+
+```
+/// Represents a batch of finalized deposits from Cardano to be settled on the Midnight ledger.
+pub struct BridgeSettlementV1 {
+    /// A unique, deterministic key derived from Cardano chain data to prevent replay attacks.
+    pub batch_id: IdempotencyKey,
+    /// Identifier for the source Cardano Lock Contract.
+    pub source_id: [u8; 32],
+    /// A vector of individual settlement instructions.
+    pub deposits: Vec<DepositInstruction>,
+}
+
+pub type IdempotencyKey = [u8; 32];
+
+/// Defines the settlement details for a single deposit.
+pub struct DepositInstruction {
+    /// The recipient's canonical address on the Midnight network.
+    pub destination_address: [u8; 32],
+    /// The net amount of mNIGHT credited to the claimable pool (Total - Fee).
+    pub net_amount: u128,
+    /// The fee amount credited to the Midnight Treasury.
+    pub fee_amount: u128,
+}
+```
+
+**Phase 4: Settlement and Claim (Midnight)**
+1. The Midnight Ledger executes the `BridgeSettlementV1` transaction.
+2. The Ledger must first verify that the `batch_id` has not been previously processed. If it has, the transaction is rejected.
+3. For each `DepositInstruction`, the `net_amount` is credited to a "Ready-to-Claim" sub-ledger tied to the `destination_address`, and the `fee_amount` is credited to the protocol's Treasury account.
+4. The owner of the `destination_address` initiates a separate `claim` transaction on Midnight.
+5. The Ledger validates this `claim` transaction by verifying the cryptographic signature. Upon success, the balance is moved from the "Ready-to-Claim" sub-ledger to the user's main account balance, making the mNIGHT fully spendable and capable of generating DUST.
+
+
+
+##   Rationale
+
+The design choices in this specification prioritize security and correctness over other considerations like speed.
+
+- **Architectural Choice**: Observed State Bridge: This model was selected for the Cardano-to-Midnight direction because it is maximally trustless. Midnight's protocol can directly verify Cardano's state, inheriting its security without introducing a potentially fallible intermediary committee (as in certificate-based bridges) or the high complexity and computational cost of ZK-based light client bridges. This is the most direct and secure method for this specific data flow direction.
+
+- **Deficiency - Latency**: A direct consequence of this security model is the high finality latency. The bridge cannot consider a transaction final until it is irreversible on the source chain (Cardano). The ~12-hour delay is a necessary trade-off to protect against chain re-organization attacks and is a fundamental property of this design. Faster, alternative bridges (e.g., liquidity-based) may be built by third parties but are outside the scope of this core protocol specification.
+
+- **Canonical Token vs. Wrapped**: The protocol is explicitly designed to manage the canonical NIGHT token. A wrapped token approach (`wcNIGHT`) would create a derivative asset that does not possess the native DUST-generating utility, thereby breaking the core tokenomic model of the network and fragmenting liquidity. This protocol-level approach ensures token utility is preserved.
+
+- **Idempotency Mechanism**: The use of a deterministic `IdempotencyKey` is a standard and robust software engineering pattern for preventing double-processing in distributed systems. It provides a strong guarantee against replay attacks, where a malicious actor could attempt to re-submit a valid batch of deposits to mint extra tokens. The Ledger's enforcement of key uniqueness is a critical security invariant.
+
+- **Open Source**: The protocol is specified to be open-source to foster transparency, allow for community auditing, and encourage permissionless innovation. Any wallet, DApp, or third-party service can integrate with the bridge contracts without seeking approval, promoting a decentralized ecosystem.
+
+
+
+##   Backwards Compatibility Assessment
+
+This MIP specifies an additive protocol. It introduces new functionality and has no impact on existing systems or users.
+
+- **No Hard Fork Required**: The implementation of this bridge does not require a hard fork on either Midnight or Cardano.
+
+- **New Components**: The proposal involves the deployment of new Plutus smart contracts on Cardano and the addition of new logic within the native-token-management pallet and the core Midnight Ledger. These are new functionalities and do not alter or break any existing components.
+
+- **Impact on Applications**: Existing dApps and wallets on both networks are unaffected. To interact with the bridge, dApps will need to integrate support for the new Cardano bridge contract and the Midnight claim transaction.
+
+
+
+##   Security Considerations
+
+The security of the bridge relies on the security of the underlying blockchains and the correct implementation of the logic specified herein.
+
+**Threat Model & Mitigations:**
+- T-01: Transaction Contention (DoS): Mitigated by the requirement that the Cardano Lock Contract be implemented to support concurrent deposits, avoiding a single-UTXO bottleneck.
+- T-02: Replay Attack: Mitigated by the mandatory use of an `IdempotencyKey` (`batch_id`) in every `BridgeSettlementV1` transaction. The Midnight Ledger must enforce the uniqueness of this key.
+- T-03: Malformed Data Injection: Mitigated by the strict Boundary Validation step performed by the off-chain Observation Service. No data from Cardano may enter the Midnight runtime without being successfully parsed and validated against a rigid schema.
+- T-04: Unauthorized Fund Claim: Mitigated by the `claim` transaction on Midnight, which requires a cryptographic signature from the private key corresponding to the public `destination_address`.
+
+**Trust Assumptions:**
+
+- The protocol assumes the security and liveness of both the Cardano and Midnight consensus mechanisms.
+- The protocol relies on the correctness of the Cardano `db-sync` instance that the Midnight nodes use for observation.
+
+
+
+##   Implementation
+
+The implementation shall be divided into distinct components with well-defined interfaces.
+
+**Cardano Components:**
+Responsibilities: Develop, test, and formally verify a Plutus smart contract that:
+- Locks UTXOs containing cNIGHT.
+- Parses a 32-byte Midnight destination address from its redeemer.
+- Allows for concurrent deposit transactions.
+
+**Midnight Components:**
+Observation Service:
+- Responsibilities: Configure the service to monitor the Cardano contract address, enforce the finality delay, and perform Boundary Validation.
+
+`native-token-management` Pallet:
+- Responsibilities: Implement logic to batch verified deposits, calculate protocol fees based on a governable parameter, and correctly construct the `BridgeSettlementV1` System Transaction with its `IdempotencyKey`.
+
+Ledger:
+- Responsibilities: Implement the state transition logic for processing `BridgeSettlementV1`, including the mandatory idempotency check. Implement the state logic for the "Ready-to-Claim" pool. Expose the `claim` extrinsic and implement its signature-based authorization logic.
+
+##   Testing
+
+A comprehensive verification strategy is required to ensure the protocol's correctness and security.
+
+**Unit Testing:**
+- The Plutus contract must be tested in a simulated environment for all valid and invalid deposit scenarios.
+- The Midnight `native-token-management` pallet and Ledger logic must have extensive unit tests covering all state transitions, including edge cases for fee calculation, idempotency checks, and claim authorization.
+
+**Integration Testing:**
+- A full Midnight node will be tested in an isolated environment where Cardano events are injected, verifying the entire flow from observation to System Transaction generation.
+
+A comprehensive verification strategy is required to ensure the protocol's correctness and security.
+
+**Unit Testing:**
+- The Plutus contract must be tested in a simulated environment for all valid and invalid deposit scenarios.
+- The Midnight `native-token-management` pallet and Ledger logic must have extensive unit tests covering all state transitions, including edge cases for fee calculation, idempotency checks, and claim authorization.
+
+**Integration Testing:**
+- A full Midnight node will be tested in an isolated environment where Cardano events are injected, verifying the entire flow from observation to System Transaction generation.
+
+**End-to-End (E2E) System Testing:**
+- A testnet environment will be established with a live connection between a Midnight testnet and a Cardano testnet.
+- The full user journey will be tested: deposit on Cardano, wait for finality, confirm the claimable state on Midnight, and execute a successful `claim` transaction.
+- Assertions will be made against user and treasury balances.
+
+**Security Testing (Adversarial):**
+- Explicit tests will be conducted to trigger the mitigations for all identified threats (T-01 to T-04), such as attempting to submit a transaction with a replayed `batch_id`.
+
+
+
+##   Copyright Waiver
+
+All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0. Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
