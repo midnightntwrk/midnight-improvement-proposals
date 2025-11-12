@@ -1,0 +1,148 @@
+MIP: TBD Title: Standard for URI Token Metadata Authors: <Author Name> <Author GitHub username> Status: Proposed Category: Standards Created: 2025-11-03 Requires: <MIP-XXXX (Midnight Token Standard)> Replaces: N/A
+
+
+##   Abstract
+
+This MIP proposes a standardized JSON schema for the metadata pointed to by the URI of Midnight-based tokens (e.g., Non-Fungible Tokens or URITokens). The standard defines a clear structure for token properties, including name, description, and media links. Crucially, this schema is designed to support Midnight's unique architecture by providing a clear distinction between public metadata (visible to all) and private metadata (selectively disclosable using ZK proofs). Adopting this standard is essential for ecosystem interoperability, enabling wallets, marketplaces, and dApps to correctly display and interact with tokens while preserving user and asset privacy. This proposal aims to establish a baseline for community discussion, particularly with wallet and dApp builders, to ensure the final standard is robust and meets ecosystem needs.
+
+
+##   Motivation
+
+For the Midnight ecosystem to flourish, particularly in its target markets of FinTech, Digital ID, and Blockchain & Crypto, a common standard for representing token metadata is essential. Currently, no standard exists for what the tokenURI of a Midnight asset should point to. This proposal solves this problem.
+
+The benefits are:
+
+- **Ecosystem Interoperability: Allows any wallet, marketplace, or dApp to correctly parse and display token information, which is critical for user experience and liquidity.
+
+- **Enabling Enterprise Use Cases: This standard for asset tokenization is critical for capturing the FinTech market. It provides a clear structure for private real-world assets (RWAs), confidential financial instruments, and other data-protected tokens.
+
+- **Supporting Private Digital ID: Provides a schema for identity-related tokens, allowing for standard fields that can be selectively disclosed (e.g., Verifiable Credentials).
+
+- **Lowering Developer Friction: Gives dApp builders and integrators a clear specification to follow, aligning with Midnight's goal of a low learning curve by providing a predictable, JSON-based structure.
+
+This MIP is intended to create a clear specification and, as requested, foster community discussion with wallet/dApp builders to refine it.
+
+
+##  Specification
+
+This standard defines a JSON object as the expected output of the tokenURI. The tokenURI will be stored on-chain in the Compact contract, while the JSON metadata it points to will be stored off-chain (e.g., on IPFS or a web server).
+
+Wallets and dApps MUST be able to parse the following structure.
+
+Core Metadata (Public)
+This data is public and aligns with established standards (e.g., ERC-721) for broad compatibility.
+
+JSON
+
+{
+  "name": "Token Name",
+  "description": "A human-readable description of the token.",
+  "image": "A URI pointing to a public image (e.g., http://, https://, ipfs://).",
+  "attributes": [
+    {
+      "trait_type": "Property Name",
+      "value": "Property Value"
+    }
+  ]
+}
+Midnight-Specific Private Metadata
+To support data protection, this MIP introduces an optional privateMetadata field. The content of this field is intended to be encrypted or reference data held in a shielded data object, accessible only to parties with the correct viewing keys or via a ZK proof.
+
+JSON
+
+{
+  // ... Core Metadata ...
+  "privateMetadata": {
+    "description": "A public hint about the private data's nature (e.g., 'Private Legal Documents', 'Confidential Credentials').",
+    "data": [
+      {
+        "type": "EncryptedData",
+        "value": "<Encrypted JSON blob or pointer to shielded data>"
+      },
+      {
+        "type": "VerifiableCredential",
+        "proofType": "CompactZKProof",
+        "value": "<Proof data or reference to a verifier contract>"
+      }
+    ]
+  }
+}
+
+##  Field Definitions
+name (string, required): The token's name.
+
+description (string, required): A human-readable description.
+
+image (string, optional): A URI to a media file.
+
+attributes (array of objects, optional): Public traits.
+
+privateMetadata (object, optional): A namespace for private data.
+
+privateMetadata.description (string, optional): A public hint for the private data.
+
+privateMetadata.data (array of objects, optional): An array of private data objects, allowing for multiple shielded attributes (e.g., encrypted files, ZK-verifiable claims).
+
+
+##  Rationale
+
+The proposed schema is heavily inspired by the ERC-721 metadata standard to ensure familiarity and ease of adoption for developers, particularly wallet builders and those coming from other ecosystems. Using TypeScript for API definitions and JSON for data structures aligns with Midnight's goal of minimizing the developer learning curve.
+
+The key design decision is the introduction of the privateMetadata object. This approach was chosen over:
+
+A fully encrypted metadata blob: This was rejected because it prevents wallets and marketplaces from displaying any information (like the token's name or image), leading to a poor user experience.
+
+Mixing private and public fields: This was rejected as it creates a "polluted" and ambiguous schema.
+
+The privateMetadata namespace provides a clear, explicit separation between public-facing data and data that requires special handling (encryption, ZK proofs). This hybrid model offers the best of both worlds: public interoperability and Midnight's core promise of data protection.
+
+Using a URI for off-chain metadata (as suggested by OpenZeppelin's token standards) is standard practice. This keeps on-chain data minimal and transaction costs (in $DUST) low.
+
+
+##  Backwards Compatibility Assessment
+
+This MIP proposes a new standard and does not affect any existing core protocol components. It is not a consensus-critical change and does not require a hard fork.
+
+Contracts and dApps already deployed that use a different or non-existent metadata format will not be compatible with this standard, but they will not break. For ecosystem-wide adoption, it is crucial that new projects, especially wallet providers and marketplace integrators, adopt this standard moving forward.
+
+##  Security Considerations
+Security considerations for this standard primarily relate to the off-chain data pointed to by the URI.
+
+Data Availability & Integrity: The tokenURI should point to immutable, content-addressed storage (e.g., IPFS) where possible. If a centralized server is used, the metadata is at risk of being lost or maliciously altered. Compact contracts could optionally enforce this by only allowing IPFS CIDs.
+
+Privacy of privateMetadata: This standard defines the schema for private data, not the implementation of its encryption or access control. The responsibility lies with the dApp developer to ensure:
+
+Data in the privateMetadata.data field is properly encrypted.
+
+Key management for this private data is secure.
+
+Any ZK proofs referenced are correctly implemented and verified.
+
+A poorly implemented dApp could leak private data, even if it follows this schema. This standard simply provides the "box" for the private data, not the "lock."
+
+
+##  Implementation
+Implementation of this MIP is primarily a matter of community adoption and tooling.
+
+Reference Library: A TypeScript SDK module should be created (e.g., @midnight-network/mip-metadata) that provides types, interfaces, and validation functions for this JSON schema.
+
+Example Contracts: Example Compact contracts for a URIToken should be provided, demonstrating how to store the tokenURI and link it to this metadata standard.
+
+Community Outreach: Engage with wallet builders, dApp developers, and integrators (as highlighted in the proposal's motivation) to ensure they are aware of and adopt this standard.
+
+
+##  Testing
+Testing for this standard involves validation and compliance.
+
+Schema Validation: A test suite must be created for the reference library to validate various JSON objects against the proposed schema (both valid and invalid cases).
+
+Ecosystem Compliance: A "compliance" test suite or checklist should be published for wallet and dApp developers to test their applications. This includes:
+
+Correctly parsing all public fields.
+
+Gracefully handling the absence of optional fields.
+
+Correctly identifying the presence of privateMetadata (e.g., displaying a "lock" icon) without attempting to read the encrypted data.
+
+##  Copyright Waiver
+All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0. Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
