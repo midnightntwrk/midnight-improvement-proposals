@@ -10,7 +10,7 @@ Created: 2026-02-11
 ## Abstract
 
 This proposal specifies a scaffolding implementation for peer-to-peer atomic swaps on Midnight,
-similar to Dexie.space on Chia.
+similar to [Dexie.space](https://dexie.space) on Chia.
 The architecture leverages Midnight's native Zswap transaction merging to enable trustless atomic swaps without requiring a custom smart contract.
 Makers create partial transactions that offer tokens, takers complete and submit them,
 and the ledger handles all settlement logic.
@@ -40,22 +40,21 @@ Makers create partial transactions containing only their spend authorization (an
 Takers complete these by adding all outputs and merging the transactions.
 
 ```text
-MAKER'S TX (imbalanced):
-  Input:  100 TokenA  →  (nothing)
-  Delta:  +100 TokenA
+MAKER'S PARTIAL TX (imbalanced):
+  Inputs:  100 TokenA
+  Outputs: (none)
 
-TAKER'S TX (imbalanced):
-  Input:  50 NIGHT    →  Output: 100 TokenA to taker
-                      →  Output: 50 NIGHT to maker
-  Delta:  -100 TokenA, 0 NIGHT
-
-MERGED (balanced):
-  Inputs:  100 TokenA, 50 NIGHT
+TAKER'S PARTIAL TX (imbalanced):
+  Inputs:  50 NIGHT
   Outputs: 100 TokenA to taker, 50 NIGHT to maker
-  Delta:   0, 0
+
+MERGED TX (balanced):
+  Inputs:  100 TokenA (maker), 50 NIGHT (taker)
+  Outputs: 100 TokenA to taker, 50 NIGHT to maker
 ```
 
-This pattern is explicitly supported by Zswap (Section 4.4 of the Zswap paper).
+The merged transaction balances because the maker's input (100 TokenA) funds the taker's output to themselves,
+and the taker's input (50 NIGHT) funds the output to the maker.
 
 ### Relationship to Offer Files (MIP-?)
 
@@ -70,7 +69,7 @@ This MIP extends that foundation by specifying:
 
 - An application-layer payload wrapping the serialized offer
 - Metadata (pricing, receiving method, expiration)
-- Authentication via BIP-340 signatures
+- Authentication via [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) signatures
 - Discovery protocol (indexer API)
 
 The `transaction` field in this MIP's payload contains the bech32-encoded offer as specified in the Offer Files MIP.
@@ -92,7 +91,7 @@ interface OfferPayload {
     amount: string;  // Stringified bigint
   };
 
-  // What the maker is giving (for display/filtering)
+  // What the maker is giving
   gives: {
     token: string;
     amount: string;
@@ -100,14 +99,11 @@ interface OfferPayload {
 
   // How taker should send payment to maker
   receiving: {
-    method: 'direct' | 'ephemeral' | 'stealth' | 'custom';
+    method: 'direct' | 'ephemeral' | 'custom';
 
     // For 'direct' or 'ephemeral': maker's receiving keys
     cpk?: string;   // Coin public key (hex)
     epk?: string;   // Encryption public key (hex, optional)
-
-    // For 'stealth': meta-address for one-time derivation
-    metaAddress?: string;
 
     // For 'custom': implementer-defined payload
     custom?: unknown;
@@ -139,8 +135,9 @@ interface OfferPayload {
 | `wants.amount` | Yes | Amount wanted as stringified bigint |
 | `gives.token` | Yes | Token type identifier being offered |
 | `gives.amount` | Yes | Amount offered as stringified bigint |
-| `receiving.method` | Yes | One of: `direct`, `ephemeral`, `stealth`, `custom` |
+| `receiving.method` | Yes | One of: `direct`, `ephemeral`, `custom` |
 | `receiving.cpk` | Conditional | Required for `direct` and `ephemeral` methods |
+| `receiving.epk` | Optional | Encryption public key for `direct` and `ephemeral` methods |
 | `auth.signerPublicKey` | Yes | Public key used for signature verification |
 | `auth.signature` | Yes | BIP-340 Schnorr signature over offer |
 | `auth.scheme` | Yes | Must be `schnorr-bip340` |
@@ -156,13 +153,13 @@ preventing metadata tampering and binding the maker's spending authorization to 
 The signing payload MUST be constructed as follows:
 
 1. Create a copy of the offer without the `auth` field
-2. Serialize to canonical JSON (keys sorted alphabetically, no whitespace)
+2. Serialize to canonical JSON per [RFC8785](https://www.rfc-editor.org/rfc/rfc8785)
 3. Compute SHA-256 hash of the serialized bytes
 4. Sign the 32-byte hash using BIP-340 Schnorr
 
 ```typescript
 function createSigningPayload(offer: Omit<OfferPayload, 'auth'>): Uint8Array {
-  const canonical = JSON.stringify(offer, Object.keys(offer).sort());
+  const canonical = canonicalize(offer); // RFC 8785
   return sha256(new TextEncoder().encode(canonical));
 }
 ```
@@ -180,7 +177,6 @@ Both indexers and takers MUST verify signatures:
 | -------- | ------------- | --------------- |
 | `direct` | Maker's persistent wallet keys | Low - all offers linked |
 | `ephemeral` | Fresh key pair per offer | High - offers unlinkable |
-| `stealth` | Taker derives one-time address | High - requires meta-address support |
 | `custom` | Implementation-defined | Varies |
 
 Implementations SHOULD default to `ephemeral` for privacy.
@@ -277,13 +273,13 @@ By operating at the protocol level, swaps inherit the full security guarantees o
 
 *Alternatives considered: None. The point of the protocol is to leverage the existing architecture.*
 
-### Input-Only Transaction Pattern
+### Imbalanced Transactions
 
 The maker creates a transaction containing only their spend authorization with no outputs.
 This is intentionally imbalanced.
 The taker completes the swap by adding all outputs and merging the transactions.
 This non-interactive pattern allows makers to create offers offline and takers to complete swaps without maker participation.
-The pattern is explicitly supported by Zswap's design (Section 4.4 of the Zswap paper).
+The pattern is explicitly supported by Zswap's design (Section 4.4 of the [Zswap paper](https://eprint.iacr.org/2022/1002)).
 
 *Alternatives considered: None. The protocol was designed to leverage imbalanced transactions.*
 
@@ -301,7 +297,6 @@ Both indexers and takers verify signatures, providing defense in depth.
 Multiple receiving methods accommodate different privacy requirements.
 The ephemeral method generates fresh keys per offer, preventing linkage between a maker's offers.
 The direct method uses persistent keys for simplicity at the cost of privacy.
-The stealth method enables taker-derived one-time addresses for maximum privacy.
 Implementations should default to ephemeral as a reasonable balance of privacy and usability.
 
 *Alternatives considered: single method only (insufficient flexibility), mandatory stealth addresses (complexity burden on all implementations).*
