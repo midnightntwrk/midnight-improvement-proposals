@@ -4,7 +4,7 @@ Title: Peer-to-Peer Atomic Swaps \
 Authors: Andrew Fleming @andrew-fleming \
 Status: Proposed \
 Category: Standards \
-Created: 2026-02-11
+Created: 2026-02-12
 ---
 
 ## Abstract
