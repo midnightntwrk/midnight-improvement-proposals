@@ -36,25 +36,27 @@ only offer metadata on the discovery layer is public.
 ### Overview
 
 The swap mechanism leverages Zswap's native support for imbalanced transactions.
-Makers create partial transactions containing only their spend authorization (an input with no outputs).
-Takers complete these by adding all outputs and merging the transactions.
+Makers create partial transactions containing their spend authorization and their expected payment output.
+Takers complete these by adding their own input and output, then merging the transactions.
 
 ```text
 MAKER'S PARTIAL TX (imbalanced):
   Inputs:  100 TokenA
-  Outputs: (none)
+  Outputs: 50 NIGHT to maker
 
 TAKER'S PARTIAL TX (imbalanced):
   Inputs:  50 NIGHT
-  Outputs: 100 TokenA to taker, 50 NIGHT to maker
+  Outputs: 100 TokenA to taker
 
 MERGED TX (balanced):
   Inputs:  100 TokenA (maker), 50 NIGHT (taker)
-  Outputs: 100 TokenA to taker, 50 NIGHT to maker
+  Outputs: 50 NIGHT to maker, 100 TokenA to taker
 ```
 
-The merged transaction balances because the maker's input (100 TokenA) funds the taker's output to themselves,
-and the taker's input (50 NIGHT) funds the output to the maker.
+The merged transaction balances because the maker's input (100 TokenA) funds the taker's output,
+and the taker's input (50 NIGHT) funds the maker's output.
+Both parties' expected receipts are committed to in their respective partial transactions,
+ensuring neither can be shortchanged.
 
 ### Relationship to Offer Files (MIP-?)
 
@@ -68,7 +70,7 @@ The Offer Files MIP defines:
 This MIP extends that foundation by specifying:
 
 - An application-layer payload wrapping the serialized offer
-- Metadata (pricing, receiving method, expiration)
+- Metadata (pricing, expiration)
 - Authentication via [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) signatures
 - Discovery protocol (indexer API)
 
@@ -97,18 +99,6 @@ interface OfferPayload {
     amount: string;
   };
 
-  // How taker should send payment to maker
-  receiving: {
-    method: 'direct' | 'ephemeral' | 'custom';
-
-    // For 'direct' or 'ephemeral': maker's receiving keys
-    cpk?: string;   // Coin public key (hex)
-    epk?: string;   // Encryption public key (hex, optional)
-
-    // For 'custom': implementer-defined payload
-    custom?: unknown;
-  };
-
   // Optional metadata
   metadata?: {
     createdAt?: string;      // ISO 8601 timestamp
@@ -135,9 +125,6 @@ interface OfferPayload {
 | `wants.amount` | Yes | Amount wanted as stringified bigint |
 | `gives.token` | Yes | Token type identifier being offered |
 | `gives.amount` | Yes | Amount offered as stringified bigint |
-| `receiving.method` | Yes | One of: `direct`, `ephemeral`, `custom` |
-| `receiving.cpk` | Conditional | Required for `direct` and `ephemeral` methods |
-| `receiving.epk` | Optional | Encryption public key for `direct` and `ephemeral` methods |
 | `auth.signerPublicKey` | Yes | Public key used for signature verification |
 | `auth.signature` | Yes | BIP-340 Schnorr signature over offer |
 | `auth.scheme` | Yes | Must be `schnorr-bip340` |
@@ -145,8 +132,8 @@ interface OfferPayload {
 ### Offer Authentication
 
 Offers MUST be signed using BIP-340 Schnorr signatures.
-The signature covers the entire offer payload (excluding the `auth` field itself),
-preventing metadata tampering and binding the maker's spending authorization to their receiving address.
+The signature covers the entire offer payload (excluding the auth field itself),
+preventing metadata tampering.
 
 #### Signing Payload Construction
 
@@ -170,16 +157,6 @@ Both indexers and takers MUST verify signatures:
 
 - **Indexers**: MUST reject offers with invalid signatures on publish
 - **Takers**: MUST verify signatures before completing swaps
-
-### Receiving Methods
-
-| Method | Description | Privacy Level |
-| -------- | ------------- | --------------- |
-| `direct` | Maker's persistent wallet keys | Low - all offers linked |
-| `ephemeral` | Fresh key pair per offer | High - offers unlinkable |
-| `custom` | Implementation-defined | Varies |
-
-Implementations SHOULD default to `ephemeral` for privacy.
 
 ### Cancellation
 
@@ -275,39 +252,37 @@ By operating at the protocol level, swaps inherit the full security guarantees o
 
 ### Imbalanced Transactions
 
-The maker creates a transaction containing only their spend authorization with no outputs.
-This is intentionally imbalanced.
-The taker completes the swap by adding all outputs and merging the transactions.
-This non-interactive pattern allows makers to create offers offline and takers to complete swaps without maker participation.
-The pattern is explicitly supported by Zswap's design (Section 4.4 of the [Zswap paper](https://eprint.iacr.org/2022/1002)).
+The maker creates a transaction containing their spend authorization and their expected payment output.
+This transaction is imbalanced — it outputs a token type (the payment) that it doesn't input.
+The taker creates a complementary imbalanced transaction with their input and their expected receipt.
+When merged, the two transactions balance.
+Critically, because the maker's expected payment is included as an output in their proven transaction,
+the taker cannot modify the payment terms.
+The maker's proof commits to receiving a specific amount of a specific token.
+This provides on-chain enforcement of both sides of the swap terms.
 
 *Alternatives considered: None. The protocol was designed to leverage imbalanced transactions.*
 
 ### Authenticating Offers
 
-BIP-340 Schnorr signatures provide a standardized, well-audited mechanism with compact 64-byte signatures and wide library support.
-The signature binds the maker's spending authorization to their receiving address,
-preventing an attacker from substituting their own address in the offer metadata.
+BIP-340 Schnorr signatures provide a standardized,
+well-audited mechanism with compact 64-byte signatures and wide library support.
+The signature prevents tampering with offer metadata,
+ensuring the `gives` and `wants` fields accurately reflect the underlying proven transaction.
 Both indexers and takers verify signatures, providing defense in depth.
 
-*Alternatives considered: no authentication (vulnerable to address substitution), EdDSA (less ecosystem tooling), on-chain commitment (unnecessary complexity).*
-
-### Receiving Address Methods
-
-Multiple receiving methods accommodate different privacy requirements.
-The ephemeral method generates fresh keys per offer, preventing linkage between a maker's offers.
-The direct method uses persistent keys for simplicity at the cost of privacy.
-Implementations should default to ephemeral as a reasonable balance of privacy and usability.
-
-*Alternatives considered: single method only (insufficient flexibility), mandatory stealth addresses (complexity burden on all implementations).*
+*Alternatives considered: No authentication (vulnerable to metadata tampering), on-chain commitment (unnecessary complexity).*
 
 ### Metadata in Application Layer
 
-The underlying `zswap::Offer` (as defined in the Offer Files MIP) contains only the proven partial transaction.
-This MIP adds application-layer metadata for pricing, receiving addresses, and authentication.
-This separation allows the base offer format to remain minimal while enabling rich marketplace functionality.
-The wants and gives fields are informational for discovery;
-the actual swap terms are enforced by the transaction structure itself.
+The underlying zswap::Offer (as defined in the Offer Files MIP) contains the proven partial transaction,
+which includes the maker's input, their expected payment output, and the receiving address.
+This MIP adds application-layer metadata for discovery and authentication.
+This separation allows the base offer format to remain focused on the cryptographic commitment while enabling rich marketplace functionality.
+
+The `gives` and `wants` fields mirror what is already committed to in the proven transaction.
+They exist for discoverability (filtering, indexing) and human readability,
+but the actual swap terms are enforced by the transaction structure itself.
 
 ### Indexer as Discovery Layer
 
@@ -316,7 +291,7 @@ While this introduces a privacy leak (the indexer operator can observe IP addres
 it does not affect security—the cryptographic guarantees remain intact regardless of indexer behavior.
 Users requiring stronger privacy can run their own indexer instance or access via Tor.
 
-*Alternatives considered: on-chain offer registry (expensive, reduces privacy), DHT-based discovery (complexity, availability concerns), pure peer-to-peer (poor discoverability).*
+*Alternatives considered: On-chain offer registry (expensive, reduces privacy), DHT-based discovery (complexity, availability concerns), pure peer-to-peer (poor discoverability).*
 
 ## Backwards Compatibility Assessment
 
@@ -329,8 +304,13 @@ Implementations adopting this standard will interoperate with each other but not
 
 ### Signature Verification
 
-Failure to verify signatures before completing swaps allows attackers to modify the receiving address, redirecting funds.
+Failure to verify signatures before completing swaps allows attackers to modify offer metadata,
+potentially misleading takers about the swap terms.
 Both indexers and takers MUST verify signatures.
+
+Note that the core swap terms (what the maker gives and receives)
+are enforced by the proven transaction itself.
+The signature protects the metadata layer.
 
 ### Stale Offers
 
@@ -345,7 +325,7 @@ While on-chain activity is shielded, the indexer is a privacy leak:
 | Data | Visibility |
 | ------ | ------------ |
 | Token types and amounts | Public on indexer |
-| Maker receiving keys | Public on indexer |
+| Maker receiving keys | Embedded in the proven transaction |
 | IP addresses | Visible to indexer operator |
 | On-chain transaction details | Shielded |
 
