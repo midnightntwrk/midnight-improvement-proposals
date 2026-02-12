@@ -295,7 +295,7 @@ the option for enhanced metadata integrity when desired.
 
 ### Metadata in Application Layer
 
-The underlying zswap::Offer (as defined in the Offer Files MIP) contains the proven partial transaction,
+The underlying `zswap::Offer` (as defined in the Offer Files MIP) contains the proven partial transaction,
 which includes the maker's input, their expected payment output, and the receiving address.
 This MIP adds application-layer metadata for discovery.
 This separation allows the base offer format to remain focused on the cryptographic commitment while enabling rich marketplace functionality.
