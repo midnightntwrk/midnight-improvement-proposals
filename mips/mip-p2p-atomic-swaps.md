@@ -101,7 +101,7 @@ interface OfferPayload {
   // Optional metadata
   metadata?: {
     createdAt?: string;  // ISO 8601 timestamp
-    makerNote?: string;  // Arbitrary message (max 256 chars)
+    makerNote?: string;  // Arbitrary message
   };
 
   // Authentication
