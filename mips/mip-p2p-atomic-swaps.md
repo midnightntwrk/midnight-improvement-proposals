@@ -69,7 +69,7 @@ The Offer Files MIP defines:
 This MIP extends that foundation by specifying:
 
 - An application-layer payload wrapping the serialized offer
-- Metadata (pricing, expiration)
+- Metadata (pricing, timestamps)
 - Authentication via [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) signatures
 - Discovery protocol (indexer API)
 
@@ -101,7 +101,6 @@ interface OfferPayload {
   // Optional metadata
   metadata?: {
     createdAt?: string;      // ISO 8601 timestamp
-    expiresAt?: string;      // ISO 8601 timestamp (informational only)
     makerNote?: string;      // Arbitrary message (max 256 chars)
   };
 
