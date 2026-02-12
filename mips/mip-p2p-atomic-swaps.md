@@ -19,7 +19,6 @@ This standard defines the offer payload schema, authentication mechanism, and re
 ## Motivation
 
 Midnight currently lacks a standardized mechanism for peer-to-peer token exchanges.
-Users who wish to swap tokens must rely on centralized exchanges or custom implementations that may not interoperate.
 
 A native P2P swap standard provides several benefits:
 
