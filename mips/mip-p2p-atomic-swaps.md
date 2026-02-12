@@ -381,7 +381,8 @@ Indexers SHOULD implement:
 
 Implementation will require the following components:
 
-1. **Core Library**: Functions to build offer payloads (optionally signed), validate and complete swaps, and cancel offers by spending backing UTXOs.
+1. **Core Library**: Functions to build offer payloads (optionally signed),
+validate and complete swaps, and cancel offers by spending backing UTXOs.
 
 2. **Reference Indexer**: REST API implementation with optional signature verification and nullifier monitoring.
 
