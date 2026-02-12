@@ -22,7 +22,8 @@ Midnight currently lacks a standardized mechanism for peer-to-peer token exchang
 
 A native P2P swap standard provides several benefits:
 
-1. **Trustless exchange**: Atomic swaps guarantee that either both parties receive their tokens or neither does—no counterparty risk.
+1. **Trustless exchange**: Atomic swaps guarantee that either both parties receive their tokens or neither does.
+No counterparty risk.
 2. **No smart contract overhead**: By leveraging Zswap's built-in transaction merging,
 swaps execute at the protocol level without custom contract deployment or execution costs.
 3. **Interoperability**: A standardized offer format enables multiple UIs,
@@ -129,7 +130,8 @@ interface OfferPayload {
 ### Offer Validation
 
 Takers SHOULD verify that the `gives` and `wants` fields accurately reflect the transaction's actual imbalances before completing a swap.
-The proven transaction is authoritative—metadata fields exist for discoverability but could be inaccurate or maliciously misrepresented.
+The proven transaction is authoritative.
+Metadata fields exist for discoverability but could be inaccurate or maliciously misrepresented.
 
 To validate an offer:
 
@@ -148,7 +150,7 @@ preventing metadata tampering.
 Note that authentication is not required for security.
 The core swap terms (what each party gives and receives)
 are cryptographically committed in the proven transaction itself.
-The taker cannot modify the maker's expected payment—it is enforced by the ledger.
+The taker cannot modify the maker's expected payment, it is enforced by the ledger.
 
 Authentication provides defense in depth by ensuring metadata fields
 (`gives`, `wants`, `metadata`) have not been tampered with.
@@ -268,7 +270,7 @@ By operating at the protocol level, swaps inherit the full security guarantees o
 ### Imbalanced Transactions
 
 The maker creates a transaction containing their spend authorization and their expected payment output.
-This transaction is imbalanced — it outputs a token type (the payment) that it doesn't input.
+This transaction is imbalanced, it outputs a token type (the payment) that it doesn't input.
 The taker creates a complementary imbalanced transaction with their input and their expected receipt.
 When merged, the two transactions balance.
 Critically, because the maker's expected payment is included as an output in their proven transaction,
@@ -308,7 +310,8 @@ but the actual swap terms are enforced by the transaction structure itself.
 
 A centralized indexer provides simple, familiar REST semantics for offer discovery.
 While this introduces a privacy leak (the indexer operator can observe IP addresses and browsing patterns),
-it does not affect security—the cryptographic guarantees remain intact regardless of indexer behavior.
+it does not affect security.
+The cryptographic guarantees remain intact regardless of indexer behavior.
 Users requiring stronger privacy can run their own indexer instance or access via Tor.
 
 The indexer API intentionally omits a DELETE endpoint.
