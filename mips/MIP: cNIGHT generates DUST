@@ -1,0 +1,151 @@
+##   Abstract
+
+A formal specification for the "cNIGHT generates DUST" mechanism. This system allows NIGHT tokens residing on the Cardano blockchain (designated as cNIGHT) to produce DUST, the shielded gas token for the Midnight network. The core of this mechanism involves a user creating a persistent, on-chain mapping between their cNIGHT-holding Cardano wallet address and a designated DUST-receiving address on Midnight. This registration is managed by a Plutus smart contract on Cardano. An off-chain observability layer monitors Cardano for these registrations and cNIGHT token movements, subsequently generating Cardano-based Midnight System Transactions (CMSTs). These system transactions are processed by the Midnight network to initiate or terminate DUST generation accordingly, effectively bridging the two ecosystems and enabling the utility of NIGHT ether on Cardano or Midnight, within the Midnight network.
+
+
+
+##   Motivation
+
+The launch of the Midnight network and the initial distribution of its native token, NIGHT, via a "Glacier Drop" on the Cardano network creates a fundamental cold-start problem. New users will possess NIGHT tokens on Cardano (cNIGHTS) but will lack the necessary DUST fuel to pay for their initial transactions on Midnight, such as moving their assets to the network or transaction on Midnight. This MIP directly solves this issue by creating a secure and decentralized mechanism for cNIGHT to generate DUST.
+
+This proposal is strategically critical for several reasons:
+- **Bootstrapping the Ecosystem**: It provides the essential on-ramp for the first wave of users, allowing them to engage with the Midnight network immediately following the token distribution event.
+- **Fostering Interoperability**: It establishes a foundational cross-chain standard between Midnight and Cardano, leveraging Cardano's existing infrastructure and user base to accelerate Midnight's growth, which is a core part of the business strategy.
+- **Enhancing Token Utility**: It ensures that NIGHT tokens provide utility regardless of which chain they reside on, aligning with the dual-token model where NIGHT ownership is directly linked to the generation of DUST.
+- **Aligning with Enterprise Goals**: By providing a clear, documented standard for cross-chain asset utility, this MIP supports the broader vision of creating a reliable, enterprise-ready blockchain ecosystem.
+
+
+
+##   Specification
+
+https://github.com/midnightntwrk/midnight-cnight-generates-dust
+
+This specification details the three primary components of the cNIGHT generates DUST mechanism: the Cardano Layer, the Observability Layer, and the Midnight Layer.
+
+**1. Cardano Layer: On-Chain Registration**
+A Plutus smart contract, the **Mapping Validator**, is deployed on the Cardano network to manage user registrations. This process creates a verifiable link between a Cardano identity and a Midnight identity.
+
+**Registration Transaction:**
+- A user initiates a transaction to the Mapping Validator to register their intent to generate DUST.
+- This transaction mints a unique Authentication Token. The minting policy for this token requires that the transaction be signed by the private key corresponding to the Cardano public key hash being registered, ensuring only the owner can create the mapping.
+- The transaction creates a UTXO at the Mapping Validator address containing the freshly minted Authentication Token.
+- An inline datum is attached to this UTXO, structured as follows:
+
+```
+
+JSON
+
+{
+  "user_pkh": "Cardano_PubKeyHash",
+  "dust_address": "Midnight_DustPublicKey"
+}
+
+```
+This creates an immutable on-chain record of the mapping.
+
+**Deregistration Transaction:**
+- To stop DUST production for future UTXOs, the user spends the registration UTXO from the Mapping Validator.
+- This transaction must be signed by the key corresponding to `user_pkh` in the datum.
+- The transaction must burn the associated Authentication Token, ensuring it cannot be reused.
+
+**Update Transaction:**
+- To change the destination `dust_address`, the user spends their existing registration UTXO and creates a new one at the validator address in the same transaction.
+- The transaction must be signed by the owner. The `user_pkh` must remain unchanged, while the `dust_address` can be updated. The Authentication Token is forwarded to the new UTXO.
+
+**2. Observability Layer: Cross-Chain Communication**
+An off-chain service, operated by Midnight block producers, monitors the Cardano blockchain for relevant events.
+
+**Monitoring**: The layer continuously observes:
+1. The state of the Mapping Validator, tracking all registration UTXOs.
+2. The creation and spending of all cNIGHT UTXOs on Cardano.
+
+**CMST Generation**: Upon detecting a valid event, the layer generates a Cardano-based Midnight System Transaction (CMST).
+- `Create` **Event**: When a new cNIGHT UTXO is created at an address that has a valid, active registration in the Mapping Validator, the layer emits a CMST containing an `NgDPayloadEntry` of type `Create`. DUST generation begins for UTXOs created after registration is confirmed. This applies even to frozen tokens from events like the Glacier Drop. The nonce for the `DustGenerationInfo` is deterministically calculated as `nonce = hash(tx_hash || output_index)` of the Cardano UTXO.
+- `Destroy` **Event**: When a cNIGHT UTXO that was previously generating DUST is spent, the layer emits a CMST with a Destroy entry.
+
+**Conflict Resolution**: The Cardano protocol allows for duplicate mappings. The Observability Layer must apply a deterministic conflict resolution policy, such as honoring the most recent valid registration UTXO for a given cardano_pkh.
+
+**3. Midnight Layer: DUST Production Logic**
+The Midnight network processes the CMSTs to manage the DUST ledger state.
+- **CMST Handler**: A component within the Midnight partner chain logic receives and verifies incoming CMSTs from the Observability Layer.
+- **Ledger State Update**:
+1. Upon processing a Create CMST, the handler updates the Midnight ledger to create DustGenerationInfo and a corresponding DustOutput record for the specified DUST address. DUST begins to accrue for that output.
+2. Upon processing a Destroy CMST, the handler updates the corresponding record with a SetDestructionTime, which halts further DUST generation from that source.
+
+
+
+##   Rationale
+
+The design of this mechanism is based on several key decisions aimed at balancing security, usability, and decentralization.
+
+- **Registration on Cardano**: The decision to place the mapping validator on Cardano is fundamental. Users receiving cNIGHT tokens will have ADA to pay for Cardano transactions but will have no DUST to pay for an initial registration transaction on Midnight. This approach elegantly solves the bootstrapping dilemma.
+- **Authentication Token for Security**: A simple on-chain record is insufficient, as it would allow anyone to create a mapping on behalf of another user. The proposed solution uses a unique, non-transferable Authentication Token minted in the same transaction as the registration. The minting policy requires the signature of the user being registered, cryptographically binding the registration to the owner's intent and preventing unauthorized mappings.
+- **Handling of Duplicate Registrations**: The initial design considered using a "distributed set" on-chain to enforce unique registrations. This was rejected due to the significant overhead and performance issues observed in similar implementations, such as transaction build times of up to 40 minutes. The chosen approach simplifies the on-chain logic and delegates conflict resolution (e.g., choosing the most recent mapping) to the off-chain observability layer and client-side DApps. This is a pragmatic trade-off that prioritizes user experience and network performance over on-chain enforcement of uniqueness.
+- **Post-Registration UTXO Activation**: DUST generation is intentionally limited to cNIGHT UTXOs created after a mapping is registered. An alternative, where all existing UTXOs in a wallet become active upon registration, was discarded because it presents a significant DoS attack vector. A malicious actor could accumulate thousands of small UTXOs in a wallet before registering it, forcing the observability layer to generate a massive volume of CMSTs at very little cost to the attacker. The current design mitigates this risk and aligns the behavior of cNIGHT with that of mNIGHT on the Midnight network.
+
+
+
+
+##   Backwards Compatibility Assessment
+
+This MIP introduces a new, additive feature to the Midnight ecosystem. It establishes a standard for cross-chain interaction with Cardano but does not alter any existing core protocol rules or smart contract interfaces on Midnight. Therefore, this proposal is fully backwards compatible and does not require a hard fork. Existing applications and users on the Midnight network will be unaffected.
+
+
+
+##   Security Considerations
+
+- **Unauthorized Registration/Deregistration**: This is the primary security concern. It is mitigated by the Authentication Token mechanism. The token's minting policy requires a signature from the user_pkh being registered, and the Mapping Validator script requires the same signature for spending the registration UTXO (for updates or deregistration). This ensures only the legitimate owner can control the mapping.
+
+- **Denial-of-Service (DoS) on Observability Layer**: As detailed in the Rationale, activating DUST generation only for UTXOs created post-registration is a crucial mitigation against DoS attacks. This prevents actors from forcing the generation of an excessive number of CMSTs by registering a wallet already containing a large number of UTXOs.
+
+- **Authentication Token Security**: The validator scripts are designed to be a "closed system" for the Authentication Token. The Mapping Validator script ensures that upon spending a registration UTXO, the token is either forwarded to a new registration UTXO (for updates) or burned (for deregistration). It explicitly prevents the token from being sent to any other address, ensuring it cannot "leak" and be misused.
+
+- **Replay Attacks and State Conflicts**: While the on-chain logic does not prevent duplicate registrations, the Observability Layer's deterministic conflict resolution policy (e.g., "most recent valid registration wins") provides a consistent interpretation of user intent. Client-side applications (DApps) should also check for existing registrations before allowing a user to create a new one to prevent user error and unnecessary chain bloat.
+
+
+
+
+##   Implementation
+
+The implementation of this MIP involves work across both the Cardano and Midnight ecosystems.
+
+**Cardano Smart Contracts**: A suite of Plutus smart contracts must be developed, tested, and deployed to the Cardano mainnet. This includes:
+- `Mapping Validator`: Stores the registration UTXOs.
+- `Auth Token Policy`: The main proxy policy for the authentication token.
+- `Auth Token Minting Policy` & `Auth Token Burning Policy`: The versioned logic for minting and burning.
+- Associated versioning contracts (`Version Oracle Validator`, etc.) to allow for future upgrades to the logic without changing the contract address or token policy IDs.
+
+**Midnight Node**: The Midnight node software must be updated to include the components of the Observability Layer. This layer needs to connect to a Cardano node (or db-sync instance) to monitor the Mapping Validator address and cNIGHT asset transactions. The CMST Handler logic must also be implemented within the node's partner chain module to process the incoming system transactions.
+
+**Dependencies**:
+- Access to a stable, reliable Cardano node or db-sync service.
+- Finalization of the partner-chain versioning system contracts, which are a dependency for the upgradeability of the Plutus scripts.
+- A client-side DApp or equivalent tooling for users to build and submit the registration, update, and deregistration transactions.
+
+
+
+##   Testing
+
+A comprehensive testing strategy is required to ensure the security and reliability of the end-to-end system.
+
+- **Unit and Property-Based Testing**: Each Plutus smart contract must undergo rigorous testing to verify all validation logic, including positive and negative test cases for registration, updates, and deregistration.
+
+- **End-to-End Integration Testing**: A series of tests on a Cardano-Midnight testnet environment must validate the complete user flow as described in the `README.md` test procedure:
+
+1. **Wallet Setup**: Create test wallets on Cardano.
+2. **Registration**: Successfully execute a `register` transaction, confirming the creation of the correct UTXO and datum at the Mapping Validator address.
+3. **cNIGHT Minting/Transfer**: Create a cNIGHT UTXO at the registered address.
+4. **Observability Verification**: Confirm that the Observability Layer detects the new cNIGHT UTXO and correctly generates a `Create` CMST.
+5. **DUST Generation Verification**: Confirm that the Midnight network processes the CMST and that DUST starts accruing to the correct DUST address.
+6. **Deregistration**: Successfully execute a `deregister` transaction, confirming the registration UTXO is spent and the Authentication Token is burned.
+7. **Generation Halt Verification**: Transfer a new cNIGHT UTXO to the now-deregistered address and confirm that no `Create` CMST is generated.
+
+**Edge Case Testing**:
+- Test the conflict resolution logic by creating multiple registrations for a single Cardano address.
+- Test the "respend to self" mechanism for activating pre-registration UTXOs.
+- Simulate Cardano chain reorganizations to ensure the Observability Layer can handle them gracefully.
+
+
+##   Copyright Waiver
+
+All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0. Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
