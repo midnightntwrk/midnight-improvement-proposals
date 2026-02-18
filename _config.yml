@@ -1,0 +1,85 @@
+# Jekyll configuration for Midnight Improvement Proposals
+
+title: Midnight Improvement Proposals
+description: >-
+  A collection of Midnight Improvement Proposals (MIPs) - the primary mechanism
+  for proposing new features and documenting design decisions for Midnight.
+baseurl: "/midnight-improvement-proposals"
+url: "https://midnightntwrk.github.io"
+
+# Theme
+remote_theme: just-the-docs/just-the-docs@v0.8.2
+color_scheme: dark
+
+# Logo
+logo: "/assets/images/midnight-logo.png"
+
+# Search
+search_enabled: true
+search:
+  heading_level: 2
+  previews: 3
+  preview_words_before: 5
+  preview_words_after: 10
+  tokenizer_separator: /[\s/]+/
+  rel_url: true
+  button: false
+
+# Aux links (top right)
+aux_links:
+  "GitHub":
+    - "https://github.com/midnightntwrk/midnight-improvement-proposals"
+aux_links_new_tab: true
+
+# Navigation
+nav_enabled: true
+nav_sort: case_sensitive
+
+# Collections
+collections:
+  mips:
+    output: true
+    permalink: /:collection/:name
+
+# Defaults
+defaults:
+  - scope:
+      path: "mips"
+    values:
+      layout: default
+      nav_order: 2
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Exclude from processing
+exclude:
+  - .git
+  - .github
+  - node_modules
+  - vendor
+  - Gemfile
+  - Gemfile.lock
+  - "*.gemspec"
+  - LICENSE
+  - SECURITY.md
+  - CODEOWNERS
+
+# Include
+include:
+  - _pages
+
+# Plugins
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-include-cache
