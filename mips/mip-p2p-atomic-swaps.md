@@ -36,7 +36,7 @@ only offer metadata on the discovery layer is public.
 ### Overview
 
 The swap mechanism leverages Zswap's native support for imbalanced transactions.
-Makers create partial transactions containing their spend authorization and their expected payment output.
+Makers create partial transactions containing their spend authorization and their expected payment outputs.
 Takers complete these by adding their own input and output, then merging the transactions.
 
 ```text
@@ -52,6 +52,9 @@ MERGED TX (balanced):
   Inputs:  100 TokenA (maker), 50 NIGHT (taker)
   Outputs: 50 NIGHT to maker, 100 TokenA to taker
 ```
+
+> This example illustrates a simple 1:1 token swap.
+> The specification supports multi-asset swaps where `gives` and `wants` contain multiple token types.
 
 The merged transaction balances because the maker's input (100 TokenA) funds the taker's output,
 and the taker's input (50 NIGHT) funds the maker's output.
@@ -87,20 +90,21 @@ interface OfferPayload {
   transaction: string;
 
   // What the maker wants in return
-  wants: {
-    token: string;   // Token type identifier
-    amount: string;  // Stringified bigint
-  };
+  wants: Array<{
+    token: string;     // Token type identifier
+    amount: string;    // Stringified bigint
+  }>
 
   // What the maker is giving
-  gives: {
+  gives: Array<{
     token: string;
     amount: string;
-  };
+  }>
 
   // Optional metadata
   metadata?: {
     createdAt?: string;  // ISO 8601 timestamp
+    expiresAt?: string;  // ISO 8601 timestamp, SHOULD match transaction TTL
     makerNote?: string;  // Arbitrary message
   };
 
@@ -119,10 +123,15 @@ interface OfferPayload {
 | ------- | ---------- | ------------- |
 | `version` | Yes | Must be `1` for this specification |
 | `transaction` | Yes | Bech32-encoded offer per Offer Files MIP |
-| `wants.token` | Yes | Token type identifier the maker wants |
-| `wants.amount` | Yes | Amount wanted as stringified bigint |
-| `gives.token` | Yes | Token type identifier being offered |
-| `gives.amount` | Yes | Amount offered as stringified bigint |
+| `wants` | Yes | Array of tokens the maker wants in return |
+| `wants[].token` | Yes | Token type identifier |
+| `wants[].amount` | Yes | Amount as stringified bigint |
+| `gives` | Yes | Array of tokens the maker is offering |
+| `gives[].token` | Yes | Token type identifier |
+| `gives[].amount` | Yes | Amount as stringified bigint |
+| `metadata.createdAt` | No | ISO 8601 timestamp of offer creation |
+| `metadata.expiresAt` | No | ISO 8601 timestamp, SHOULD match transaction TTL |
+| `metadata.makerNote` | No | Arbitrary message from maker |
 | `auth.signerPublicKey` | No | Public key used for signature verification |
 | `auth.signature` | No | BIP-340 Schnorr signature over offer |
 | `auth.scheme` | No | Must be `schnorr-bip340` if auth is present |
@@ -222,20 +231,15 @@ Publish a new offer.
 
 #### GET /v1/offers
 
-Query available offers.
+**Query available offers.**
 
-**Parameters:**
+Indexers SHOULD support filtering by token type and amount.
+The exact query parameters and filtering semantics are left to implementations,
+as offers may contain multiple tokens in `gives` and `wants` arrays.
+At minimum, implementations SHOULD support:
 
-| Parameter | Type | Description |
-| ----------- | ------ | ------------- |
-| `givesToken` | string | Filter by token being offered |
-| `wantsToken` | string | Filter by token wanted |
-| `minGivesAmount` | string | Minimum `gives.amount` |
-| `maxGivesAmount` | string | Maximum `gives.amount` |
-| `minWantsAmount` | string | Minimum `wants.amount` |
-| `maxWantsAmount` | string | Maximum `wants.amount` |
-| `limit` | number | Pagination limit |
-| `offset` | number | Pagination offset |
+- Filtering by token type (in either gives or wants)
+- Pagination
 
 **Response:**
 
@@ -269,13 +273,13 @@ By operating at the protocol level, swaps inherit the full security guarantees o
 
 ### Imbalanced Transactions
 
-The maker creates a transaction containing their spend authorization and their expected payment output.
-This transaction is imbalanced, it outputs a token type (the payment) that it doesn't input.
-The taker creates a complementary imbalanced transaction with their input and their expected receipt.
+The maker creates a transaction containing their spend authorizations and their expected payment outputs.
+This transaction is imbalanced becuase it outputs token types (the payments) that it doesn't input.
+The taker creates a complementary imbalanced transaction with their inputs and their expected receipts.
 When merged, the two transactions balance.
-Critically, because the maker's expected payment is included as an output in their proven transaction,
+Critically, because the maker's expected payments are included as outputs in their proven transaction,
 the taker cannot modify the payment terms.
-The maker's proof commits to receiving a specific amount of a specific token.
+The maker's proof commits to receiving specific amounts of specific tokens.
 This provides on-chain enforcement of both sides of the swap terms.
 
 ### Optional Authentication
@@ -286,8 +290,8 @@ ensuring the `gives` and `wants` fields accurately reflect the underlying proven
 
 Authentication is not required for security because the core swap terms
 are cryptographically committed in the proven transaction.
-The maker's expected payment (token type, amount, and receiving address)
-is embedded in their partial transaction and enforced by the ledger.
+The maker's expected payments (token types, amounts, and receiving addresses)
+are embedded in their partial transaction and enforced by the ledger.
 No amount of metadata tampering can change what the maker actually receives.
 
 Making authentication optional simplifies implementations while preserving
@@ -298,7 +302,7 @@ the option for enhanced metadata integrity when desired.
 ### Metadata in Application Layer
 
 The underlying `zswap::Offer` (as defined in the Offer Files MIP) contains the proven partial transaction,
-which includes the maker's input, their expected payment output, and the receiving address.
+which includes the maker's inputs, their expected payment outputs, and the receiving addresses.
 This MIP adds application-layer metadata for discovery.
 This separation allows the base offer format to remain focused on the cryptographic commitment while enabling rich marketplace functionality.
 
@@ -336,8 +340,8 @@ The core security of atomic swaps derives from the proven transaction structure,
 not from application-layer authentication.
 The maker's partial transaction cryptographically commits to:
 
-- The input being spent (what the maker gives)
-- The expected output (what the maker receives, including token type, amount, and receiving address)
+- The inputs being spent (what the maker gives)
+- The expected outputs (what the maker receives, including token types, amounts, and receiving addresses)
 
 The taker cannot modify these terms.
 When the merged transaction is submitted, the ledger enforces that commitments balance.
@@ -370,6 +374,16 @@ While on-chain activity is shielded, the indexer is a privacy leak:
 | On-chain transaction details | Shielded |
 
 Users requiring stronger privacy should access indexers via Tor or run their own instance.
+
+### Address Privacy
+
+The maker's receiving address is embedded in their proven transaction
+and can be extracted by anyone who deserializes the offer.
+This includes indexers, takers, and passive observers with access to the offer payload.
+Makers who reuse the same receiving address across multiple offers
+enable observers to correlate those offers to a single identity.
+To mitigate this, makers SHOULD generate a fresh receiving address for each offer.
+This ensures offers are unlinkable even if published on the same indexer.
 
 ### Denial of Service
 
