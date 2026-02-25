@@ -124,10 +124,10 @@ interface OfferPayload {
 | `version` | Yes | Must be `1` for this specification |
 | `transaction` | Yes | Bech32-encoded offer per Offer Files MIP |
 | `wants` | Yes | Array of tokens the maker wants in return |
-| `wants[].token` | Yes | Token type identifier |
+| `wants[].token` | Yes | Hex-encoded `RawTokenType` |
 | `wants[].amount` | Yes | Amount as stringified bigint |
 | `gives` | Yes | Array of tokens the maker is offering |
-| `gives[].token` | Yes | Token type identifier |
+| `gives[].token` | Yes | Hex-encoded `RawTokenType` |
 | `gives[].amount` | Yes | Amount as stringified bigint |
 | `metadata.createdAt` | No | ISO 8601 timestamp of offer creation |
 | `metadata.expiresAt` | No | ISO 8601 timestamp, SHOULD match transaction TTL |
@@ -145,7 +145,7 @@ Metadata fields exist for discoverability but could be inaccurate or maliciously
 To validate an offer:
 
 1. Deserialize the proven transaction from the `transaction` field
-2. Compute the transaction's imbalances
+2. Compute the transaction's imbalances (from the `deltas` property of the deserialized `ZswapOffer<Proof>`)
 3. Verify that the imbalances match the advertised `gives` and `wants` values
 
 Indexers MAY perform this validation on publish and reject offers with mismatched metadata.
