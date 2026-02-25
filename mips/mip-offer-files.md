@@ -254,7 +254,7 @@ function offerFromBech32(text: string): ZswapOffer<Proof> {
 
 ## Acknowledgments
 
-This MIP supersedes an earlier draft that established the bech32 encoding approach and `zswapoffer` HRP.
+This MIP supersedes an earlier draft (#39) that established the bech32 encoding approach and `zswapoffer` HRP.
 This MIP extends that work with proven-offer-only constraints
 and reference implementations informed by ledger source analysis.
 
