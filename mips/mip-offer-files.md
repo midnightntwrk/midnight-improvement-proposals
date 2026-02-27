@@ -63,8 +63,7 @@ To decode an offer file:
 
 1. Verify the HRP is `zswapoffer`
 2. Decode the bech32m data part and verify the checksum
-3. Verify the bech32 checksum
-4. Deserialize the binary payload as a proven zswap offer using `Deserializable::deserialize` (Rust) or `ZswapOffer.deserialize('proof', bytes)` (TypeScript)
+3. Deserialize the binary payload as a proven zswap offer using `Deserializable::deserialize` (Rust) or `ZswapOffer.deserialize('proof', bytes)` (TypeScript)
 
 Implementations MUST reject strings with an incorrect HRP, invalid checksum,
 or payloads that fail deserialization.
