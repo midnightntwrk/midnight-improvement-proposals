@@ -104,9 +104,10 @@ so offer invalidation would coincide with a network upgrade and not cause silent
 
 ### Proven Offers Only
 
-Only proven offers contain the zero-knowledge proofs required for a taker to merge the offer into a submittable transaction.
-Unproven offers require access to the proving system,
-and proof-erased offers are unverifiable.
+This specification mandates proven offers because they are the only variant that enables non-interactive merging.
+Unproven offers would require the taker to have access to the proving system,
+breaking the non-interactive property.
+Proof-erased offers can't be verified which makes them unsuitable for sharing with untrusted parties.
 
 ### Offer String Size
 
