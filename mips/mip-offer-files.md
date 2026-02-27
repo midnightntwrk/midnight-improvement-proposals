@@ -83,7 +83,7 @@ or payloads that fail deserialization.
 Bech32 was chosen because it produces ASCII-only strings shareable in any text context,
 the `zswapoffer` prefix makes strings immediately identifiable,
 and the format can be double-click selected in most environments.
-While proven offer strings are larger than initially anticipated (see Offer String Size),
+While proven offer strings are larger than ideal (see Offer String Size),
 bech32 remains suitable as the encoding format for these reasons.
 
 **Alternatives considered:**
