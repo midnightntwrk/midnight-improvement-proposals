@@ -127,8 +127,14 @@ Multi-asset offers with additional inputs and outputs will be proportionally lar
 ### Checksum Suitability
 
 Bech32's error-detection properties degrade for strings longer than 90 characters.
-However, offer files are not manually entered by users,
-so the error-detection requirements are lower than for addresses.
+This is less concerning for offer files than for addresses because a corrupted offer cannot result in loss of funds.
+There is no valid offer to complete, so the transaction simply cannot be constructed.
+
+The more realistic risk is a man-in-the-middle that substitutes one valid offer for another,
+potentially swapping a different asset or less favorable terms.
+The checksum provides a first line of defense against such substitution.
+Validating that the offer content matches the user's expectations is a separate concern
+that should be addressed by parsers and UIs.
 
 ## Backwards Compatibility Assessment
 
