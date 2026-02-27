@@ -111,10 +111,6 @@ Proof-erased offers can't be verified which makes them unsuitable for sharing wi
 
 ### Offer String Size
 
-A minimal proven offer (1 input, 1 output, 1 delta) produces a binary payload of approximately 10,000 bytes,
-dominated by zero-knowledge proofs (4,832 bytes each for input and output proofs).
-After bech32 encoding, this yields an offer string of approximately 16,000 characters.
-
 An earlier draft of this MIP estimated approximately 3,000 characters.
 That estimate was likely based on proof-erased offers,
 where proof fields serialize as zero bytes.
