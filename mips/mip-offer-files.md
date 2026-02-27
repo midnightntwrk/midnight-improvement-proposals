@@ -158,7 +158,8 @@ Users MUST use a compliant parser to inspect offer terms before accepting.
 ### Offer Validity
 
 An encoded offer becomes invalid when the maker spends the backing UTXO.
-Validity is time-bounded and verification requires checking against current ledger state.
+Offers also expire when their transaction TTL is reached.
+In both cases, verification requires checking against current ledger state.
 
 ## Relationship to Other MIPs
 
