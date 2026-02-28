@@ -117,7 +117,7 @@ After bech32 encoding, this yields an offer string of approximately 16,000 chara
 
 At this size, offer strings remain practical for sharing via messaging platforms,
 paste services, files, and the indexer API defined in the P2P Atomic Swaps MIP.
-They are too large for standard QR codes (which support a maximum of ~4,296 alphanumeric characters).
+They are too large for common QR codes (which support a maximum of ~4,296 alphanumeric characters).
 QR extensions such as [Structured Append](https://segno.readthedocs.io/en/latest/structured-append.html)
 and [HCC2D](https://qrcodecreator.com/hcc2d-code) exist but lack practical scanner support.
 URI schemes (e.g. `web+midnight://`) are also impractical as offer strings exceed common URL length limits.
