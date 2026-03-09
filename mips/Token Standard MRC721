@@ -1,0 +1,86 @@
+##   Abstract
+
+This MIP introduces a standard interface for non-fungible tokens (NFTs) on the Midnight Network. Modeled conceptually on Ethereum's ERC-721, this standard allows for the creation, ownership, and transfer of unique, distinguishable digital assets. Each token is identified by a unique `tokenId`, and its ownership is tracked individually. The standard includes functions to query token ownership, manage transfer approvals for a single token or an entire collection, and transfer tokens securely. Crucially, it integrates Midnight’s privacy-by-design principles by using shielded public keys (`string pk`) for all owner and operator identifiers, enabling private management of unique digital assets through Zero-Knowledge Proofs.
+
+
+##   Motivation
+
+The ability to represent unique assets on-chain is fundamental to unlocking high-value, data-sensitive use cases. This standard directly supports Midnight's business strategy by providing the technical foundation for enterprise adoption in key markets:
+- **Digital ID and Verifiable Credentials**: An NFT can represent a private, non-transferable credential (e.g., a KYC verification, an academic degree, an organizational membership). A user can prove ownership of this credential to a third party to gain access to services without revealing their identity or other personal data.
+- **Real-World Asset (RWA) Tokenization**: Unique physical assets like real estate titles, fine art, or luxury goods can be represented as NFTs. This standard allows for confidential ownership and transfer of these high-value assets, a critical requirement for institutional and private wealth management.
+- **Intellectual Property and Licensing**: Software licenses, music rights, or patents can be issued as NFTs, enabling creators and businesses to manage and trade these rights in a secure and private manner.
+
+Without a standard interface, interoperability between different NFT applications, marketplaces, and wallets would be impossible, stifling ecosystem growth. This MIP establishes a common language for unique assets, promoting innovation while upholding Midnight's core promise of data protection.
+
+##   Specification
+
+A Midnight Non-Fungible Token contract MUST be implemented using the `Compact` language and expose the following public interface. The keywords `MUST`, `SHOULD`, and `MAY `are to be interpreted as described in RFC 2119.
+
+**State Variables**
+A compliant contract MUST include the following state variables:
+- `name: string` - The human-readable name of the NFT collection.
+- `symbol: string` - The symbol for the NFT collection.
+- `owners: Map<uint256, string pk>` - A mapping from a unique `tokenId` to its current `ownerId`.
+- `balances: Map<string pk, uint128>` - A mapping from an `ownerId` to their count of owned tokens in the collection.
+- `tokenApprovals: Map<uint256, string pk>` - A mapping from a `tokenId` to a single approved `spenderId` for that token.
+- `operatorApprovals: Map<string pk, Map<string pk, boolean>>` - A nested mapping where `operatorApprovals[ownerId][operatorId]` is `true` if an `operatorId` is approved to manage all tokens of an `ownerId`.
+
+**Functions**
+A compliant contract MUST implement the following functions:
+- `name() public view returns (string)` Returns the name of the token collection.
+- `symbol() public view returns (string)` Returns the symbol of the token collection.
+- `balanceOf(ownerId: string pk) public view returns (uint128)` Returns the number of NFTs in this collection owned by `ownerId`.
+- `ownerOf(tokenId: uint256) public view returns (string pk) `Returns the `ownerId` of the specified `tokenId`.
+- `approve(toId: string pk, tokenId: uint256)` public Grants permission to `toId` to transfer the `tokenId` on behalf of the caller. Only one approval can exist per token. MUST trigger the Approval event.
+- `getApproved(tokenId: uint256) public view returns (string pk) `Returns the approved `spenderId` for a single `tokenId`, or a zero-address if none is set.
+- `setApprovalForAll(operatorId: string pk, approved: `boolean`)` public Grants or revokes permission for an `operatorId` to manage all of the caller's tokens. MUST trigger the `ApprovalForAll` event.
+- `isApprovedForAll(ownerId: string pk, operatorId: string pk) `public view returns (boolean) Returns true if operatorId is an approved operator for all of ownerId's tokens.
+- `transferFrom(fromId: string pk, toId: string pk, tokenId: uint256)` public Transfers ownership of `tokenId` from `fromId` to `toId`. The caller must be the owner, an approved spender, or an approved operator. MUST trigger the Transfer event.
+- `tokenURI(tokenId: uint256) public view returns (string)` Returns a distinct URI for a given `tokenId`, pointing to its metadata. This URI SHOULD conform to the ERC-721 Metadata JSON Schema.
+
+**Events**
+A compliant contract MUST emit the following events:
+- `Transfer(from: string pk, to: string pk, tokenId: uint256)` MUST be triggered when a token is transferred.
+- `Approval(owner: string pk, approved: string pk, tokenId: uint256)` MUST be triggered on a successful call to approve.
+- `ApprovalForAll(owner: string pk, operator: string pk, approved: boolean)` MUST be triggered on a successful call to setApprovalForAll.
+
+
+
+##   Rationale
+
+This standard's design is heavily based on ERC-721, the definitive standard for unique NFTs in the blockchain industry. Adopting this familiar structure greatly simplifies the onboarding process for developers and ensures compatibility with established metadata standards and application logic.
+
+The inclusion of `setApprovalForAll` is a critical design choice learned from the evolution of NFT standards. It allows users to grant a single approval to marketplace contracts (operators), enabling them to list, sell, and manage collections without requiring a separate, costly `approve` transaction for every individual token. This dramatically improves user experience and is essential for a functioning NFT ecosystem.
+
+The core innovation is the consistent use of `string pk` for all identity-related fields (`ownerId`, `operatorId`, etc.). This aligns the standard with Midnight's foundational privacy architecture, allowing ownership and control to be cryptographically verified using ZKPs without exposing the actual identities of the token holders. This fusion of a proven asset standard with cutting-edge privacy technology is the central rationale for this proposal.
+
+##   Backwards Compatibility Assessment
+
+This MIP proposes a new, foundational standard for non-fungible tokens on the Midnight Network. It does not alter or replace any existing standards and therefore introduces no backwards compatibility issues.
+
+##   Security Considerations
+
+The implementation of this standard must address several critical security vectors:
+1. **Authorization and Ownership Logic**: The contract must rigorously enforce ownership and approval rules. The `transferFrom` function must be non-reentrant and strictly verify that the caller is either the owner, has been approved for the specific `tokenId`, or is an approved operator for the owner.
+2. **Operator Risk**: The `setApprovalForAll` function grants significant power to the designated operator. Malicious operator contracts could potentially steal all of a user's approved assets. Wallets and dApps interacting with this function MUST clearly and explicitly inform users of the permissions they are granting.
+3. **URI and Metadata Integrity**: While the on-chain state is immutable, the metadata linked by `tokenURI` can be mutable (e.g., hosted on a central server). Implementers and users should be aware of the trust assumptions related to metadata hosting. Solutions like IPFS are recommended for greater integrity.
+4 **Privacy Implementation**: The integrity of the ZK circuits used to prove ownership and approvals is paramount. Any flaw could lead to the deanonymization of token holders, undermining the core value proposition of using Midnight for NFTs. All reference implementations require exhaustive security audits.
+
+
+##   Implementation
+
+A reference implementation of this standard should be created in the `Compact` language and made available in the official `compact-contracts` repository. This implementation will serve as the canonical guide for all developers building NFT projects on Midnight. Note: The URL provided in the prompt was for a fungible token; this section will be updated with the correct link once it is available.
+
+
+##   Testing
+
+Any implementation of this standard must be accompanied by a thorough test suite covering the following areas:
+- **Unit Tests**: Each function MUST be tested in isolation, covering all logical paths and edge cases (e.g., transferring to the zero address, approving an existing owner, handling non-existent token IDs).
+- **Integration Tests**: The contract should be tested with other contracts, particularly a mock marketplace, to ensure the `approve` and `setApprovalForAll` workflows function correctly.
+- **State Invariant Tests**: Property-based tests should be used to confirm that critical invariants are maintained (e.g., the total number of NFTs owned by all users always equals the total supply; a `tokenId` never has more than one owner).
+- **Privacy Verification**: Tests must be conducted to ensure that ZK proofs are correctly generated and verified, and that no personally identifiable information is leaked on-chain during transfers or approvals.
+
+
+##   Copyright Waiver
+
+All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0. Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
