@@ -1,0 +1,13 @@
+title: Midnight Improvement Proposals
+description: Midnight Improvement Proposals (MIPs) describe standards for the Midnight platform, including core protocol specifications, client APIs, and contract standards.
+theme: jekyll-theme-minimal
+baseurl: "/midnight-improvement-proposals" # Important for GH Pages project sites
+url: "https://midnightntwrk.github.io" # Replace with actual if known, or leave blank
+
+plugins:
+  - jekyll-seo-tag
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
