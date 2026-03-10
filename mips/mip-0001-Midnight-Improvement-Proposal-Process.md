@@ -13,13 +13,13 @@ Replaces: none
 
 <!--
  Copyright 2025 Midnight Foundation
- 
+
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
- 
+
      https://www.apache.org/licenses/LICENSE-2.0
- 
+
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,7 @@ Replaces: none
 
 ## Abstract
 
-A Midnight Improvement Proposal (MIP) is a formalised design document for the Midnight community and the name of the process by which such documents are produced and listed.
+A Midnight Improvement Proposal (MIP) is a formalised design document for the Midnight community, and also the name of the process by which such documents are produced and listed.
 A MIP provides information or describes a change to the Midnight ecosystem, processes, or environment concisely and in sufficient technical detail.
 In this MIP, we explain what a MIP is, how the MIP process functions, the role of the MIP Editors, and how users should go about proposing, discussing, and structuring a MIP.
 
@@ -40,15 +40,16 @@ Plus, because MIPs are text files in a versioned repository, their revision hist
 
 MIPs aim to address two challenges mainly:
 
-The need for various parties to agree on a common approach to ease the interoperability of tools or interfaces.
-The need to propose and discuss changes to the protocol or established practice of the ecosystem.
-The MIP process does not by itself offer any form of governance.
+- The need for various parties to agree on a common design in order to create interoperable tools or interfaces.
+- The need to propose and discuss changes to the Midnight protocol, ecosystem, or established practices.
+
+The MIP process does not *by itself* offer any form of governance.
 For example, it does not govern the process by which proposed changes to the Cardano protocol are implemented and deployed.
 Yet, it is a crucial, community-driven component of the governance decision pipeline as it helps to collect thoughts and proposals in an organised fashion.
 Additionally, specific projects may choose to actively engage with the MIP process for some or all changes to their project.
 
-The process detailed herein is intentionally light weight and is expected to expand evolve as the Midnight community grows.
-This document outlines the technical structure of the MIP and the technical requirements of the submission and review process. 
+The process detailed herein is intentionally lightweight and is expected to evolve as the Midnight community grows.
+This document outlines the technical structure of the MIP and the technical requirements of the submission and review process.
 
 ## Specification
 
@@ -57,19 +58,73 @@ This document outlines the technical structure of the MIP and the technical requ
 The specification in this MIP will be versioned using semantic versioning (SemVer).
 Any changes to the specification must be submitted as a new MIP if they affect backwards compatibility or introduce new requirements.
 
-### **Process Overview**
+### Process Overview
 
 The Midnight Improvement Proposal (MIP) process consists of the following stages:
 
-1. **Idea Formulation:** An idea for an improvement is conceived.
-1. **MIP Drafting:** A formal MIP document is created.
-1. **Submission:** The MIP is submitted as a Pull Request (PR) to the Midnight Architectured GitHub repository.
-1. **Review and Discussion:** The community and MIP Editors review and discuss the MIP.
-1. **Status Progression:** The MIP progresses through various statuses based on review and consensus.
-1. **Implementation:** Accepted MIPs are implemented by development teams.
-1. **Deployment:** Implemented changes are deployed in a Midnight network upgrade.
+1. **Idea formulation:** An idea for an improvement is conceived.
+   Simple improvements (like performance improvements or better error messages) and bug fixes generally do not need a MIP.
+   These can be submitted directly to the relevant Midnight issue tracker instead.
+   Bigger improvements first start with an idea.
+   This could be a feature request or arise out of other discussion.
+   In any case, it's a good idea to vet the idea publicly in some way to gauge if it fits a genuine need and is likely to be acceptable.
+   It's **very** important that proposed changes are well-motivated.
+   Adding features and changing implementations has a cost, which must be justified by a corresponding benefit.
 
-### **MIP Categories**
+1. **MIP drafting:** A formal MIP document is created.
+   This is a document that follows the template structure in `mip-template.md`.
+   The authors must create a [midnightntwrk/midnight-improvement-proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) PR where the MIP document is added to the `mips` subdirectory.
+   The name of the document must be `mip-xxxx.md` (those are literal `x`'s).
+   The status of the MIP must be **Draft** (in the document, that is not necessarily the PR status).
+   If the proposal has accompanying resources (such as images), they should be added to a subdirectory of `mips` with the same basename as the MIP filename
+   (so for draft MIPs before numbering, this directory is `mips/mip-xxxx`).
+   To signal that the MIP is ready for editors to consider numbering it, assign a MIP Editor as a reviewer and mention them in a PR comment.
+   (Be explicit so the editors don't accidentally consider numbering the MIP before the authors are ready.)
+
+1. **Editor numbering of the draft:** The MIP Editors consider the draft MIP PR, and assign a number if it's acceptable (as a draft).
+   Note that this is **not** the same as acceptance of the MIP itself.
+   The MIP Editors will review the draft at one of their next regularly scheduled meetings.
+   They will ensure that the document is correctly formatted, that it is clear and understandable, and that it is well motivated.
+   The editors will be generally lenient at this stage with the understanding that problems can be addressed before the MIP is eventually proposed.
+   If the editors deem the MIP is not yet ready for numbering, it will be sent back to the authors with specific feedback.
+   If the editors approve numbering the MIP, they will assign it a number and update the document by pushing to the PR.
+   The editors will update the filename, the number in the document, and add the MIP as a draft to the index.
+   The editors will then merge the MIP.
+
+1. **Discussion and update:** The MIP authors finish the draft and address feedback to get it in shape for proposal.
+   Discussion should happen in some public forum, such as the Midnight Discord server.
+   The relevant issue tracker can be used to raise and track issues with the MIP.
+   Contributors can send pull requests to improve the draft MIP.
+
+1. **Proposal:** When ready, the MIP authors formally propose it to the MIP Editors for consideration.
+   The MIP authors do this by filing an issue in the MIPs repository, asking for the editors to consider the MIP for acceptance.
+   The editors will set the status of the MIP to **Proposed** and mark it as proposed in the index.
+   There should be no more substantive modifications to the document
+   (small changes like spelling and punctuation fixes are OK).
+
+1. **Review and discussion:** The community and MIP Editors review and discuss the MIP.
+   The MIP Editors will announce a period of community commentary, which usually will last at least two weeks.
+   They will announce by posting in the proposal issue that they will discuss the MIP at a specific regularly scheduled editors meeting after the commentary period has passed.
+
+1. **Editor decision:** The MIP Editors decide to accept the MIP or not.
+   The editors will vote to accept (status **Accepted**) or reject (status **Rejected**) the MIP.
+   At this point the authors' job is done (as authors, they can still contribute to implementation).
+   The editors will update the MIP document and the index to reflect the status.
+
+1. **Implementation:** Accepted MIPs are implemented by development teams.
+   The editors' acceptance represents a decision for the project to adopt the proposed improvement.
+   For protocol changes or tooling improvements, this requires contributors to actually plan and perform the implementation work.
+   For governance or process improvements, it requires the community to take steps to adopt the process.
+   When implementation is completed the MIP's status is changed to **Implemented** by the editors
+   (they might do this by approving a PR from the implementers to change the status).
+
+1. **Deployment:** Implemented changes are deployed in a Midnight network upgrade.
+   Implemented changes will not necessarily make it into the very next network upgrade.
+   For example, a breaking protocol change might have to wait for a planned major version increment,
+   or a change might require updates to multiple components across the Midnight ecosystem.
+   When an implemented MIP is deployed, the status is changed to **Active** and the relevant network upgrade is noted.
+
+### MIP Categories
 
 MIPs are categorized to help organize and manage the different types of proposals:
 
@@ -80,75 +135,69 @@ MIPs are categorized to help organize and manage the different types of proposal
 - **Governance:** Proposals related to the governance of the Midnight blockchain, including decision-making processes, roles, and responsibilities.
 - **Informational:** Provides general information, guidelines, or research related to the Midnight Blockchain but does not propose a specific change.
 
-### **MIP Statuses**
+### MIP Statuses
 
-MIPs can have the following statuses:
+MIPs can have the following statuses mentioned in the Process Overview above:
 
-- **Proposed:** The MIP has been formally submitted as a PR to the MIPs repository.
-- **Review:** The MIP is undergoing community and editor review.
-- **Accepted:** The MIP is accepted as meeting the MIP standards by editors.
-- **Active:** The MIP has been accepted and meets its "Path to Active" criteria.
+- **Draft:** The MIP has been submitted as a PR to the MIPs repository, is merged, and is undergoing writing and revision.
+- **Proposed:** A draft MIP has been formally proposed to the MIP Editors for consideration.
+  Writing and revision are done.
+- **Accepted:** The MIP Editors have voted to accept a proposed MIP.
+  For accepted informational MIPs, this is the final status.
+- **Rejected:** The MIP Editors have voted to reject a proposed MIP.
+- **Implemented:** The improvement described in the MIP has been implemented.
+  For accepted governance MIPs, this is the final status.
+- **Active:** The implemented improvement has been deployed in a Midnight network upgrade and is active.
+  For accepted core, standards, and networking MIPs, this is the final status.
+
+In addition, there are other statuses that represent events occurring outside the normal process described above:
+
 - **Superseded:** A newer MIP replaces this MIP.
+  The newer (accepted) MIP explicitly does this by including as part of the proposal that it supersedes the superseded MIP ("Supersedes MIP-1234", for instance).
 - **Obsolete:** The MIP is no longer considered relevant.
-- **Rejected:** The MIP was not accepted.
+  The MIP Editors will occasionally vote to label MIPs this way for clarity.
 - **Withdrawn:** The author(s) have withdrawn the MIP.
+  This can happen at any time before the MIP Editors vote to accept or reject the MIP.
 
-#### **Submission**
+#### Submission
 
-- A Finalized MIP should be submitted as a Pull Request (PR) to the[Midnight Improvements Proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) (this) repository of the Midnight GitHub organization as a pull request named after the proposal's title.
-  The pull request title should not include a MIP number (and use ? instead as number); the editors will assign one.
-  Discussions may precede a proposal.
-  Early reviews and discussions streamline the process down the line.
-- Upon review, the PR title should be: MIP-XXXX: [MIP Title] (where XXXX is the next available MIP number, assigned by a MIP Editor). 
+When a draft MIP is "finished" to the authors' satisfaction, it should be proposed by filing an issue in the [Midnight Improvement Proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) repository.
+The issue should specify the MIP number and ask the MIP Editors to formally consider it for acceptance.
+The MIP Editors will announce the commentary period and when they will vote on the proposal.
+After proposing for editor consideration, the MIP should not be substantially altered.
 
 Note: Pull requests should not include implementation code: any code bases should instead be provided as links to a code repository.
 
 Note: Proposals addressing a specific MPS should also be listed in the corresponding MPS header, in 'Proposed Solutions', to keep track of ongoing work.
 
-#### **Review and Discussion**
+#### Review and Discussion
 
-- Once a MIP is submitted, it enters a period of public review and discussion.
-- Feedback is encouraged from all Midnight community members, including:
-    - Developers
-    - Node operators
-    - Application developers
-    - Token holders
-    - Users
-- Discussion should take place on the GitHub PR page.
-- Workshop sessions to discuss and review proposals, coordinated by XXXXXX.
-- MIP Editors will:
-    - Ensure the MIP follows the template and meets the minimum quality standards.
-    - Facilitate discussion and ensure all concerns are addressed.
-    - Assign a MIP number.
-    - Track the MIP's progress.
-- Technical experts may be consulted for specific aspects of the proposal.
+Once a MIP is proposed, it enters a period of public review and discussion.
+Feedback is encouraged from all Midnight community members.
+Discussion should take place on the GitHub issue or by attending a MIP Editors meeting.
+Technical experts may be consulted for specific aspects of the proposal.
 
-#### **Implementation**
+#### Implementation
 
-- Once a MIP is Accepted, it becomes a candidate for implementation.
-- Engineering teams (Shielded Architects & Engineers, Community developers) will implement the changes specified in the MIP.
-- Implementation may involve:
-    - Changes to Midnight Architecture
-    - Modifying the Midnight protocol
-    - Updating client software
-    - Developing new tools or libraries
+Once a MIP is accepted, it becomes a candidate for implementation.
+Engineering teams (Shielded Architects & Engineers, community developers) will implement the changes specified in the MIP.
 
-### **Artifacts and Tools**
+### Artifacts and Tools
 
 - **MIP Document:** The core artifact is the MIP document itself, written in Markdown and stored in the MIPs repository.
 - **MIP Template:** A standardized Markdown template for creating MIPs (see below).
-- **GitHub Repository:** The MIPs repository (in Midnight-Architecture) on GitHub will be used to:
+- **GitHub Repository:** The `mips` subdirectory (in the MIPs repository) on GitHub will be used to:
     - Store all MIP documents.
     - Track the status of each MIP.
-    - Facilitate discussion through PRs.
-- **Discussion Forums:** The Midnight Governance Hub (future state) and Discord server should be used for broader discussions and early-stage idea sharing. 
+    - Facilitate discussion through PRs and issues.
+- **Discussion Forums:** The Midnight Governance Hub (future state) and Discord server should be used for broader discussions and early-stage idea sharing.
 - **Meeting Notes:** Notes from any meetings related to MIP discussions should be publicly available in this GitHub repository or linked from it.
 
-### **MIP Editors**
+### MIP Editors
 
 The MIP process relies on a group of *MIP Editors* to manage the process, ensure quality, and facilitate community discussion.
 
-#### **Role and Responsibilities**
+#### Role and Responsibilities
 
 MIP Editors are responsible for:
 
@@ -156,10 +205,10 @@ MIP Editors are responsible for:
 - Assigning MIP numbers.
 - Tracking the progress of MIPs.
 - Facilitating community discussion and helping to resolve technical disagreements.
-- Determining when a MIP has reached sufficient consensus to move to the Accepted status.
-- Maintaining the MIPs repository.
+- Voting to accept or reject a MIP.
+- Maintaining the MIPs in the repository, including an index of them and their statuses.
 
-### **Selection and Qualifications**
+### Selection and Qualifications
 
 MIP Editors should be selected based on the following criteria:
 
@@ -172,11 +221,11 @@ MIP Editors should be selected based on the following criteria:
 ### Nomination and Rotation of Editors
 
 The initial set of MIP Editors will be appointed by the Midnight Foundation and Shielded.
-Subsequently the below set of rules will apply to the addition and removal of MIP Editors. 
+Subsequently the below set of rules will apply to the addition and removal of MIP Editors.
 
 To become a MIP Editor one must be:
 - Nominated by anyone.
-- All sitting MIP Editors must agree to their becoming a MIP Editor by public vote at a MIP Editors' meeting either by expressing support in person or in a written submission to the meeting. 
+- All sitting MIP Editors must agree to their becoming a MIP Editor by public vote at a MIP Editors' meeting either by expressing support in person or in a written submission to the meeting.
 
 The Midnight Foundation will revoke the administrator rights of a MIP Editor over the MIP repository (and they will cease to be a MIP Editor) if one of the following happens:
 - The MIP Editor themselves asks to resign.
@@ -210,7 +259,7 @@ All MIP documents *must* follow this Markdown template and use YAML front matter
 MIP: <Number> # assigned by editors
 Title: <Proposal Title>
 Authors: <Name> (<github-username>)
-Status: <Status> # All new MIPs will assigned Proposed
+Status: <Status> # All new MIPs will be assigned Draft
 Category: <Core | Standards | Networking | Governance | Informational>
 Created: YYYY-MM-DD
 Requires: [List of other MIPS this MIP depends on]
@@ -247,7 +296,7 @@ What does it mean to get from Accepted to Active, and how this will be achieved.
 
 Explain what objective milestones need to be achieved in order for the MIP to achieve Active status.
 
-### Implementation Plan 
+### Implementation Plan
 
 Describe how the MIP will be put into practice.
 
@@ -279,12 +328,11 @@ What tests will be performed to ensure that it works as expected and does not in
 
 Are there any external sources that are referenced in this document, or that add to the efficacy of this MIP?
 
-## Acknowledgements 
+## Acknowledgements
 
-List the contributors that were not the Authors, this will include any workshop participants. 
+List the contributors that were not the Authors, this will include any workshop participants.
 
 ## Copyright Waiver
 
 All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0.
 Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
-
