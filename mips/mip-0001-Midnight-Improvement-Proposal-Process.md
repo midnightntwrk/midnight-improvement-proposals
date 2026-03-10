@@ -64,8 +64,9 @@ Any changes to the specification must be submitted as a new MIP if they affect b
 flowchart TD
     %% Process steps
     A([Idea Formulation]) --> B[MIP Drafting<br/>PR created as mip-xxxx.md]
-    B --> C{Editor Review<br/>for Numbering}
+    B -->|Editor assigned| C{Editor Review<br/>for Numbering}
     C -->|Not ready<br/>feedback sent| B
+    C -->|Not suitable<br/>as a MIP| Closed([PR Closed]):::rejected
     C -->|Number assigned<br/>PR merged| Draft
 
     %% Status: Draft
@@ -132,6 +133,7 @@ The Midnight Improvement Proposal (MIP) process consists of the following stages
    They will ensure that the document is correctly formatted, that it is clear and understandable, and that it is well motivated.
    The editors will be generally lenient at this stage with the understanding that problems can be addressed before the MIP is eventually proposed.
    If the editors deem the MIP is not yet ready for numbering, it will be sent back to the authors with specific feedback.
+   The editors may also close the PR if the proposal is fundamentally not suitable as a MIP (e.g., it is a duplicate, out of scope, or does not warrant a formal proposal).
    If the editors approve numbering the MIP, they will assign it a number and update the document by pushing to the PR.
    The editors will update the filename, the number in the document, and add the MIP as a draft to the index.
    The editors will then merge the MIP.
@@ -184,7 +186,7 @@ MIPs are categorized to help organize and manage the different types of proposal
 
 MIPs can have the following statuses mentioned in the Process Overview above:
 
-- **Draft:** The MIP has been submitted as a PR to the MIPs repository, is merged, and is undergoing writing and revision.
+- **Draft:** The MIP has been submitted as a PR to the MIPs repository and is undergoing writing and revision.
 - **Proposed:** A draft MIP has been formally proposed to the MIP Editors for consideration.
   Writing and revision are done.
 - **Accepted:** The MIP Editors have voted to accept a proposed MIP.
@@ -203,6 +205,22 @@ In addition, there are other statuses that represent events occurring outside th
   The MIP Editors will occasionally vote to label MIPs this way for clarity.
 - **Withdrawn:** The author(s) have withdrawn the MIP.
   This can happen at any time before the MIP Editors vote to accept or reject the MIP.
+
+#### Status Transition Gates
+
+The following table describes the criteria that must be met to transition between statuses:
+
+| From | To | Gate / Criteria |
+|---|---|---|
+| — | **Draft** | PR submitted to the MIPs repository; editor assigns a number and merges |
+| **Draft** | **Proposed** | Authors file an issue requesting editor consideration; document is complete |
+| **Proposed** | **Accepted** | Editor vote after community commentary period (≥ 2 weeks) |
+| **Proposed** | **Rejected** | Editor vote after community commentary period |
+| **Accepted** | **Implemented** | Implementation work completed and verified |
+| **Implemented** | **Active** | Improvement deployed in a Midnight network upgrade |
+| Any (pre-vote) | **Withdrawn** | Author(s) withdraw the MIP |
+| Any (post-accept) | **Superseded** | A newer accepted MIP explicitly supersedes this one |
+| **Active** | **Obsolete** | Editors vote to mark the MIP as no longer relevant |
 
 #### Submission
 
