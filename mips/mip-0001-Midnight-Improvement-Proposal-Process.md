@@ -60,6 +60,51 @@ Any changes to the specification must be submitted as a new MIP if they affect b
 
 ### Process Overview
 
+```mermaid
+flowchart TD
+    %% Process steps
+    A([Idea Formulation]) --> B[MIP Drafting<br/>PR created as mip-xxxx.md]
+    B --> C{Editor Review<br/>for Numbering}
+    C -->|Not ready<br/>feedback sent| B
+    C -->|Number assigned<br/>PR merged| Draft
+
+    %% Status: Draft
+    Draft[Draft]:::status --> D[Discussion & Update<br/>Authors refine, community contributes]
+    D -->|Authors file issue<br/>requesting consideration| Proposed
+
+    %% Status: Proposed
+    Proposed[Proposed]:::status --> E["Community Commentary (≥ 2 weeks)"]
+    E --> F{Editor Vote}
+    F --> Rejected[Rejected]:::rejected
+    F --> Accepted
+
+    %% Status: Accepted
+    Accepted[Accepted]:::status -->|Informational MIPs| Final1([Final Status]):::final
+    Accepted --> G[Implementation Work]
+
+    %% Status: Implemented
+    G --> Implemented[Implemented]:::status
+    Implemented -->|Governance MIPs| Final2([Final Status]):::final
+    Implemented --> H[Network Upgrade Deployment]
+
+    %% Status: Active
+    H --> Active[Active]:::status
+    Active -->|Core / Standards /<br/>Networking MIPs| Final3([Final Status]):::final
+
+    %% Special statuses (exceptional transitions)
+    Draft -.->|Author withdraws| Withdrawn[Withdrawn]:::special
+    Proposed -.->|Author withdraws| Withdrawn
+    Accepted -.-> Superseded[Superseded]:::special
+    Active -.-> Superseded
+    Active -.-> Obsolete[Obsolete]:::special
+
+    %% Styling
+    classDef status fill:#2563eb,stroke:#1e40af,color:#fff,font-weight:bold
+    classDef rejected fill:#dc2626,stroke:#991b1b,color:#fff,font-weight:bold
+    classDef special fill:#6b7280,stroke:#4b5563,color:#fff,font-style:italic
+    classDef final fill:#16a34a,stroke:#15803d,color:#fff
+```
+
 The Midnight Improvement Proposal (MIP) process consists of the following stages:
 
 1. **Idea formulation:** An idea for an improvement is conceived.
