@@ -93,8 +93,8 @@ flowchart TD
     Active -->|Core / Standards /<br/>Networking MIPs| Final3([Final Status]):::final
 
     %% Special statuses (exceptional transitions)
-    Draft -.->|Author withdraws| Withdrawn[Withdrawn]:::special
-    Proposed -.->|Author withdraws| Withdrawn
+    Draft -.->|Author withdraws| Withdrawn1[Withdrawn]:::special
+    Proposed -.->|Author withdraws| Withdrawn2[Withdrawn]:::special
     Accepted -.-> Superseded[Superseded]:::special
     Active -.-> Superseded
     Active -.-> Obsolete[Obsolete]:::special
