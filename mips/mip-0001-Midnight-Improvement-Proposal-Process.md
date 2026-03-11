@@ -64,13 +64,13 @@ Any changes to the specification must be submitted as a new MIP if they affect b
 flowchart TD
     %% Process steps
     A([Idea Formulation]) --> B[MIP Drafting<br/>PR created as mip-xxxx.md]
-    B -->|Editor assigned| C{Editor Review<br/>for Numbering}
-    C -->|Not ready<br/>feedback sent| B
-    C -->|Not suitable<br/>as a MIP| Closed([PR Closed]):::rejected
-    C -->|Number assigned<br/>PR merged| Draft
+    B --> Draft
 
     %% Status: Draft
-    Draft[Draft]:::status --> D[Discussion & Update<br/>Authors refine, community contributes]
+    Draft[Draft]:::status -->|Editor assigned| C{Editor Review<br/>for Numbering}
+    C -->|Not ready<br/>feedback sent| Draft
+    C -->|Not suitable<br/>as a MIP| Closed([PR Closed]):::rejected
+    C -->|Number assigned<br/>PR merged| D[Discussion & Update<br/>Authors refine, community contributes]
     D -->|Authors file issue<br/>requesting consideration| Proposed
 
     %% Status: Proposed
