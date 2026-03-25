@@ -2,7 +2,7 @@
 
 ## Rubric scoring
 
-Below is a comprehensive rubric designed for scoring the risk level associated with various dimensions of the Phased. This scoring system aims to provide a standardized, objective framework for assessing potential risks, allowing stakeholders to quickly identify areas of concern and prioritize mitigation efforts. The rubric assigns a risk score to each dimension based on predefined criteria, ensuring a consistent evaluation across all launch initiatives.
+Below is a comprehensive rubric designed for scoring the risk level associated with various dimensions. This scoring system aims to provide a standardized, objective framework for assessing potential risks, allowing stakeholders to quickly identify areas of concern and prioritize mitigation efforts. The rubric assigns a risk score to each dimension based on predefined criteria, ensuring a consistent evaluation across all launch initiatives.
 
 Each dApp gets scored 1 to 3 on each of the three risk categories. The score reflects what is actually at stake if something goes wrong, not how likely it is.
 
@@ -60,7 +60,7 @@ Exposure of Tier 3 data can lead to:
 
 This scoring mechanism evaluates the financial risk exposure associated with the smart contract, primarily focusing on the amount of user funds that are potentially vulnerable to a security exploit. A higher score indicates a more significant financial risk as the platform grows.
 
-| **Tier** | **Description** | **Financial Risk Profile** | **Confidence During Initial Launch Phase** |
+| **Tier** | **Description** | **Financial Risk Profile** | **Confidence During Launch Phase** |
 | --- | --- | --- | --- |
 | **1** | **No funds locked in contract.** <br> The smart contract architecture is designed such that user assets are never directly held within the contract's balance. Transactions may involve temporary, atomic transfers, but the contract does not serve as a long-term custodian or pool for capital. | **Minimal/Zero Risk.** <br> An exploit would not result in the direct loss of user principal held in the contract. Risk is limited to gas fees, transaction failures, or minor, non-custodial functional loss. | **Highest level of confidence.** <br> Focus shifts entirely to functional correctness and liveness, rather than catastrophic financial loss. 
 | **2** | **Funds temporarily escrowed in contract but for a bounded time.** <br> The contract holds user funds, but this is limited to short, defined periods (e.g., during a swap, a loan origination, a timelocked withdrawal, or a fixed-duration auction). The time window for funds being vulnerable is limited and predetermined. | **Bounded Risk.** <br> The maximum value-at-risk is constrained by the current volume or capacity of the temporary process. An exploit can cause a loss, but the window of opportunity is limited and the total capital at risk is less than the protocol's total value locked (TVL). | **Moderate confidence.** <br> Requires thorough review of the escrow mechanism, withdrawal logic, and timeout procedures. A critical bug has a contained blast radius. |
