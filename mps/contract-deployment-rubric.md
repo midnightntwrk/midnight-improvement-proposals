@@ -2,7 +2,7 @@
 
 ## Rubric scoring
 
-Below is a comprehensive rubric designed for scoring the risk level associated with various dimensions of the Shielded Phase. This scoring system aims to provide a standardized, objective framework for assessing potential risks, allowing stakeholders to quickly identify areas of concern and prioritize mitigation efforts. The rubric assigns a risk score to each dimension based on predefined criteria, ensuring a consistent evaluation across all launch initiatives.
+Below is a comprehensive rubric designed for scoring the risk level associated with various dimensions of the Phased. This scoring system aims to provide a standardized, objective framework for assessing potential risks, allowing stakeholders to quickly identify areas of concern and prioritize mitigation efforts. The rubric assigns a risk score to each dimension based on predefined criteria, ensuring a consistent evaluation across all launch initiatives.
 
 Each dApp gets scored 1 to 3 on each of the three risk categories. The score reflects what is actually at stake if something goes wrong, not how likely it is.
 
@@ -12,7 +12,7 @@ Each dApp gets scored 1 to 3 on each of the three risk categories. The score ref
 
 ### Privacy-at-Risk Score
 
-The Privacy-at-Risk Score serves as a crucial rubric for evaluating the potential real-world harm associated with data exposure, particularly in the context of the Shielded phase and decentralized systems. This score is structured into three ascending tiers of risk, each representing a different level of sensitivity and potential for negative impact on users.
+The Privacy-at-Risk Score serves as a crucial rubric for evaluating the potential real-world harm associated with data exposure, particularly in the context of decentralized systems. This score is structured into three ascending tiers of risk, each representing a different level of sensitivity and potential for negative impact on users.
 
 **Tier 1: Minimal Risk - Data Intended / Already Public or Devoid of Real-World Harm**
 
@@ -60,7 +60,7 @@ Exposure of Tier 3 data can lead to:
 
 This scoring mechanism evaluates the financial risk exposure associated with the smart contract, primarily focusing on the amount of user funds that are potentially vulnerable to a security exploit. A higher score indicates a more significant financial risk as the platform grows.
 
-| **Tier** | **Description** | **Financial Risk Profile** | **Confidence During Shielded Phase** |
+| **Tier** | **Description** | **Financial Risk Profile** | **Confidence During Initial Launch Phase** |
 | --- | --- | --- | --- |
 | **1** | **No funds locked in contract.** 
 The smart contract architecture is designed such that user assets are never directly held within the contract's balance. Transactions may involve temporary, atomic transfers, but the contract does not serve as a long-term custodian or pool for capital. | **Minimal/Zero Risk.** 
@@ -103,9 +103,9 @@ The contract's state can grow infinitely without limit based on user activity. I
 
 **Examples:** A simple public log or message board where anyone can post an unlimited number of entries, a system that tracks *every* historical interaction without aggregation or removal, or a decentralized identifier (DID) system that registers every alias ever created without a deactivation/deletion process.
 
-### Shielded Phase Deployment Override Rule:
+### Launch Phased Deployment Override Rule:
 
-### The Shielded phase represents a critical period for evaluating the stability, performance, and readiness of the product or feature before a full, general release. To ensure maximum stability and minimize potential negative user impact during this controlled rollout, a stringent deployment override rule is enforced.
+### This phase represents a critical period for evaluating the stability, performance, and readiness of the product or feature before a full, general release. To ensure maximum stability and minimize potential negative user impact during this controlled rollout, a stringent deployment override rule is enforced.
 
 **Deployment Override Condition:**
 
