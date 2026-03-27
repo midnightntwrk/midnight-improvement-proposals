@@ -107,3 +107,31 @@ A definitive score of 3 on any single category within the rubric will immediatel
 This high-stakes threshold emphasizes the principle of "fail fast and fix early" within a controlled environment. A score of 3 typically signifies a critical flaw, a severe performance degradation, a significant security vulnerability, or a major operational blocker that poses an unacceptable risk to the pilot user base, system health, or business objectives. This rule ensures that critical issues are identified and mitigated before they impact a wider audience.
 
 If your contract scores a 3 in any category, it is not a permanent block. It is a prompt to rethink the architecture. Join the developer forum or drop into Discord's #dev-chat channel and share your contract structure. The Aliit, the community, and the DevRel team can help you understand what a lower-risk design looks like.
+
+## Apply for Deployment Authorization
+
+To apply for deployment authorization, open a Pull Request against this repository.
+
+1. Fork this repository
+2. In the `deployments/` folder, create a new file named`your-dapp-name.md` if it does not already exist
+3. Open a Pull Request against the `main` branch with the title: `[Deployment Request] Your dApp Name`
+
+Use the following template for your file:
+
+---
+
+**dApp name:**
+
+**Contract repository:**
+
+**Brief description:**
+
+| Category | Self-assessed score (1–3) | Rationale | Mitigations (if applicable) |
+|---|---|---|---|
+| Privacy-at-risk | | | |
+| Value-at-risk | | | |
+| State-space-at-risk | | | |
+
+---
+
+If your contract scores a 3 in any category, it is not a permanent block. It is a prompt to rethink your architecture. Drop into [Discord #dev-chat](https://discord.gg/midnightnetwork) or post in the [developer forum](https://forum.midnight.network/) and share your contract structure. The Solutions, the DevRel team, and the Aliit community can help you understand what a lower-risk design looks like.
