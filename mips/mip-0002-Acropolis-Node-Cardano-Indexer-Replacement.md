@@ -28,7 +28,7 @@ License: Apache-2.0
 
 ## Abstract
 
-This proposal introduces the Acropolis node, a modular Rust implementation of the Cardano node developed by IOG, as a replacement for the current Cardano Node and DBSync (db-sync) components used by Midnight for mainchain observation. The Acropolis node implements a custom Cardano blockchain indexer optimized specifically for Midnight's requirements, exposing indexed data through a gRPC interface. This targeted approach delivers substantial performance improvements: **48x faster boot time** (1-2 hours vs 6-24 hours to chain tip on mainnet, 12-30 minutes with Mithril snapshots), **3x faster Midnight sync time**, and **90+% reduced memory requirements** (7 GB vs 124+ GB represents a 94% reduction in indexer memory footprint, with additional optimizations easily achievable such as 50% further reduction). The custom indexer simplifies the Midnight node infrastructure by indexing only the data necessary for Midnight operations: cNIGHT token registrations, governance updates, UTXO state, and Ariadne validator selection data.
+This proposal introduces the Acropolis node, a modular Rust implementation of the Cardano node developed by IOG, as a replacement for the current Cardano Node and DBSync (db-sync) components used by Midnight for mainchain observation. The Acropolis node implements a custom Cardano blockchain indexer optimized specifically for Midnight's requirements, exposing indexed data through a gRPC interface. This targeted approach delivers substantial performance improvements: **48x faster boot time** (1-2 hours vs 6-24 hours to chain tip on mainnet, 12-30 minutes with Mithril snapshots), **3x faster Midnight sync time**, and **~6x reduced memory requirements** (20 GB vs 124+ GB represents a reduction in indexer memory footprint, with additional optimizations easily achievable such as 50% further reduction). The custom indexer simplifies the Midnight node infrastructure by indexing only the data necessary for Midnight operations: cNIGHT token registrations, governance updates, UTXO state, and Ariadne validator selection data.
 
 ## Motivation
 
@@ -40,7 +40,7 @@ DBSync indexes the entire Cardano blockchain into a PostgreSQL database (cexplor
 
 **Memory Requirements:**
 - Cardano Node + DBSync: 124+ GB
-- Acropolis custom indexer: 7 GB
+- Acropolis custom indexer: 20 GB
 - **Reduction: 94% (17.7x less memory)**
 
 **Boot Time (Time to Chain Tip):**
@@ -301,7 +301,7 @@ Configuration is covered by the documentation on the Acropolis repository.
 
 **Alternative 1: Continue using DBSync**
 - Rejected because it requires indexing the entire Cardano blockchain
-- Performance and resource overhead cannot be eliminated (124+ GB vs 7 GB)
+- Performance and resource overhead cannot be eliminated (124+ GB vs 20 GB)
 - Tight coupling to DBSync update cycles
 - Generic schema not optimized for Midnight queries
 - Accounts for 70% of Midnight operational costs
@@ -318,7 +318,7 @@ Configuration is covered by the documentation on the Acropolis repository.
 - Complete control over indexed data scope
 - Optimized storage and query patterns for Midnight (11x-65x faster queries)
 - Independent evolution and maintenance
-- Minimal resource footprint (7 GB vs 124+ GB)
+- Minimal resource footprint (20 GB vs 124+ GB)
 - Purpose-built gRPC API for Midnight pallets
 - Built-in Mithril support for 12-30 minute sync times
 - **IOG backing:** Developed and supported by Input Output Global
