@@ -411,7 +411,7 @@ All conversion circuits (`shield`, `toUtxo`, `unshield`, `fromUtxo`) MUST revert
 
 ### Reference Implementation
 
-A reference implementation is provided as a [Compact](https://docs.midnight.network/compact) contract that imports and wraps the [FungibleToken](https://github.com/OpenZeppelin/compact-contracts/blob/main/contracts/src/token/FungibleToken.compact) module. The reference implementation includes optional `burn`, `mint` (gated by `admin`/`minter` key pattern with `setMinter` delegation), and 13 circuits total (15 verifier keys — at the local devnet block limit). The full source will be available at: [link to be provided upon submission].
+A reference implementation is provided as a [Compact](https://docs.midnight.network/compact) contract that imports and wraps the [FungibleToken](https://github.com/OpenZeppelin/compact-contracts/blob/main/contracts/src/token/FungibleToken.compact) module. The reference implementation includes optional `burn`, `mint` (gated by `admin`/`minter` key pattern with `setMinter` delegation), and 13 circuits total (15 verifier keys — at the local devnet block limit). The full source is available at: [token-with-utxo](https://github.com/sommetlabs/abyss-contracts/blob/main/token-with-utxo).
 
 ## Testing
 
