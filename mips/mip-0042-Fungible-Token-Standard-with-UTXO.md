@@ -6,7 +6,7 @@ Authors:
 Status: Proposed
 Category: Standards
 Created: 2026-03-21
-Requires: MIP-1
+Requires: [MIP-1]
 Replaces: none
 License: Apache-2.0
 ---
@@ -457,4 +457,4 @@ This proposal was developed by [Sommet Labs](https://abyss.trade), in collaborat
 ## Copyright Waiver
 
 All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0.
-Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
+Submission requires agreement to the Midnight Foundation Contributor License Agreement, which includes the assignment of copyright for your contributions to the Foundation.
