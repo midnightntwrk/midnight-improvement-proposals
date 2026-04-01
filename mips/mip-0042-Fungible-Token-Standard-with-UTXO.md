@@ -6,7 +6,6 @@ Authors:
 Status: Proposed
 Category: Standards
 Created: 2026-03-21
-Updated: 2026-04-01
 Requires: MIP-1
 Replaces: none
 License: Apache-2.0
