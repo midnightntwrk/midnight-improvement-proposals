@@ -1,6 +1,6 @@
 **dApp name:** Proof of Spy (Guess Who)
 
-**Contract repository:** https://github.com/codemarvl/guess-who-contract
+**Contract repository:** https://github.com/SovoInc/guess-who-contract.git
 
 **Brief description:**
 Proof of Spy is a browser-based deduction game on the Midnight network. A random spy (culprit) is selected from a 32-character roster and committed on-chain using a ZK hash commitment. The player asks yes/no questions to narrow down suspects, then submits a final accusation. A ZK proof verifies the accusation against the stored commitment without ever revealing the culprit's identity on-chain. The contract is stateful but holds no user funds; all transaction fees are sponsored server-side using DUST tokens.
