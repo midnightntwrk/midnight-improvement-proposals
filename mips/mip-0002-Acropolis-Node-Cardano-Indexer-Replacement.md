@@ -1,13 +1,13 @@
 ---
 MIP: 0002
 Title: Acropolis Node - Custom Cardano Indexer Replacement
-Authors: Chris Tilt (christopher-tilt)
+Authors:
+  - Chris Tilt (christopher-tilt)
 Status: Proposed
 Category: Core
 Created: 2026-03-30
 Requires: none
 Replaces: none
-License: Apache-2.0
 ---
 
 <!--
@@ -775,4 +775,5 @@ Thanks to all contributors and workshop participants who provided feedback on th
 
 ## Copyright Waiver
 
-All contributions (code and text) submitted in this MIP are licensed under the Apache License, Version 2.0.
+All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0.
+Submission requires agreement to the Midnight Foundation Contributor License Agreement [Link to CLA], which includes the assignment of copyright for your contributions to the Foundation.
