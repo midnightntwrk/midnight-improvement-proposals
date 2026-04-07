@@ -3,7 +3,7 @@ MIP: '?'
 Title: Fungible Token Standard with UTXO
 Authors:
   - Guido De Vita (dvgui)
-Status: Proposed
+Status: Draft
 Category: Standards
 Created: 2026-03-21
 Requires: [MIP-1]
