@@ -34,3 +34,8 @@ verify_rsa_2048(pubkey, message, signature) → Boolean`
 | **Correct Verification** | The implemented functions correctly return `True` for valid RSA signatures for both 1024-bit and 2048-bit keys against a set of MNF-provided test vectors. | Implementation fails verification against known, standards-compliant test vectors. |
 
 ---
+
+
+### Supporting Issues
+
+- [Compact 105](https://github.com/LFDT-Minokawa/compact/issues/105)
