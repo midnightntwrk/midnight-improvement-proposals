@@ -1,4 +1,4 @@
-# ZKIR v3
+# ZKIR
 
 ## Summary
 
@@ -11,7 +11,7 @@
 
 ## Motivation
 
-The primary goal of ZKIR v3 is to evolve the format from an experimental feature into a robust standard that supports advanced cryptographic primitives.
+The primary goal of ZKIR is to evolve the format from an experimental feature into a robust standard that supports advanced cryptographic primitives.
 
 - **Advanced Curve Support:** Enable the support native curve points (specifically `JubjubPoint` and `secp256k1`) to enable critical features like ECDSA signatures which are required by partners.
 - **"Latent" Mainnet Features:** Deploy capabilities into the mainnet ledger (Ledger 7.0) that are present but "locked." This allows features to be exposed later via compiler/toolchain updates without requiring a risky blockchain hard fork[cite: 369, 377].
