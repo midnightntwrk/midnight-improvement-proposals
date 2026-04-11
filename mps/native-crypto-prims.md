@@ -37,3 +37,8 @@ bytes32 hash = keccak256(blob);          // same as above
 address signer = ECDSA.recover(hash, signature);
 require(signer == expectedSigner, "invalid sig");
 ```
+
+### Supporting Issues
+
+- [Compact #91](https://github.com/LFDT-Minokawa/compact/issues/91)
+- [Compact #104](https://github.com/LFDT-Minokawa/compact/issues/104)
