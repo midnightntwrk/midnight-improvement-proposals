@@ -28,7 +28,7 @@ Two Compact contracts are deployed per auction:
 | ------------------- | :-----------------------: |
 | Privacy-at-risk     |             1             |
 | Value-at-risk       |             2             |
-| State-space-at-risk |             2             |
+| State-space-at-risk |             1             |
 
 ---
 
@@ -88,25 +88,34 @@ contract instance.
 
 ---
 
-### State-space-at-risk — 2
+### State-space-at-risk — 1
 
 **Rationale:**
 
 Each auction contract is an independent deployment with a bounded lifecycle, and
-after the auction closes no new state entries can be created. However, the
-`bid_commitments` and `escrowed_amounts` maps grow with each unique bidder and
-there is no hard cap on the number of participants — an arbitrarily large number
-of bidders can submit during the bidding window. The NFT contract enforces a
-single mint (`total_minted == 0` guard). State growth is bounded per user and has
-a natural ceiling (the auction's time window limits participation), but it is not
-statically bounded.
+after the auction closes no new state entries can be created. The
+`bid_commitments` and `escrowed_amounts` maps grow with each unique bidder, but
+growth is constrained by three structural bounds: each key (derived from a
+per-auction secret) can create at most one map entry, the bidding window has a
+fixed deadline (`end_time`), and each auction is an isolated contract instance
+whose state does not accumulate across auctions. A `minimum_bid` (currently
+hardcoded to 10 NIGHT) adds a modest additional friction — an attacker must
+temporarily lock funds per entry — though since escrowed amounts are refundable
+after close, the real deterrent is opportunity cost rather than permanent loss.
+The NFT contract enforces a single mint (`total_minted == 0` guard).
 
 **Mitigations:**
 
-- One contract per auction ensures no cross-auction state accumulation.
-- The single-mint constraint on the NFT contract caps metadata storage at one
-  entry.
+- One entry per key: the `bid_commitments.member` check in `submit_bid` ensures
+  each derived key can create exactly one map entry, preventing a single wallet
+  from inflating state.
 - Auction time windows impose a deadline on state growth — no entries can be
   added after `end_time`.
+- One contract per auction ensures no cross-auction state accumulation.
+- Minimum bid enforcement (`assert(amount >= minimum_bid)`) raises the cost of
+  state-spam by requiring attackers to temporarily lock funds per entry, though
+  funds are refundable after the auction closes.
+- The single-mint constraint on the NFT contract caps metadata storage at one
+  entry.
 - State-clearing is user-initiated: bidders call `claim_refund` which zeroes out
   their escrowed amount entry.
