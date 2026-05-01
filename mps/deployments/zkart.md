@@ -1,6 +1,6 @@
 **dApp name:** zkArt
 
-**Contract repository:** https://github.com/niclas-ART/zkArt
+**Contract repository:** https://github.com/jonathanfishbein1/zkArt-demo
 
 **Brief description:**
 
