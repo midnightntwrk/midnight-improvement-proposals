@@ -23,7 +23,7 @@ The Midnight Improvement Proposal (MIP) process consists of the following stages
 
 1. **Idea Formulation:** An idea for an improvement is conceived.
 2. **MIP Drafting:** A formal MIP document is created.
-3. **Submission:** The MIP is submitted as a Pull Request (PR) to the Midnight Architectured GitHub repository.
+3. **Submission:** The MIP is submitted as a Pull Request (PR) to the Midnight Improvement Proposal repository.
 4. **Review and Discussion:** The community and MIP Editors review and discuss the MIP.
 5. **Status Progression:** The MIP progresses through various statuses based on review and consensus.
 6. **Implementation:** Accepted MIPs are implemented by development teams.
