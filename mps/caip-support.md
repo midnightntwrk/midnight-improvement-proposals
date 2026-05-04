@@ -1,4 +1,4 @@
-**MPS:** ????
+**MPS:** 0003
 
 **Title:** CAIP-2 Compliant Network Identifiers for Wallet Ecosystem Integration
 
