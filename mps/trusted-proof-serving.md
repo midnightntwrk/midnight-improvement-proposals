@@ -1,5 +1,5 @@
 ---
-MPS: ???
+MPS: 0004
 Title: Trustworthy Delegated Proof Generation for Privacy-Preserving Transactions
 Category: Ledger
 Status: Open
@@ -114,7 +114,7 @@ The proving engine currently ships as part of the midnight-ledger Rust crate wor
 - **Performance**: Proof generation throughput ≥ 80 proofs/sec at 16 workers on 32-core hardware. p50 latency < 250ms, p99 < 600ms for standard ZSwap proofs. Cold start to ready (including parameter pre-fetch) < 60 seconds.
 - **Security**: API keys hashed (never stored plaintext). TLS by default for all communications. No persistent storage inside the TEE. Per-IP rate limiting to prevent abuse. Graceful authentication with zero-downtime key rotation.
 - **Privacy**: Witness data and proving keys exist only in TEE-encrypted memory during proof generation. No logging of witness content. Memory is released after each proof. No persistent storage that could be forensically recovered.
-- **Compatibility**: Proof output must be identical to client-side generation — the on-chain verifier cannot distinguish server-generated from client-generated proofs. Binary serialization format must match the midnight SDK's tagged serialization.
+- **Compatibility**: Proof output must be identical to client-side generation — the on-chain verifier cannot distinguish server-generated from client-generated proofs. Binary serialization format must match the Midnight SDK's tagged serialization.
 - **Usability**: Operators must be able to deploy with a single binary and minimal configuration (port + API key). Health/readiness probes must be compatible with standard orchestrators (Kubernetes, systemd). All configuration via CLI flags or environment variables.
 
 ### Success Metrics
