@@ -87,7 +87,7 @@ The proving engine currently ships as part of the midnight-ledger Rust crate wor
 
 ### UC4: Multi-Cloud Operator Deployment
 
-**Scenario**: An enterprise operating Midnight infrastructure uses a multi-cloud strategy (AWS primary, GCP failover). They need proof generation in multip;e environments with equivalent security guarantees.
+**Scenario**: An enterprise operating Midnight infrastructure uses a multi-cloud strategy (AWS primary, GCP failover). They need proof generation in multiple environments with equivalent security guarantees.
 
 **Current Approach**: No existing solution supports TEE attestation across cloud providers with a single binary.
 
