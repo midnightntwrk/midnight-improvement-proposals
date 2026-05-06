@@ -71,9 +71,9 @@ Collaborative proof generation, coSNARKs, or proof-share approaches may be promi
 
 A constrained smart-contract approach can support early use cases such as tokenized deposits where assets are minted, held, and burned within a narrow operational boundary. This may be sufficient for a simple V1 product where assets do not move freely. However, this is a workaround rather than full native shielded custody. It does not support the broader vision where users or institutions can hold shielded assets in wallet-style accounts and later move them into transfers, redemptions, DeFi flows, or other applications.
 
-### 8. Stateless contract designs push private state management onto custodians
+### 8. Custodians must store private coin information to support future spends
 
-One possible design avoids storing UTXO state in contract state, but that means the custodian must capture and maintain private coin information off-chain. This creates operational complexity because the custodian must subscribe to relevant events, track Merkle tree positions, preserve coin information, and ensure the correct private state is available when assets need to move. This may be feasible in constrained flows, but it is not the same as a general-purpose custody primitive for shielded assets.
+A shielded asset is not spent from a simple publicly readable account balance. To spend a shielded asset, the spender must know the relevant private coin information for the specific asset being consumed. Public ledger data may show commitments and state transitions, but it does not by itself give the custodian all of the information needed to identify, reconstruct, select, and spend a customer’s shielded coins. This means a custodian must capture and securely store the required coin information when assets are received, then preserve it accurately for future transfers, burns, redemptions, or recovery workflows. If this information is missing, stale, or incorrectly associated with a customer account, the custodian may be unable to spend the asset even if it has the required signing authority.
 
 ## Use Cases
 
@@ -91,11 +91,11 @@ A custodian receives a shielded deposit and must decide whether it can accept th
 
 ### Use Case 4: Customer redeems or transfers a shielded asset
 
-A customer or regulated institution wants to redeem, burn, transfer, or otherwise move a shielded asset. The custodian must authorize the action using its threshold custody model, but the asset movement also requires a shielded proof. Today, that proof path appears to require private coin material that the custodian cannot expose to a proof server.
+A customer or regulated institution wants to redeem, burn, transfer, or otherwise move a shielded asset. The custodian must authorize the action using its threshold custody model, but the asset movement also requires a shielded proof. Today, that proof path requires private coin material that the custodian cannot easily expose to a proof server.
 
-### Use Case 5: Bank issues tokenized deposits through a custodian
+### Use Case 5: Institution enables shielded assets to participate in broader DeFi workflows
 
-A bank wants to issue a shielded tokenized deposit product using a regulated custodian. For a narrow first version, the lifecycle may be limited to minting and burning, with no user-directed transfers. This may be achievable using a contract-based pattern. However, future product versions may require per-user wallet custody, transfers, DeFi integrations, or external movement, all of which reintroduce the native shielded custody problem.
+An institution wants to support shielded assets in a way that goes beyond simple custody or static holding. To unlock the full range of DeFi capabilities, shielded assets must eventually be able to move between wallet-style accounts, smart contracts, liquidity venues, lending markets, structured products, and redemption flows without losing their privacy properties. This requires native shielded custody that can support controlled movement, proof generation, balance visibility, compliance checks, and secure authorization. If shielded assets can only be held in constrained patterns or moved through bespoke workflows, custodians and institutions will struggle to support the broader application layer that Midnight is designed to enable.
 
 ### Use Case 6: Exchange or custodian supports many shielded asset accounts
 
@@ -126,9 +126,6 @@ An exchange or institutional custodian may manage thousands of customer accounts
 
 8. **Preserve Midnight's privacy guarantees.**
    Solutions should not require assets to be held in visible contract state or otherwise degrade shielded privacy merely to make custody possible.
-
-9. **Support phased adoption.**
-   The ecosystem should be able to support constrained flows, such as mint/burn tokenized deposits, while clearly distinguishing them from full native shielded custody.
 
 ## Expected Outcomes
 
