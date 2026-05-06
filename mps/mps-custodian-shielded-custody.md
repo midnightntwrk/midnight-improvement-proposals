@@ -1,3 +1,14 @@
+---
+MPS: ?
+Title: Custodian Support for Native Shielded Assets (ZSwap)
+Authors: Jalal Hannan <Jalal-1>
+Status: Proposed
+Category: Core
+Created: 06-May-2026
+Requires: none
+Replaces: none
+---
+
 <!--
  Copyright 2026 Midnight Foundation
  
@@ -13,17 +24,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
----
-MPS: ?
-Title: Custodian Support for Native Shielded Assets (ZSwap)
-Authors: Jalal Hannan <Jalal-1>
-Status: Proposed
-Category: Core
-Created: 06-May-2026
-Requires: none
-Replaces: none
----
 
 ## Abstract
 
