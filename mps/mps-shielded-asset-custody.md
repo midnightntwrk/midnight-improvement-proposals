@@ -1,12 +1,14 @@
 ---
-MPS: ?
+MPS: "?"
 Title: Custodian Support for Native Shielded Assets (ZSwap)
-Authors: Jalal Hannan <Jalal-1>
-Status: Proposed
 Category: Core
-Created: 06-May-2026
-Requires: none
-Replaces: none
+Status: Proposed
+Authors:
+  - Jalal Hannan <Jalal-1>
+Proposed Solutions: []
+Discussions: []
+Created: 2026-05-06
+License: CC-BY-4.0
 ---
 
 <!--
