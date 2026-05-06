@@ -5,6 +5,7 @@ Category: Core
 Status: Proposed
 Authors:
   - Jalal Hannan <Jalal-1>
+  - Hector Bulgarini <hbulgarini>
 Proposed Solutions: []
 Discussions: []
 Created: 2026-05-06
