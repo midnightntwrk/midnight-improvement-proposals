@@ -1,6 +1,6 @@
 ---
 MPS: "?"
-Title: Custodian Support for Native Shielded Assets (ZSwap)
+Title: Institutional Custody for Native Shielded Assets (ZSwap)
 Category: Core
 Status: Proposed
 Authors:
@@ -12,177 +12,157 @@ Created: 2026-05-06
 License: CC-BY-4.0
 ---
 
-<!--
- Copyright 2026 Midnight Foundation
- 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
- 
-     https://www.apache.org/licenses/LICENSE-2.0
- 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
--->
-
 ## Abstract
 
-Regulated custodians, exchanges, banks, and institutional wallet providers require custody architectures that enforce strict threshold-control models, typically through MPC, HSMs, TSS, or equivalent secure signing systems. Midnight shielded assets introduce a different custody challenge because native shielded ownership, address generation, visibility, and spending are not expressed purely as standard signature workflows. In particular, shielded address generation currently depends on hashing secret material, while shielded spending requires proof generation over private coin material. These requirements create friction for custodians whose security model prevents any single party, device, service, or proof server from reconstructing or accessing full private material.
+Native shielded asset custody on Midnight is not a conventional custody integration problem. It is not only a question of whether a custodian can hold or control a key. It is a full-stack custody problem involving shielded account generation, note discovery, viewing capability, private UTXO state management, proof generation, DUST management, compliance visibility, and transaction execution.
 
-There is also a compliance and source-of-funds challenge. When a recipient receives a shielded asset, the current model does not provide a reliable way to determine with certainty who sent the asset or where it originated. Viewing keys may help identify assets belonging to a wallet, but they do not provide sender attribution or sufficient source-of-funds information for most regulated custody workflows. This creates a significant barrier for custodians that must satisfy KYC, AML, transaction monitoring, audit, and reconciliation obligations.
+The central mismatch is that native shielded asset movement in ZSwap is proof-authorized rather than purely signature-authorized. In an account-based system, a custodian can usually approve asset movement by applying its existing threshold signing, MPC, HSM, TSS, or equivalent controls. In ZSwap, spending a shielded asset requires constructing a shielded UTXO transaction and generating a zero-knowledge proof over private witness material. Any service that handles that material becomes part of the custody security boundary and may be treated by custodians as handling key-equivalent data.
 
-This MPS defines the problem space so future MIPs can propose custodian-compatible shielded key generation, viewing, proof generation, spending, and compliance-support mechanisms.
+This creates integration challenges for regulated custodians, exchanges, banks, and institutional wallet providers. They need to support threshold-controlled custody, balance reporting, auditability, transaction execution, source-of-funds controls, and recovery workflows without weakening Midnight's privacy model or exposing sensitive material outside approved secure environments.
 
-## Vision
+This MPS defines the problem space for native shielded asset custody so that future MIPs and implementation work can address it with protocol, SDK, indexer, wallet, and infrastructure changes.
 
-Midnight should support regulated custodians, exchanges, banks, and institutional wallet providers without requiring them to weaken their security model or us to abandon the privacy guarantees of shielded assets. A custodian should be able to create shielded accounts, receive shielded assets, report balances, identify assets under custody, support audit and compliance workflows, and authorize shielded spends using a threshold custody model such as 2-of-3 MPC or equivalent.
+## Problem Statement
 
-The ideal future state is one where native shielded asset custody feels operationally familiar to custodians while preserving Midnight's privacy model. Custodians should not need to rely on temporary smart-contract workarounds, visible asset-holding patterns, or bespoke off-chain state systems merely to support basic custody. They should also have enough visibility to satisfy regulated custody obligations without receiving unnecessary access to customer spending authority or compromising network-level privacy.
+Midnight's current shielded asset model does not yet provide a custody pattern that is operationally familiar to regulated institutional custodians. Existing institutional custody systems are built around threshold authorization and secure key isolation. Native shielded asset movement requires proof generation over private note or coin data, which introduces sensitive material and operational state that custodians do not normally manage in standard signing-based workflows.
 
-## Problem
+As a result, custodians may be forced into constrained workarounds, bespoke off-chain state systems, or product-specific flows that support narrow use cases but do not provide general native shielded custody.
 
-### 1. DKG and shielded address generation do not fit cleanly into MPC custody
+## Background
 
-The first friction point appears before any transaction occurs: wallet creation. Regulated custodians commonly use distributed key generation and threshold key material so that no single participant holds or reconstructs a complete private key. Midnight shielded address generation requires applying SHA-256 directly to secret material. That creates a mismatch because a custodian cannot simply gather the full secret and hash it without violating the assumptions of its MPC architecture. Even if threshold signing is available, the address and key derivation model itself is not share-friendly.
+Institutional custody normally assumes that asset movement is authorized by signatures. The custodian can enforce policy using MPC, HSMs, TSS, multisig, approval workflows, recovery keys, or other threshold-control mechanisms. The transaction may be constructed outside the secure boundary, while the signing material remains protected inside it.
 
-### 2. Custodian custody is based on threshold control, not single-secret control
+ZSwap uses a different model. Shielded assets are represented as private notes or UTXOs. To move a shielded asset, the spender must know the relevant private coin information, construct the correct inputs and outputs, and produce a zero-knowledge proof that validates the spend without revealing the private data. This means that custody must account not only for keys, but also for note discovery, private state retention, proof generation, DUST funding, and selective visibility.
 
-Institutional custody is normally built around threshold authorization, policy controls, secure key isolation, and recovery mechanisms. This is materially different from a wallet model where a single user locally controls a full secret. Midnight shielded custody therefore needs to support threshold-controlled ownership as a first-class requirement rather than treating MPC or HSM integration as an external implementation detail. Without this, custodians may be forced into designs that either weaken their security model or avoid native shielded custody entirely.
+## Core Problem Areas
 
-### 3. Viewing keys do not reveal the source of a shielded asset
+### 1. Shielded account generation is not obviously threshold-native
 
-When a person or institution receives a shielded asset, they may be able to identify that a note or asset belongs to them, but they do not necessarily know with certainty who sent it or where it originated. Viewing keys can help a wallet or service identify assets that belong to an account and support balance reporting, but they do not provide a reliable source-of-funds trail. A viewing key may show that a shielded asset was received, but not definitively identify the sender or provide a KYC-able address history. This is a major issue for regulated custodians because custody is not only about controlling assets; it is also about understanding whether assets can be accepted, reported, monitored, and reconciled under compliance obligations. If a custodian cannot reliably determine source of funds, sender identity, or provenance, then accepting shielded deposits creates KYC, AML, sanctions-screening, and transaction-monitoring risk.
+Regulated custodians commonly use DKG, MPC, HSMs, or TSS so that no single party or service reconstructs a full secret. Shielded address or account derivation must therefore be compatible with threshold custody. If address derivation requires direct operations over full secret material, custodians may be unable to create shielded accounts without violating their security model.
 
-### 4. Native shielded spending requires proof generation over private coin material
+### 2. Custody control is threshold-based, while shielded ownership is secret-based
 
-For native shielded assets, the hard problem is not simply receiving assets; it is spending, burning, or transferring them later. Moving shielded assets out of a wallet-style account requires generating a zero-knowledge proof, and the current understanding is that this proof path requires access to private coin material. This does not map to a standard custody flow where two parties sign a transaction and the transaction is broadcast. It introduces a separate proof-generation step that must be made compatible with custody-grade key isolation.
+Institutional custody is built around threshold authorization, policy enforcement, secure key isolation, and recovery. Native shielded ownership and spending must support this model as a first-class requirement. Otherwise, custodians must either weaken their controls or avoid native shielded custody.
 
-### 5. Proof servers conflict with HSM and MPC security boundaries
+### 3. Viewing keys support balance visibility, not full provenance
 
-Custodians generally do not allow private keys, key-equivalent material, or sensitive signing material to be exposed outside approved secure boundaries. A conventional proof server that receives full coin secrets, spend keys, or equivalent private material may therefore be treated as a hot-key risk. This creates a fundamental mismatch between native shielded proof generation and regulated custody infrastructure. A custodian-safe proof model must ensure that proof generation does not require unsafe movement or reconstruction of sensitive material.
+A viewing capability may allow a wallet or custodian to identify shielded assets belonging to an account and report balances. It does not, by itself, provide reliable sender attribution, source-of-funds history, or KYC-able provenance. Ledger-level privacy is a feature of Midnight, but regulated custodians still need a compliant way to evaluate whether received assets can be accepted, monitored, reconciled, and audited.
 
-### 6. Key shards are themselves sensitive material
+### 4. Spending requires proof generation over private witness material
 
-Collaborative proof generation, coSNARKs, or proof-share approaches may be promising, but they do not automatically solve the custodian problem. Key shards are also sensitive signing material. If a proof server requires access to a key shard, even without reconstructing the full private key, that may still be unacceptable under a custodian's risk model. Any future solution must therefore avoid not only full private-key reconstruction, but also unsafe exposure of key-share material.
+Receiving a shielded asset is only part of the custody problem. The custodian must also be able to transfer, burn, redeem, or otherwise spend the asset later. That requires proof generation over private note or coin data. This does not fit the standard pattern where a transaction is prepared and then approved only by threshold signing.
 
-### 7. Contract-based mint/burn flows are useful but incomplete
+### 5. Proof generation becomes part of the custody boundary
 
-A constrained smart-contract approach can support early use cases such as tokenized deposits where assets are minted, held, and burned within a narrow operational boundary. This may be sufficient for a simple V1 product where assets do not move freely. However, this is a workaround rather than full native shielded custody. It does not support the broader vision where users or institutions can hold shielded assets in wallet-style accounts and later move them into transfers, redemptions, DeFi flows, or other applications.
+A proof server or proving service that handles private coin information, spend-authorizing material, or key-equivalent witness data may be treated as a hot-key or sensitive-signing-material risk. A custodian-safe proving model must avoid unsafe reconstruction, movement, or exposure of full secrets and must clearly define which data enters which secure environment.
 
-### 8. Custodians must store private coin information to support future spends
+### 6. Key shares and proof shares may still be sensitive
 
-A shielded asset is not spent from a simple publicly readable account balance. To spend a shielded asset, the spender must know the relevant private coin information for the specific asset being consumed. Public ledger data may show commitments and state transitions, but it does not by itself give the custodian all of the information needed to identify, reconstruct, select, and spend a customer’s shielded coins. This means a custodian must capture and securely store the required coin information when assets are received, then preserve it accurately for future transfers, burns, redemptions, or recovery workflows. If this information is missing, stale, or incorrectly associated with a customer account, the custodian may be unable to spend the asset even if it has the required signing authority.
+Collaborative proving, coSNARKs, proof-share aggregation, or TEE-based approaches may help, but they do not automatically solve the custody problem. Key shares, secret shares, and some witness components may still be sensitive. Any proposed model must state precisely what material is exposed, where it is exposed, whether it is key-equivalent, and how it is protected.
 
-## Use Cases
+### 7. Custodians must manage private coin state
 
-### Use Case 1: Regulated custodian creates a shielded wallet for a customer
+A shielded asset is not spent from a publicly readable account balance. Future spends require the custodian to know and preserve the correct private coin information, including enough state to identify, select, prove, and spend the relevant notes. If this state is missing, stale, or incorrectly associated with a customer account, the custodian may be unable to move the asset even if it has the required authorization rights.
 
-A regulated custodian wants to create a Midnight shielded wallet for a customer using its standard threshold custody architecture. Today, this is difficult because shielded address generation appears to require hashing secret material directly, while the custodian's DKG process is designed to avoid creating a single full secret. The custodian needs a way to derive shielded addresses without reconstructing or exposing the secret.
+### 8. DUST management is part of custody execution
 
-### Use Case 2: Custodian receives shielded assets on behalf of a customer
+Transaction execution on Midnight requires DUST. Custodians therefore need a custody-compatible way to fund, sponsor, account for, and monitor DUST usage. This is not only a fee abstraction; it affects transaction construction, wallet operations, proof generation, and the risk of stuck assets.
 
-A custodian wants to receive shielded assets into a customer account and report the resulting balance. The custodian needs enough viewing or indexing capability to detect incoming assets, associate them with the correct customer, and maintain reliable accounting. However, receiving the asset does not necessarily tell the custodian with certainty who sent it or where it came from, which creates a source-of-funds and compliance challenge.
+### 9. Contract-based mint/burn patterns are useful but incomplete
 
-### Use Case 3: Custodian evaluates whether an incoming shielded asset can be accepted
-
-A custodian receives a shielded deposit and must decide whether it can accept the asset under KYC, AML, sanctions, and internal risk policies. If the system only reveals that the asset belongs to the recipient but does not provide reliable sender attribution or provenance, the custodian may be unable to satisfy its compliance obligations. The result may be that the custodian refuses to support shielded deposits, supports only restricted flows, or requires assets to pass through controlled mint/burn processes.
-
-### Use Case 4: Customer redeems or transfers a shielded asset
-
-A customer or regulated institution wants to redeem, burn, transfer, or otherwise move a shielded asset. The custodian must authorize the action using its threshold custody model, but the asset movement also requires a shielded proof. Today, that proof path requires private coin material that the custodian cannot easily expose to a proof server.
-
-### Use Case 5: Institution enables shielded assets to participate in broader DeFi workflows
-
-An institution wants to support shielded assets in a way that goes beyond simple custody or static holding. To unlock the full range of DeFi capabilities, shielded assets must eventually be able to move between wallet-style accounts, smart contracts, liquidity venues, lending markets, structured products, and redemption flows without losing their privacy properties. This requires native shielded custody that can support controlled movement, proof generation, balance visibility, compliance checks, and secure authorization. If shielded assets can only be held in constrained patterns or moved through bespoke workflows, custodians and institutions will struggle to support the broader application layer that Midnight is designed to enable.
-
-### Use Case 6: Exchange or custodian supports many shielded asset accounts
-
-An exchange or institutional custodian may manage thousands of customer accounts. It needs scalable viewing, balance reporting, audit trails, and operational controls. Delegated viewing rights, indexer support, and efficient scanning are therefore essential. Without them, every account may require bespoke handling, large-scale scanning, or operationally fragile off-chain state management.
+Constrained contract-based flows can support early products where shielded assets are minted, held, and burned inside a narrow operational boundary. These flows may be valuable for initial deployments. However, they are not a substitute for general native shielded custody, where assets can be held in wallet-style accounts and later transferred, redeemed, or used in broader application flows while preserving privacy.
 
 ## Goals
 
-1. **Support threshold custody for shielded assets.**
-   Any future solution should allow custodians to operate under 2-of-3 or equivalent threshold-control models without reconstructing full private keys or exposing key-equivalent material.
+1. **Support threshold custody for shielded assets.** Custodians should be able to operate under 2-of-3 or equivalent threshold-control models without reconstructing full secrets or exposing key-equivalent material outside approved boundaries.
 
-2. **Enable custodian-safe shielded address generation.**
-   Shielded address derivation should be compatible with DKG/MPC architectures, or an alternative derivation path should be provided for institutional custody.
+2. **Enable custodian-safe shielded account generation.** Shielded address and account derivation should be compatible with DKG, MPC, HSM, TSS, or equivalent institutional custody architectures.
 
-3. **Provide reliable source-of-funds support for regulated flows.**
-   Custodians should have a way to determine, prove, or obtain sufficient information about the origin of shielded assets they receive, without undermining Midnight's broader privacy model.
+3. **Make proof generation custody-safe.** Any proving model should clearly define what private material is required, where it is processed, and how it remains protected.
 
-4. **Separate authorization from proof generation where possible.**
-   Custodians should be able to authorize a shielded spend using standard threshold signing or equivalent controls, while proof generation should not require unsafe exposure of private key material.
+4. **Support note discovery and balance reporting.** Custodians should be able to identify assets under custody, report balances, reconcile accounts, and recover from missed events or infrastructure downtime.
 
-5. **Provide a secure delegated proof-generation model.**
-   If proof servers remain necessary, there should be a custody-compatible model for running them in a secure environment without exposing full coin secrets, spend keys, or sensitive key shards outside an approved security boundary.
+5. **Support delegated visibility without delegated spending.** Custodians should be able to centralize or delegate viewing for operations, audit, and reporting without granting spending authority.
 
-6. **Support delegated viewing and institutional reporting.**
-   Custodians should be able to delegate or centralize viewing rights for operational reporting, audit, and compliance, without delegating spending authority.
+6. **Support source-of-funds and compliance workflows.** The ecosystem should provide a privacy-preserving way for regulated entities to obtain sufficient provenance, sender, or origin information where required.
 
-7. **Minimize bespoke off-chain state burden.**
-   Custodians should not be forced to maintain fragile, product-specific private state unless that state-management model is clearly specified, testable, and supported by robust indexer APIs.
+7. **Support DUST-aware transaction execution.** Custody integrations should include clear patterns for DUST funding, sponsorship, accounting, and operational monitoring.
 
-8. **Preserve Midnight's privacy guarantees.**
-   Solutions should not require assets to be held in visible contract state or otherwise degrade shielded privacy merely to make custody possible.
+8. **Preserve Midnight's privacy guarantees.** Custody support should not require public exposure of shielded balances, sender/recipient relationships, or private transaction data merely to make institutional custody possible.
 
-## Expected Outcomes
+9. **Reduce bespoke off-chain state burden.** Required private state management should be clearly specified, testable, recoverable, and supported by robust SDK and indexer APIs.
 
-If this problem is addressed, Midnight will become significantly easier for regulated custodians, exchanges, banks, and institutional wallet providers to support. Partners will be able to custody shielded assets without bespoke one-off architecture, users will be able to access shielded asset products through trusted custodians, and builders will have clearer integration patterns for tokenized deposits, RWAs, private payments, and future DeFi products.
+## Non-Goals
 
-The most important outcome is that Midnight's shielded asset model becomes institutionally usable without sacrificing either privacy or custody-grade security. This would reduce reliance on temporary contract-based workarounds and make shielded assets more composable across wallets, custodians, and applications.
+This MPS does not prescribe a specific implementation, proving architecture, custody vendor model, or compliance policy. It does not propose to weaken shielded privacy or make all shielded transfers publicly traceable. It also does not require every shielded asset flow to support open third-party deposits on day one.
+
+The purpose of this MPS is to define the problem clearly enough that future MIPs and implementation work can evaluate competing solutions.
+
+## Representative Use Cases
+
+### Use Case 1: Custodian creates a shielded account
+
+A regulated custodian wants to create a shielded account for a customer using its standard threshold custody architecture. The custodian needs to derive and manage the account without reconstructing or exposing full secret material.
+
+### Use Case 2: Custodian receives and reports shielded assets
+
+A custodian receives shielded assets on behalf of a customer and must detect the assets, associate them with the correct account, report balances, and reconcile holdings.
+
+### Use Case 3: Custodian evaluates whether assets can be accepted
+
+A custodian receives a shielded asset and must determine whether it can be accepted under KYC, AML, sanctions, audit, and internal risk policies. Ledger-level receipt alone may not provide enough provenance or sender attribution.
+
+### Use Case 4: Customer redeems, burns, or transfers a shielded asset
+
+A customer or institution wants to redeem, burn, transfer, or otherwise move a shielded asset. The custodian must authorize the action under its threshold-control model and generate the required shielded proof without unsafe exposure of private material.
+
+### Use Case 5: Institution supports broader shielded asset workflows
+
+An institution wants shielded assets to move beyond static holding into payments, redemptions, tokenized deposits, RWAs, lending, liquidity, or other application flows. This requires native shielded custody that supports controlled movement, proof generation, compliance visibility, and secure execution.
+
+### Use Case 6: Custodian supports many shielded accounts
+
+An exchange or institutional custodian may manage thousands of customer accounts. It needs scalable viewing, indexing, state recovery, audit trails, and operational controls rather than bespoke handling per account.
 
 ## Open Questions
 
-1. Can Midnight support shielded address generation in a way that is compatible with DKG/MPC, without requiring any party to reconstruct or hash the full secret?
+1. Can shielded address derivation be made compatible with DKG, MPC, HSM, or TSS custody models without reconstructing or hashing a full secret in one place?
 
-2. Can shielded spending be redesigned so that threshold signatures authorize spends while proof generation uses separate, non-key-equivalent material?
+2. Can shielded spending separate threshold authorization from proof generation, so that proof generation does not require exposure of key-equivalent material?
 
-3. What information should a shielded recipient be able to learn about the source of received assets, and under what permissioning model?
+3. What exact private material is required for proof generation, and which parts are key-equivalent under a custodian security model?
 
-4. Can source-of-funds information be disclosed selectively to regulated custodians without making all shielded transfers publicly traceable?
+4. Can proof generation be performed safely through TEEs, HSM-adjacent services, collaborative proving, coSNARKs, proof-share aggregation, or another custody-compatible model?
 
-5. Is a coSNARK or collaborative proof-generation model practical for Midnight's current proving stack, and would custodians accept the treatment of key shards or proof shares under that model?
+5. What should a viewing capability reveal to custodians, and how can it support reporting without granting spending authority?
 
-6. Can proof generation be safely run inside TEEs, HSM-adjacent infrastructure, or custodian-controlled secure environments without exposing sensitive material?
+6. What privacy-preserving mechanism can provide regulated entities with sufficient source-of-funds or sender-origin information when required?
 
-7. Should Midnight introduce first-class delegated viewing rights for institutional custody, and if so, should delegation be protocol-level, wallet-level, or indexer-level?
+7. What indexer and SDK APIs are required for reliable note discovery, Merkle-position tracking, balance reconciliation, and recovery from missed events?
 
-8. Can viewing keys be extended or complemented to support compliance-grade provenance without compromising sender privacy for ordinary users?
+8. How should DUST funding, sponsorship, capacity planning, and accounting work for institutional custody flows?
 
-9. Can contracts be given a privacy-preserving analogue to viewing capability, or should contract-based custody avoid viewing keys entirely?
+9. Which early contract-based flows are acceptable as temporary patterns, and where do they fall short of native shielded custody?
 
-10. What minimum indexer APIs are required for custodians to track shielded UTXO state safely and reliably?
+10. Which aspects of the problem require protocol changes, and which can be solved through SDKs, wallets, indexers, custody infrastructure, or application patterns?
 
-11. Which parts of the problem are protocol changes, which are wallet SDK changes, which are indexer changes, and which are application-level patterns?
+## Future MIP Areas
 
-## Recommended MIPs
+Future MIPs may address the following areas:
 
-### MIP: Custodian-Compatible Shielded Address Derivation
+- Custodian-compatible shielded address derivation.
+- Threshold authorization for shielded spending.
+- Secure delegated or collaborative proof generation.
+- Delegated viewing and institutional reporting.
+- Selective source-of-funds disclosure.
+- Custodian-oriented shielded indexing and state recovery.
+- DUST sponsorship and transaction execution for institutional custody.
 
-This MIP should define a shielded address derivation method that works with DKG/MPC custody architectures. It should address the current friction caused by deriving shielded addresses from hashed secret material and define acceptance criteria for custodians that cannot reconstruct a full secret.
+## Expected Outcome
 
-### MIP: Threshold Authorization for Shielded Spending
+If this problem is addressed, Midnight will be easier for regulated custodians, exchanges, banks, and institutional wallet providers to support. Institutions will be able to custody native shielded assets without relying on one-off workarounds, users will be able to access private asset products through trusted service providers, and builders will have clearer integration patterns for tokenized deposits, RWAs, private payments, and future application-layer workflows.
 
-This MIP should explore whether shielded spending can be authorized through threshold signatures or equivalent controls, while keeping proof generation separate from the spending authority itself. The objective would be to make shielded spends fit more naturally into regulated custody workflows.
-
-### MIP: Secure Delegated Proof Generation
-
-This MIP should specify a custody-safe proof-generation architecture. Candidate approaches may include TEEs, HSM-adjacent proof services, collaborative proof generation, coSNARKs, or proof-share aggregation. The MIP should explicitly analyze whether key shards, proof shares, or coin secrets are exposed and whether the model is acceptable for institutional custody.
-
-### MIP: Delegated Viewing and Institutional Reporting
-
-This MIP should define how an account, wallet, or institution can delegate viewing rights to an operational key or service without delegating spending authority. It should cover balance reporting, audit, account-level visibility, and revocation.
-
-### MIP: Selective Source-of-Funds Disclosure
-
-This MIP should define a privacy-preserving mechanism by which the origin, sender, or provenance of a received shielded asset can be disclosed to an authorized party when required. The goal should be to support regulated custody and compliance workflows without making shielded transfers publicly traceable.
-
-### MIP: Custodian-Oriented Shielded Indexing Requirements
-
-This MIP should specify the indexer and API capabilities required for custodians to track shielded assets reliably. It should define how custodians discover relevant notes/UTXOs, maintain Merkle tree positions, reconcile balances, and recover from missed events or infrastructure downtime.
+The desired outcome is that native shielded asset custody becomes institutionally usable without sacrificing Midnight's privacy guarantees or custody-grade security.
 
 ## References
 
@@ -192,7 +172,7 @@ This MIP should specify the indexer and API capabilities required for custodians
 
 ## Acknowledgements
 
-This problem statement is based on discussions between Midnight Foundation contributors, custody providers, smart-contract security contributors, and related stakeholders exploring custody support for shielded assets, tokenized deposits, MPC-based custody, proof-server architecture, viewing keys, source-of-funds requirements, and institutional wallet operations.
+This problem statement is based on technical discussions with custodians, wallet providers, protocol contributors, smart-contract security contributors, and other stakeholders exploring native shielded asset custody, threshold-control architectures, proof generation, viewing, DUST management, source-of-funds requirements, and institutional wallet operations.
 
 ## Copyright
 
