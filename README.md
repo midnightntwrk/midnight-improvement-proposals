@@ -2,7 +2,7 @@
 
 A Midnight Improvement Proposal (MIP) is a formalised design document for the Midnight community and the name of the process by which such documents are produced and listed. A MIP provides information or describes a change to the Midnight ecosystem, processes, or environment concisely and in sufficient technical detail. In this MIP, we explain what a MIP is, how the MIP process functions, the role of the MIP Editors, and how users should go about proposing, discussing, and structuring a MIP.
 
-The Midnight Foundation intends MIPs to be the primary mechanisms for proposing new features, collecting community input on an issue, and documenting design decisions that have gone into Midnight. Plus, because MIPs are text files in a versioned repository, their revision history is the historical record of significant changes affecting Midnight.
+The Midnight Foundation intends MIPs to be the primary mechanisms for proposing new features, collecting community input on an issue, and documenting design decisions that have gone into Midnight. Plus, because MIPs are text files in a versioned repository, their revision history is the historical record of significant changes affecting Midnight.  
 
 
 ### **Goals of the MIP**
