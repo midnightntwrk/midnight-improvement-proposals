@@ -22,7 +22,7 @@ This index holds the existing numbers for MPS and MIPs documents that have been 
 
 MPS-0001: (reserved for process document)  
 [MPS-0002: midnight-developer-tooling](/mps/mps-0002-developer-tooling.md)  
-[MPS-0003: caip-support](/mps/caip-support.md)  
+[MPS-0003: caip-support](/mps/mps-0003-caip-support.md)  
 [MPS-0004: trusted-proof-serving](/mps/mps-0004-trusted-proof-serving.md)  
 [MPS-0005: events](/mps/mps-0005-events.md)
 
