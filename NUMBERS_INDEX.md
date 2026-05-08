@@ -20,10 +20,10 @@ This index holds the existing numbers for MPS and MIPs documents that have been 
 
 # MPS
 
-MPS-0001: (reserved for process document)
-[MPS-0002: midnight-developer-tooling](/mps/mps-0002-developer-tooling.md)
-[MPS-0003: caip-support.md](/mps/caip-support.md)
+MPS-0001: (reserved for process document)  
+[MPS-0002: midnight-developer-tooling](/mps/mps-0002-developer-tooling.md)  
+[MPS-0003: caip-support.md](/mps/caip-support.md)  
 
 # MIPs
 
-[MIP-0001: midnight-improvement-proposal-process.md](/mips/mip-0001-mip-process.md)
+[MIP-0001: midnight-improvement-proposal-process.md](/mips/mip-0001-mip-process.md)  
