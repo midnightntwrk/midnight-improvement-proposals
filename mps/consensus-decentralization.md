@@ -55,3 +55,5 @@ Growing the committee does not happen in isolation. As described in MPS-xxxx (th
 * **What is the target committee size for credible decentralization?** This determines the scale at which the consensus protocol must be validated.
 * **What are the safe thresholds for committee size and stake?** Below what levels does the network's security model break down, and what should the protocol do when approaching them?
 * **How should topology be structured for large committees?** What relay or gossip strategies can reconcile diverse network topologies with high-throughput propagation requirements?
+* **What computational resources are required for validators?** CPU cores, memory, persistent storage, and network bandwith/latency all affect the ability of efficiency of a validator to participate in consensus. Having adequate resources is particularly important in high-throughput environments.
+* **Are validators required to archive the full history of blocks?** Or is that role delegated to special-purpose archival nodes?
