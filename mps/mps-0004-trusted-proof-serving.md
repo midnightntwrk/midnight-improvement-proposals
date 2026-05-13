@@ -4,7 +4,7 @@ Title: Trustworthy Delegated Proof Generation for Privacy-Preserving Transaction
 Category: Ledger
 Status: Open
 Authors:
-  - Bob Blessing-Hartley <bob@shielded,io>
+  - Bob Blessing-Hartley <bob@shielded.io>
 Proposed Solutions: []
 Discussions: []
 Created: 2026-05-01
