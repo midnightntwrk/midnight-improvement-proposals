@@ -14,23 +14,19 @@ The inability to verify RSA signatures in Compact is blocking advanced enterpris
 
 ## Specification
 
-The following functions will be exposed within a dedicated Compact library:
+The following function will be exposed within a dedicated Compact library:
 
-`verify_rsa_1024(pubkey, message, signature) → Boolean
-verify_rsa_2048(pubkey, message, signature) → Boolean`
+```
+verify_rsa(n, e, padded_message, signature) → Boolean
+```
 
-**Key sizes:**
-
-- RSA-1024 (for compatibility)
-- RSA-2048 (recommended standard)
-
-**Padding:** The highest security padding standard compatible with the specified key sizes will be used.
-
+where `n` is the modulus, `e` is the public exponent, `padded_message` is the padded hash of the message, and `signature` is the RSA signature. Padding is the responsibility of the caller and is out of scope for this primitive.
+> Note: RSA circuit size scales with the bit length of the modulus and public exponent. Large moduli or exponents will result in significantly larger circuits and higher proving times, which may make them non-viable for real-time applications.   
 # Implementation
 
 | User Story | Acceptance Criteria | Failure Scenarios |
 | --- | --- | --- |
-| **Compact API Exposure** | The Compact language exposes `verify_rsa_1024(pubkey, message, signature)` and `verify_rsa_2048(pubkey, message, signature)` within a dedicated library. | Proving the verification for RSA-2048 takes an unreasonable amount of time, making it non-viable for real-time applications. |
+| **Compact API Exposure** | The Compact language exposes `verify_rsa(n, e, padded_message, signature)` within a dedicated library. | Proving the verification for RSA-2048 takes an unreasonable amount of time, making it non-viable for real-time applications. |
 | **Correct Verification** | The implemented functions correctly return `True` for valid RSA signatures for both 1024-bit and 2048-bit keys against a set of MNF-provided test vectors. | Implementation fails verification against known, standards-compliant test vectors. |
 
 ---
