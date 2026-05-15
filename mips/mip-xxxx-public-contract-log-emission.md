@@ -8,6 +8,7 @@ Category: Core
 Created: 2026-05-15
 Requires: none
 Replaces: none
+License: Apache-2.0
 ---
 
 <!--
@@ -34,7 +35,7 @@ Consumers must poll contract state, diff serialized values, and reverse-engineer
 The infrastructure for log emission already exists but is disconnected: the Impact VM provides a `Log` opcode (0x09), the ledger wraps logged values as `EventDetails::ContractLog`, and the indexer discards them.
 
 This MIP connects the pipeline.
-The Compact language gains a `log` expression — proposed separately as [CoIP-xxxx](placeholder) — which compiles to the existing `Log` opcode.
+The Compact language gains a `log` expression — proposed separately as [CoIP-xxxx](https://github.com/LFDT-Minokawa/compact/pull/442) — which compiles to the existing `Log` opcode.
 The ledger wraps payloads in a versioned envelope (`VersionedLogItem`), extending the `Log` opcode's data field while maintaining backwards compatibility.
 The indexer surfaces events via GraphQL.
 
@@ -68,6 +69,15 @@ Structured events improve access — consumers subscribe to labeled, typed notif
 They do not eliminate the need to understand a contract's schema, and consumers must treat events as the contract author's representation of what happened, not as independently verifiable facts.
 
 ## Specification
+
+### Versioning
+
+The specification evolves along two axes:
+
+- **Event payload schemas** — the `version` field in `VersionedLogItem` allows the field layout of a given `LogEventType` variant to change across ledger releases. Consumers use the version to select the correct decoder.
+- **Standard event set** — adding a new `LogEventType` variant requires a ledger release and a bumped serialization tag. New variants are amendments to this MIP and do not require a superseding proposal.
+
+Changes to the structure of `VersionedLogItem` itself, to the `EventDetails` envelope, or to the fee model require a new MIP that supersedes this one.
 
 ### VersionedLogItem
 
@@ -279,7 +289,7 @@ This is a significant change to how the indexer operates and can be pursued inde
 The workstreams are:
 
 - **Ledger**: adds `LogEventType` enum and `VersionedLogItem` parsing. Bumps `EventDetails` serialization tag. Prototype available in [Midnight Ledger PR](https://github.com/midnightntwrk/midnight-ledger/pull/503/changes).
-- **Compact compiler**: adds the `log` expression (proposed separately as CoIP-xxxx). Maps standard event structs to `LogEventType` variants. Compact work tracked in [Compact issue](https://github.com/LFDT-Minokawa/compact/issues/377).
+- **Compact compiler**: adds the `log` expression (proposed separately as [CoIP-xxxx](https://github.com/LFDT-Minokawa/compact/pull/442)). Maps standard event structs to `LogEventType` variants. Compact work tracked in [Compact issue](https://github.com/LFDT-Minokawa/compact/issues/377).
 - **Indexer**: removes the `ContractLog { .. } => None` filter, adds `Contract` variant to `LedgerEventGrouping`, adds storage and GraphQL surface. Ships with built-in schema knowledge for all `LogEventType` variants.
 - **SDK & Toolkit**: `compact-js` captures log events from circuit execution. `midnight-js` exposes event queries and subscriptions. The toolkit surfaces events to DApp developers and decodes event payloads.
 
@@ -338,7 +348,7 @@ Malformed payloads are handled as parsing failures.
 - Bump `EventDetails` serialization tag from `v10` to `v11`.
 - Parse `Log` opcode payload into `VersionedLogItem` during transaction application. Malformed payloads are handled as parsing failures.
 
-**Compact compiler** (proposed separately as CoIP-xxxx):
+**Compact compiler** (proposed separately as [CoIP-xxxx](https://github.com/LFDT-Minokawa/compact/pull/442)):
 - Add `log` expression to parser, type checker, and code generator.
 - Map standard event structs to `LogEventType` variants.
 - Reject unknown variants in Phase 1.
@@ -390,7 +400,7 @@ Malformed payloads are handled as parsing failures.
 - [Wallet Engine Specification — Indexing Service for Dust](https://github.com/midnightntwrk/midnight-architecture/blob/main/components/WalletEngine/Specification.md#indexing-service-for-dust)
 - [Monero View Tags](https://github.com/monero-project/research-lab/issues/73)
 - [Ethereum Logs and Events](https://docs.soliditylang.org/en/latest/abi-spec.html#events)
-- CoIP-xxxx: Compact `log` expression (placeholder)
+- [CoIP-xxxx: Compact `log` expression](https://github.com/LFDT-Minokawa/compact/pull/442)
 
 ## Acknowledgements
 
