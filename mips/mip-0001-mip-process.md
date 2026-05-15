@@ -12,7 +12,7 @@ Replaces: none
 ---
 
 <!--
- Copyright 2025 Midnight Foundation
+ Copyright Midnight Foundation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -55,8 +55,11 @@ This document outlines the technical structure of the MIP and the technical requ
 
 ### Versioning
 
-The specification in this MIP will be versioned using semantic versioning (SemVer).
-Any changes to the specification must be submitted as a new MIP if they affect backwards compatibility or introduce new requirements.
+MIP-0001 is not versioned and the current version must be followed for all new MIPs.
+
+MIPs must indicate how the defined Specification is versioned. Authors are free to describe any approach to versioning that allows versioned alterations to be added without author oversight. Stipulating that the proposal must be superseded by another is also considered to be valid versioning.
+
+A single Versioning scheme can be placed either as a subsection of the Specification section or in an optional Versioning top-level section near the end. If the Specification contains multiple specification subsections, each of these can have a Versioning subsection within it.
 
 ### Process Overview
 
