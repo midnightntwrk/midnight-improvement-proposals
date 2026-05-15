@@ -1,5 +1,5 @@
 ---
-MPS: "?"
+MPS: 0006
 Title: Institutional Custody for Native Shielded Assets (ZSwap)
 Category: Core
 Status: Proposed
