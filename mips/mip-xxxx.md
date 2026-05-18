@@ -238,8 +238,45 @@ In addition, negative-path tests cover the partial-success and failure semantics
 
 ## References
 
-- [MPS-0007: Node Event Visibility](../mps/mps-0007-node-event-visibility.md)
-- [Issue #1474 — Node should expose events emitted by the Ledger](https://github.com/midnightntwrk/midnight-node/issues/1474)
+### Midnight Improvement Proposals corpus
+
+- [MPS-0007: Node-Side Visibility of Ledger Events](../mps/mps-0007-node-event-visibility.md) — the upstream Problem Statement this MIP responds to.
+- [MIP-1: MIP Process](mip-0001-mip-process.md) — process, lifecycle, and section conventions.
+- [MPS-0005: Events](../mps/mps-0005-events.md) — the Compact-language event-emission proposal. Complementary to but independent of this MIP per MPS-0007's "Be independent of the events CoIP" goal.
+
+### Source issue and implementation PR
+
+- midnight-node issue [#1474 — Node should expose events emitted by the Ledger](https://github.com/midnightntwrk/midnight-node/issues/1474) — the engineering issue that scoped the work.
+- midnight-node PR [#1487 — feat: expose ledger events via frame_system::Events](https://github.com/midnightntwrk/midnight-node/pull/1487) — the implementation PR. `[pre-merge — re-pin at editor numbering time]`
+
+### Implementation reference points
+
+Line-anchored citations below point at the implementation-branch HEAD at the time this draft was authored (`58a709c8` on `feat/1474-expose-ledger-events`). They are marked for re-pinning to the merge commit of [#1487](https://github.com/midnightntwrk/midnight-node/pull/1487) once it merges. `[pre-merge — re-pin at editor numbering time]`
+
+- The new `LedgerEvent` and `LedgerEventSource` SCALE types in [`ledger/src/common/types.rs`](https://github.com/midnightntwrk/midnight-node/blob/58a709c85c913f98b8df80f271b6c35f57baa0d2/ledger/src/common/types.rs) — the wire shape this MIP commits to.
+- The bridge plumbing in [`ledger/src/versions/common/mod.rs`](https://github.com/midnightntwrk/midnight-node/blob/58a709c85c913f98b8df80f271b6c35f57baa0d2/ledger/src/versions/common/mod.rs) — where `Bridge::apply_transaction` and `Bridge::apply_system_transaction` populate the `events` field.
+- The host-API versioning in [`ledger/src/host_api/ledger_7.rs`](https://github.com/midnightntwrk/midnight-node/blob/58a709c85c913f98b8df80f271b6c35f57baa0d2/ledger/src/host_api/ledger_7.rs) and [`ledger/src/host_api/ledger_8.rs`](https://github.com/midnightntwrk/midnight-node/blob/58a709c85c913f98b8df80f271b6c35f57baa0d2/ledger/src/host_api/ledger_8.rs) — `#[version(3)]` of `apply_transaction` and `#[version(2)]` of `apply_system_transaction`.
+- The new pallet event variant and deposit loop in [`pallets/midnight/src/lib.rs`](https://github.com/midnightntwrk/midnight-node/blob/58a709c85c913f98b8df80f271b6c35f57baa0d2/pallets/midnight/src/lib.rs) — where `pallet_midnight::Event::LedgerEvent(LedgerEvent)` is deposited from `send_mn_transaction`.
+
+### Pre-implementation discard sites (mirror MPS-0007 references)
+
+These citations document the prior state — the discard points this MIP removes. Pinned at `b49ba64` matching MPS-0007's references.
+
+- [`ledger/src/common/types.rs` L46 @ `b49ba64`](https://github.com/midnightntwrk/midnight-node/blob/b49ba64beae0ede6f7c8a81eff6e840079fcae9b/ledger/src/common/types.rs#L46) — `TransactionAppliedStateRoot` without an `events` field.
+- [`ledger/src/versions/common/api/ledger.rs` L142–L158 @ `b49ba64`](https://github.com/midnightntwrk/midnight-node/blob/b49ba64beae0ede6f7c8a81eff6e840079fcae9b/ledger/src/versions/common/api/ledger.rs#L142-L158) — the ledger-bridge discard site: events bound to `_` in `apply_verified_transaction`.
+- [`ledger/src/versions/common/mod.rs` L414 @ `b49ba64`](https://github.com/midnightntwrk/midnight-node/blob/b49ba64beae0ede6f7c8a81eff6e840079fcae9b/ledger/src/versions/common/mod.rs#L414) — `TransactionAppliedStateRoot` construction site: events not forwarded.
+- [`pallets/midnight/src/lib.rs` L241 @ `b49ba64`](https://github.com/midnightntwrk/midnight-node/blob/b49ba64beae0ede6f7c8a81eff6e840079fcae9b/pallets/midnight/src/lib.rs#L241) — the pallet's pre-existing eight `Event` variants, none of which carry ledger-event payloads.
+
+### Substrate / FRAME source
+
+Pinned to `polkadot-stable2603`, the polkadot-sdk tag the midnight-node depends on.
+
+- Substrate `frame_system::Events` storage declaration: [`substrate/frame/system/src/lib.rs` @ `polkadot-stable2603`](https://github.com/paritytech/polkadot-sdk/blob/polkadot-stable2603/substrate/frame/system/src/lib.rs) — the `StorageValue<_, Vec<EventRecord<...>>, ValueQuery>` and the per-block `reset_events()` reset path called by `frame_executive::Executive::initialize_block_impl`.
+- Substrate `frame_executive::Executive::initialize_block_impl`: [`substrate/frame/executive/src/lib.rs` @ `polkadot-stable2603`](https://github.com/paritytech/polkadot-sdk/blob/polkadot-stable2603/substrate/frame/executive/src/lib.rs) — the call site that invokes `System::reset_events()` at the start of each block.
+
+### Consumer-side tooling
+
+- [subxt event filtering docs](https://docs.rs/subxt/latest/subxt/events/index.html) — pattern reference for consumers decoding `pallet_midnight::Event::LedgerEvent(_)` from `frame_system::Events`.
 
 ## Acknowledgements
 
