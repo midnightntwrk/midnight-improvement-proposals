@@ -1,5 +1,5 @@
 ---
-MIP: ?
+MIP: '?'
 Title: Node-Side Surfacing of Ledger Events via frame_system::Events
 Authors:
   - Mike Clay (m2ux)
