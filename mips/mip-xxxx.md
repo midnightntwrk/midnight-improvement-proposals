@@ -155,11 +155,22 @@ Within mechanism (a), three sub-decisions warrant explicit rationale:
 
 ### Acceptance Criteria
 
-_Drafted during `implement`._
+The MIP becomes `Active` when the following objective milestones hold against a deployed Midnight network upgrade. Each criterion is verified by the test layer named in parentheses.
+
+1. **M1 — Events observable per finalised block.** A finalised block's `frame_system::Events` storage contains one `pallet_midnight::Event::LedgerEvent(_)` record per event the ledger crate produced during transaction application, in deposit order, retrievable via `state_subscribeStorage([System.Events])` and `state_getStorage(System.Events, blockHash)` (pallet runtime test; integration test).
+2. **M2 — System-transaction symmetry.** Events produced by system-transaction application (parameter changes, dust-initial-utxo provisioning) surface through the same `Event::LedgerEvent` channel (pallet runtime test).
+3. **M3 — Cross-version wire-shape stability.** `LedgerEvent`'s SCALE encoding is byte-identical across builds resolving the ledger crate to either `mn-ledger` v7 or v8 for equivalent event fixtures, and `LedgerEvent::decode()` succeeds on output produced by either build (unit test in `ledger/src/common/types.rs::tests`).
+4. **M4 — Namespaced contract events.** A contract emitting through `EventDetails::ContractLog` surfaces an event whose decoded `(ContractAddress, EntryPointBuf)` tuple matches the emitting contract's identity and the chosen entry-point label; two contracts emitting events with identical entry-point labels produce distinguishable records (pallet runtime test; unit test).
+5. **M5 — Block-time impact bounded.** End-to-end `apply_transaction` wall time on a representative typical block (≈ 50 shielded transfers) increases by ≤ 5 % relative to the pre-implementation baseline; on a deploy-heavy block the increase is ≤ 15 % (benchmark).
+6. **M6 — No regression on existing event surface.** The eight pre-existing `pallet_midnight::Event` variants encode byte-identically on equivalent input; existing pallet-RPC outputs are unchanged; new `LedgerEvent` records are additions, not replacements (pallet runtime test; unit test; metadata-shape check).
+7. **M7 — Replay correctness.** Re-running block N against a snapshot at block N − 1 yields the same `LedgerEvent` set, modulo expected digest differences; historical blocks authored under the pre-events `apply_transaction` host-fn version replay cleanly under a node carrying the new version, with no `LedgerEvent` records for pre-activation blocks (integration test).
+8. **M8 — No `BlockLength` displacement.** Event volume does not appear in `frame_system::BlockSize`; block-fill rejections under saturation report synthetic-cost saturation rather than `BlockLength` exhaustion (pallet runtime test; integration test).
+
+A typed RPC subscription wrapper for non-Substrate consumers (`midnight_subscribeBlockEvents`) is recorded as future work in the Implementation Plan below; it is not an acceptance criterion for this MIP.
 
 ### Implementation Plan
 
-_Drafted during `implement` — references the upstream PR in `midnightntwrk/midnight-node` once opened._
+The implementation work is in flight in [`midnight-node` PR #1487](https://github.com/midnightntwrk/midnight-node/pull/1487) and will land before this MIP's `Accepted` status is reached — the reverse of the typical MIP-0001 sequencing, but explicitly permitted by MIP-0001 §"Implementation". The path to `Active` is therefore: editor numbering of the present draft → community-commentary and editor vote → status transition to `Accepted` → status transition to `Implemented` (which can be marked immediately because the implementation PR has by then merged) → status transition to `Active` when the runtime upgrade that carries the new `pallet_midnight::Event::LedgerEvent` variant and the `apply_transaction` `#[version(3)]` host-fn enters a deployed Midnight network. A typed `midnight_subscribeBlockEvents` RPC wrapper is held as a follow-on that can ship in a subsequent runtime upgrade — or in a node-only release — without further MIP work; the wire shape this MIP specifies is the layered protocol that wrapper would surface.
 
 ## Backwards Compatibility Assessment
 
