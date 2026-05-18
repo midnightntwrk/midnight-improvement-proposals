@@ -206,7 +206,16 @@ Four concerns arise from the change. Each is addressed by mechanism already in p
 
 ## Implementation
 
-_Drafted during `implement` — pointers to the upstream node PR and runtime changes._
+The implementation is in flight in [`midnight-node` PR #1487](https://github.com/midnightntwrk/midnight-node/pull/1487), addressing [`midnight-node` issue #1474](https://github.com/midnightntwrk/midnight-node/issues/1474). It modifies the following components, each of which is sufficient context for the change in isolation:
+
+- **`ledger/src/versions/common/api/ledger.rs`** — `Ledger::apply_verified_transaction` and `Ledger::apply_system_tx` are extended to return the event vector alongside the existing `AppliedStage` / `Sp<Self, D>` outputs. The two call sites in `ledger/src/versions/common/mod.rs` consume the new return shape. The pre-implementation discard sites (events bound to `_` in the `TransactionResult` match arms) are removed.
+- **`ledger/src/common/types.rs`** — defines the new `LedgerEvent` and `LedgerEventSource` SCALE types specified in §"Specification", and a new `TransactionAppliedStateRootV2` sibling struct carrying `events: Vec<LedgerEvent>`. The pre-existing `TransactionAppliedStateRoot` is retained for replay through the pre-events host-fn versions.
+- **`ledger/src/versions/common/mod.rs`** — `Bridge::apply_transaction` and `Bridge::apply_system_transaction` populate the new `events` field by tagged-serialising each `Event<D>` returned from the ledger API.
+- **`ledger/src/host_api/ledger_7.rs` and `ledger/src/host_api/ledger_8.rs`** — `#[version(3)]` of `apply_transaction` and `#[version(2)]` of `apply_system_transaction` return `TransactionAppliedStateRootV2`. The pre-existing `#[version(1)]` and `#[version(2)]` of `apply_transaction` (and `#[version(1)]` of `apply_system_transaction`) remain in tree for historical replay.
+- **`pallets/midnight/src/lib.rs`** — the pallet's `Event` enum gains a `LedgerEvent(LedgerEvent)` variant appended at the tail. `send_mn_transaction` calls the new host-fn version, iterates `result.events`, and deposits one runtime event per `LedgerEvent`.
+- **`pallets/midnight-system/src/lib.rs`** — symmetric change for the system-transaction surface; system-tx events are deposited on the same `pallet_midnight::Event::LedgerEvent` channel.
+
+There are no new external dependencies: the change reuses Substrate's existing FRAME event machinery, the existing host-fn versioning pattern (already established by the v1 → v2 transition of `apply_transaction`), and the existing pallet event deposit path. The runtime upgrade that activates the change increments the runtime's `spec_version`; no other coordinated rollout is required of operators beyond a standard runtime upgrade.
 
 ## Testing
 
