@@ -280,7 +280,7 @@ Pinned to `polkadot-stable2603`, the polkadot-sdk tag the midnight-node depends 
 
 ## Acknowledgements
 
-_To be populated._
+Thanks to Giles Cope (author of MPS-0007: Node-Side Visibility of Ledger Events) for framing the upstream Problem Statement that this MIP responds to, and to Oscar Bailey for early stakeholder feedback on the publication-mechanism trade-offs that informed the choice of `frame_system::Events` (mechanism (a) in the Rationale). Additional acknowledgements — reviewers on the present PR, MIP editors who shape the draft during numbering, and community commenters during the Proposed period — will be added during the PR review cycle.
 
 ## Copyright Waiver
 
