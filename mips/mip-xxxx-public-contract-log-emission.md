@@ -130,6 +130,8 @@ The 1 KB limit applies to the uncompressed payload — v1 does not compress even
 The `event_type` field is an enum variant reference, taking a fixed small amount of space in the serialized payload.
 The size limit can be loosened in future updates if the need for larger events is merited.
 
+**Open Question?:** Should there be a hard cap on the number of events a contract can emit?
+
 ### Fee Metering
 
 The existing `Log` opcode gas model already implements a `base+variable` fee structure.
@@ -595,7 +597,7 @@ To detect spends, a consumer must poll the full state, diff Merklized structures
 circuit spend(dest_public_key: public_key, input_coin: coin_info): [] {
   // ... existing logic unchanged ...
 
-  log(ShieldedSpend { nullifier: old_nullifier });
+  log(ShieldedSpend { nullifier: disclose(old_nullifier) });
 }
 ```
 
