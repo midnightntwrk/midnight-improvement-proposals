@@ -28,9 +28,7 @@ Replaces:
 
 ## Abstract
 
-_Draft scaffold — full content authored during the `implement` activity._
-
-This MIP proposes a candidate solution to [MPS-0007: Node Event Visibility](../mps/mps-0007-node-event-visibility.md). The Midnight node currently receives a stream of per-transaction events from the ledger crate but discards them before they reach any external consumer. This proposal specifies the publication of those events on Substrate's existing `frame_system::Events` channel, wrapped in a stable, version-uniform pallet event so consumers can decode them with standard Substrate tooling regardless of which ledger crate version produced them.
+This MIP proposes a candidate solution to [MPS-0007: Node-Side Visibility of Ledger Events](../mps/mps-0007-node-event-visibility.md). The Midnight node receives a stream of per-transaction events from the ledger crate during transaction application but discards them at the ledger-bridge boundary before they reach any observable surface. This proposal specifies their publication on Substrate's existing `frame_system::Events` channel, wrapped in a new `pallet_midnight::Event::LedgerEvent` variant whose outer shape is stable across ledger-crate upgrades. A consumer using standard Substrate tooling — `polkadot.js`, `subxt`, or the `state_subscribeStorage` RPC — receives the events in the order they were produced, decoded against the pallet's metadata, with the per-event content carried as the ledger crate's own tagged-byte serialisation so that downstream decoders evolve with the ledger crate rather than with the runtime ABI. The change is non-protocol — it adds no new gas costs, no new consensus rules, and no new block-validity constraints — and ships in a normal runtime upgrade alongside a versioned host-fn (`apply_transaction` `#[version(3)]`) that preserves replay against historical WASM runtimes.
 
 ## Motivation
 
