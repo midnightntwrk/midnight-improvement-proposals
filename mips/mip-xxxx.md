@@ -219,7 +219,22 @@ There are no new external dependencies: the change reuses Substrate's existing F
 
 ## Testing
 
-_Section drafted from `.engineering/artifacts/planning/2026-05-11-node-expose-ledger-events/05-test-plan.md` during `implement`._
+Verification spans four layers of midnight-node's existing test harness: unit tests inside `ledger/src/common/types.rs::tests` and the pallet's inline `#[cfg(test)]` modules for type round-trips and code-path logic; pallet-runtime tests against the substrate test runtime (`pallets/midnight/src/mock.rs` + `tests.rs`) that exercise the pallet end-to-end with the new `Event::LedgerEvent` variant; integration tests in `node/tests/` and chain-spec-based smoke tests that exercise full block production, RPC, and replay; and benchmarks in `pallets/midnight/src/benchmarking.rs` that measure block-time impact.
+
+Each acceptance criterion in `## Path to Active` is covered by at least one test case in at least one layer:
+
+| Criterion | Test layers |
+|---|---|
+| M1 — Events observable per finalised block | Pallet runtime, Integration |
+| M2 — System-transaction symmetry | Pallet runtime |
+| M3 — Cross-version wire-shape stability | Unit |
+| M4 — Namespaced contract events | Pallet runtime, Unit |
+| M5 — Block-time impact bounded | Benchmark, Integration smoke |
+| M6 — No regression on existing event surface | Pallet runtime, Unit, Compile-time metadata check |
+| M7 — Replay correctness | Integration |
+| M8 — No `BlockLength` displacement | Pallet runtime, Integration |
+
+In addition, negative-path tests cover the partial-success and failure semantics specified in §"Specification": a `TransactionResult::Failure` produces zero `LedgerEvent` records; a `TransactionResult::PartialSuccess` produces records only for the guaranteed portion and any successful fallible segments; and the pallet's pre-dispatch validators do not deposit events. The full test enumeration, layer-by-layer assertions, fixtures, and pass conditions live alongside the implementation in [`midnight-node` PR #1487](https://github.com/midnightntwrk/midnight-node/pull/1487).
 
 ## References
 
