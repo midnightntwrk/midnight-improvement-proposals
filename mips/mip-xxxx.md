@@ -1,6 +1,6 @@
 ---
-MIP: xxxx
-Title: Expose Ledger Events via the System Event Channel
+MIP: ?
+Title: Node-Side Surfacing of Ledger Events via frame_system::Events
 Authors:
   - Mike Clay (m2ux)
 Status: Draft
