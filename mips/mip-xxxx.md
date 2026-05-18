@@ -115,7 +115,41 @@ Contract-emitted events surface inside `EventDetails::ContractLog`, whose `(Cont
 
 ## Rationale
 
-_Section drafted from the design philosophy and research artifacts during the `implement` activity._
+Four publication mechanisms were considered. Each surfaces the same events; they differ in storage location, retrieval pattern, and operational profile.
+
+- **(a) `frame_system::Events` via a new pallet event variant.** The mechanism specified above. Events ride the standard FRAME event channel, decoded by any Substrate consumer that already reads pallet events.
+- **(b) Storage proofs only — events derivable from canonical state.** Add no new persistence; consumers reconstruct events by replaying transactions against state they prove out via `state_getReadProof`. This is essentially the present-day indexer model promoted to a documented pattern.
+- **(c) Pallet-controlled storage column with bounded retention.** A dedicated `StorageMap` keyed by block number (or block hash) holding events, pruned on a configurable window inside the pallet rather than at the Substrate node-pruning layer.
+- **(d) Typed RPC subscription wrapper.** A `midnight_subscribeBlockEvents` RPC method returning `Vec<LedgerEvent>` per finalised block, layered on top of any of (a)–(c) as a convenience for non-Substrate-native consumers.
+
+The trade-offs:
+
+| Concern | (a) FRAME events | (b) Replay-only | (c) Pallet storage | (d) Typed RPC |
+|---|---|---|---|---|
+| Per-node disk cost | Low (default-pruned); high on archive nodes | None — no new persistence | Bounded by retention window | Same as the underlying mechanism |
+| Network bandwidth | None — events read on demand | None | None | None — events read on demand |
+| Light-client friendliness | High — `frame_system::Events` is storage-root-committed; storage proofs available | None — light client cannot replay without full state | High — same storage-proof model | Inherits from underlying |
+| Indexer ingest path | `state_subscribeStorage([System.Events])`; standard subxt event decoding | Continue current replay model | Custom storage subscription | Custom RPC subscription |
+| Implementation work in midnight-node | One new pallet variant; bridge plumbing; one new host-fn version | None | A new storage column, retention policy, pruning logic, and reads | One RPC method, layered above |
+| Ledger-version churn surface | Wrapper-stable across versions; payload is opaque tagged bytes | Indexer rebuild on every event-shape change | Same as wrapper — once defined | Inherits from underlying |
+| Retention story | Inherits `frame_system::Events` default; archive opt-in via existing pruning config | None | Pallet-controlled retention window | Inherits from underlying |
+| Pallet ABI surface | One appended `Event` variant | None | One appended `Event` variant plus storage items | Inherits from underlying |
+
+The mechanism specified in `## Specification` is **(a)**.
+
+The decisive properties are light-client friendliness and tooling reach. `frame_system::Events` is part of the storage trie; light clients verify any event through `state_getReadProof` without needing the full ledger state or trusting any specific indexer ([`substrate/frame/system/src/lib.rs::Events` storage definition](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/system/src/lib.rs); the storage value is committed by the block's storage root). The same record decodes against the runtime's metadata in `polkadot.js`, in `subxt`, and in every Substrate-tooling integration teams have already built — which is the explicit UC5 promise in MPS-0007.
+
+Mechanism **(b)** preserves the present-day arrangement: events remain derivable but only via replay. It demands the indexer (or any equivalent) to be operationally available and version-pinned to the same ledger crate as the node, and it leaves the UC1 / UC2 / UC3 / UC5 use cases unaddressed. It is the implicit baseline for measuring (a); it is not an action-bearing alternative.
+
+Mechanism **(c)** adds a pallet-controlled retention policy. The benefit is that operators get a knob — events are pruned on a window the pallet owns, not on the node's archive setting. The cost is a new storage column to migrate, a new retention parameter to govern, and a custom subscription surface that consumer libraries do not already understand. The wire shape this MIP specifies (`LedgerEvent` + `LedgerEventSource`) is portable to (c) without re-spec — the same bytes can ride a pallet `StorageMap` rather than `frame_system::Events`. If operator experience under (a) shows archive growth is unsustainable, a future MIP can switch the persistence mechanism to (c) without changing the consumer-facing decoder.
+
+Mechanism **(d)** is a convenience wrapper, not an alternative. A typed `midnight_subscribeBlockEvents` RPC method would offer non-Substrate-native consumers a JSON-friendly entry point. Because `state_subscribeStorage([System.Events])` already provides real-time delivery decodable through any Substrate client, (d) is deferred from this MIP's scope: it can ship in a follow-on without altering the wire shape this MIP commits to, on its own merits when the consumer benefit justifies it.
+
+Within mechanism (a), three sub-decisions warrant explicit rationale:
+
+- **Opaque tagged bytes for `EventDetails<D>` rather than a SCALE-mirrored enum.** The ledger crate's `EventDetails<D>` is `#[non_exhaustive]`; mirroring its variants in SCALE creates a maintenance ratchet on every ledger upgrade and risks silent drift if a new variant lands. Carrying the ledger's own `Tagged` byte form makes the wrapper forward-compatible — consumers decode against the ledger version they ship with, and the runtime ABI does not move when the event taxonomy does.
+- **One pallet-event variant per ledger event rather than one variant per block carrying a `Vec`.** `subxt` and equivalent clients filter events by `(pallet_index, variant_index)` *before* SCALE-decoding the payload. A block-level `Vec<LedgerEvent>` variant forces clients to decode the whole vec before filtering, defeating the typed event channel's filtering granularity. One variant per event aligns with the existing pallet variants (`ContractCall`, `ContractDeploy`, `ContractMaintain`, ...) which each fire once per occurrence inside a single transaction.
+- **A new `TransactionAppliedStateRootV2` sibling struct rather than extending the existing struct in place.** SCALE does not silently ignore trailing bytes on decode. Extending the existing struct would break replay against WASM runtimes compiled against the old encoding. A sibling struct, returned by the new `#[version(3)]` of the host-fn, leaves historical replay paths byte-stable. This follows the precedent already in tree (`ledger/src/host_api/ledger_7.rs::apply_transaction` v1 vs v2).
 
 ## Path to Active
 
