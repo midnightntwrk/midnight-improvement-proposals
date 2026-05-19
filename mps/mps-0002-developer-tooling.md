@@ -15,14 +15,14 @@
 -->
 
 ---
-MPS: 0002
-Title: Midnight Developer Tooling
-Authors: Midnight Tooling Workforce
-Status: Proposed
-Category: Libraries and Tooling
-Created: 23-JAN-2026
-Requires: none
-Replaces: none
+MPS: 0002  
+Title: Midnight Developer Tooling  
+Authors: Midnight Tooling Workforce  
+Status: Proposed  
+Category: Libraries and Tooling  
+Created: 23-JAN-2026  
+Requires: none  
+Replaces: none  
 
 ---
 
