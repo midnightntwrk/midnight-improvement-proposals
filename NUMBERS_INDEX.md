@@ -27,7 +27,12 @@ MPS-0001: (reserved for process document)
 [MPS-0005: events](/mps/mps-0005-events.md)  
 [MPS-0006: shielded-asset-custody](/mps/mps-0006-shielded-asset-custody.md)  
 [MPS-0007: node-event-visibility](/mps/mps-0007-node-event-visibility.md)  
+[MPS-0008: keccak-hashing](/mps/mps-0008-keccak-hashing.md)  
+[MPS-0009: sig-rsa](/mps/mps-0009-sig-rsa.md)  
+[MPS-0010: sig-verify-ecdsa](/mps/mps-0010-sig-verify-ecdsa.md)  
+[MPS-0011: native-crypto-primitives](/mps/mps-0011-native-crypto-prims.md)  
 
 # MIPs
 
-[MIP-0001: midnight-improvement-proposal-process.md](/mips/mip-0001-mip-process.md)  
+[MIP-0001: mip-process](/mips/mip-0001-mip-process.md)  
+[MIP-0002: public-contract-log-emission](/mips/mip-0002-public-contract-log-emission.md)  
