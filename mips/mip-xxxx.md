@@ -6,7 +6,7 @@ Authors:
 Status: Draft
 Category: Core
 Created: 2026-05-18
-Requires:
+Requires: MIP-???? — Compact ↔ Ledger event-schema sharing protocol [pre-numbering]
 Replaces:
 ---
 
