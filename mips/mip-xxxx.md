@@ -113,6 +113,47 @@ The behaviour ships behind a new `#[version(3)]` of `apply_transaction` and a `#
 
 Contract-emitted events surface inside `EventDetails::ContractLog`, whose `(ContractAddress, EntryPointBuf)` tuple namespaces the event by `(emitting contract, entry-point label)`. The `ContractAddress` is the chain-controlled on-chain identity of the emitting contract; the `entry_point` label is contract-author-supplied. Two distinct contracts cannot collide on the same routing tuple. This MIP does not introduce a node-side `topic` type; the `ContractLog` namespace is the contract-author-facing surface and any future dedicated topic type is an upstream `midnight-ledger` change.
 
+### Cross-references to companion sections
+
+Two adjacent sections detail aspects of the wire shape that consumers commonly ask about. `## Finality Semantics and Consumer Pipeline` (immediately below) defines when in Substrate's block lifecycle a `LedgerEvent` becomes observable and how consumers compose `frame_system::Events` reads with GRANDPA finality. `## Event Schema and Compact Integration` records the boundary between this MIP's transport-level commitment (opaque tagged bytes) and a downstream concern: the schema-sharing surface that a Compact-side transcript verifier would need beyond byte-level transport. `## Performance Impact` quantifies the cost of depositing one `LedgerEvent` per ledger event onto the per-block weight envelope.
+
+## Finality Semantics and Consumer Pipeline
+
+`frame_system::Events` is per-block storage written at block-execution time, **before** finality is signalled. The events for block N are readable from `state_getStorage(System.Events, blockHashN)` the moment block N is imported on a connected full node, regardless of whether that block has been finalised by GRANDPA. This MIP does not alter that lifecycle: the deposit happens inside the pallet's call to `Self::deposit_event(Event::LedgerEvent(ev))` during transaction application, which precedes the storage-root computation and, in turn, the finality vote.
+
+Midnight's downstream consumer model — the indexer, wallets, light-client DApps, cross-chain bridges — operates on **finalised** data. The reconciliation between per-block event publication and the finalised-only consumer model is a consumer-side composition of two existing Substrate primitives. The canonical flow is:
+
+1. **Subscribe to finalised heads** through `chain_subscribeFinalizedHeads` (GRANDPA finality stream).
+2. **For each finalised block hash**, fetch the events for that block via `state_getStorage(System.Events, blockHash)` — or, equivalently in `subxt`, follow the finalised-blocks stream and read events from the resulting `Block` handle.
+3. **Decode each `EventRecord`** against the runtime metadata, filter for `pallet_midnight::Event::LedgerEvent(...)`, and re-hydrate the `content_tagged_bytes` payload against the matching `midnight-ledger` version.
+
+This is the same shape as a standard Substrate `subxt` finalised-blocks event subscription, applied to the new `LedgerEvent` variant. Consumers that already read pallet events on finalised heads — the existing indexer is one such consumer — keep their architecture; the change is that `pallet_midnight::Event::LedgerEvent` now carries content the indexer previously had to recover by re-running `state.apply` against its own copy of the ledger crate.
+
+Consumers that want to observe events on the best chain rather than the finalised chain can subscribe to `state_subscribeStorage([System.Events])` directly and accept the reorg risk that comes with reading pre-finality state. That is the existing Substrate trade-off for any state read on non-finalised blocks; the MIP does not invent a new path and does not change it. High-value consumers that require both finality and a streaming surface compose `chain_subscribeFinalizedHeads` with per-block `state_getStorage` reads, as described above.
+
+**Why no new node-side stream is added.** A typed RPC method that filtered events to the finalised chain at the node — for example, a hypothetical `midnight_subscribeFinalizedBlockEvents` returning `Vec<LedgerEvent>` per finalised block — would be option (d) in the Rationale below. It is deferred under `## Path to Active` "Implementation Plan": the wrapper can ship as a follow-on on top of the per-block surface this MIP commits to, without further MIP work. Reframing finality at the node rather than at the consumer would also bind the MIP to a particular consumer policy (finalised-only) when the per-block surface already supports both reorg-tolerant and finality-tracking consumers.
+
+**Cross-reference.** `## Backwards Compatibility Assessment` adds a "Consumer assumption layer — finality" sub-paragraph that records what the existing indexer's operational model relies on and how new consumers SHOULD compose the two primitives. The contract this section defines — events surface at execution time; consumers filter by finality — is the consumer-facing piece of that layer.
+
+## Event Schema and Compact Integration
+
+The wire shape `## Specification` commits to is sufficient for **transport**: a consumer that decodes `pallet_midnight::Event::LedgerEvent` recovers the routing header (`LedgerEventSource`) and the opaque `content_tagged_bytes` payload. To re-hydrate the payload into typed `EventDetails<D>` variants — `ContractDeploy`, `ContractLog`, `ZswapInput`, `ZswapOutput`, `ParamChange`, dust events, future variants — the consumer must hold the `midnight-ledger` crate version that produced the bytes. That is the present-day surface and the one this MIP standardises for node-side observability.
+
+Transport is necessary but not sufficient for a separate class of consumer: a **Compact-side transcript verifier**. The Compact compiler / runtime, when verifying that a contract execution emitted the events its transcript declares, needs to evaluate the emitted events against a schema that both Compact and the ledger crate agree on. The current Compact ↔ Ledger surface is byte-level only: the ledger crate emits typed `EventDetails<D>` values which are tagged-serialised at the boundary, and the Compact side does not today consume those types directly. There is no shared types crate, no published JSON-Schema-equivalent registry, and no runtime hook the Compact verifier can call to obtain an authoritative event-schema description. The byte-level boundary is what this MIP exposes; the schema-sharing surface that a transcript verifier would compose against it is a distinct concern.
+
+**Routing of the schema-sharing problem.** This MIP records the dependency and points at the work that resolves it; it does not design that work. A sibling MIP — referenced from this MIP's front matter as `Requires: MIP-???? — Compact ↔ Ledger event-schema sharing protocol [pre-numbering]` — is the right venue for specifying:
+
+- the abstract registry or shared-types crate that holds the canonical `EventDetails<D>` schema description,
+- the mechanism by which Compact obtains it during transcript verification (compile-time vendoring, runtime fetch via a host-fn, or storage of the schema in chain state),
+- the versioning rules that govern Compact ↔ Ledger compatibility when the ledger's event taxonomy evolves,
+- and the security implications of allowing or restricting the Compact side to reason about ledger-emitted event content beyond what the ledger crate's own serialiser provides.
+
+These are non-trivial design choices that touch the Compact compiler, the ledger crate, and possibly the runtime ABI. Folding them into the present MIP would dilute its load-bearing per-block event surface and would obscure the scope of the schema-sharing work itself. The sibling MIP is the right shape for that work.
+
+**What this MIP does and does not commit to.** The opaque tagged-byte payload is forward-compatible: new `EventDetails` variants or field-level additions appear as different bytes inside `content_tagged_bytes` and do not require changes to the wrapper, to `pallet_midnight::Event::LedgerEvent`, or to the runtime metadata (see `## Backwards Compatibility Assessment` Layer 2). That makes the transport stable across ledger evolution. It does **not** by itself give Compact a mechanism to validate transcript-declared events without holding the same `midnight-ledger` version, and it does not constitute a published event schema. Until the sibling MIP lands, consumers that need a Compact-side validation hook — rather than a transport-level decoder — are operating outside this MIP's scope and should treat the byte-level surface as the only contract available.
+
+**Implication for `## Path to Active`.** This MIP can transition to `Active` independent of the sibling MIP: the node-side surface is operational without the schema-sharing layer for the consumer set the MIP commits to (Substrate-tooling consumers reading `frame_system::Events` and decoding against the runtime metadata + the matching ledger version). If editors choose to gate `Active` on the sibling MIP at numbering time — which the `Requires:` field permits — the dependency is recorded so that decision is informed.
+
 ## Rationale
 
 Four publication mechanisms were considered. Each surfaces the same events; they differ in storage location, retrieval pattern, and operational profile.
