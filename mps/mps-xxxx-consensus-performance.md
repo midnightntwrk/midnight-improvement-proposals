@@ -65,6 +65,7 @@ The bottleneck is architectural, verification is sequential and cannot be parall
 ## Expected Outcomes
 
 * Transaction Throughput: Sustain > 1,000 ZK-SNARK verified TPS in a live, geographically distributed testnet.
+* Degradation: Throughput must not degrade under demand that exceeds capacity: i.e., observed throughput (averaged over a several-block time window) must be a non-decreasing function of transaction demand.
 
 ## Non-Goals
 
@@ -84,6 +85,13 @@ The precise recovery mechanics when transitioning from an asynchronous network p
 This compounds the verification bottleneck — even if verification throughput is solved, large blocks of verified transactions must still propagate.
 * **Block Structure:** If verification and transaction dissemination move out of the block leader's critical path, blocks may no longer need to carry full transactions — they could reference already-verified, already-disseminated transaction bundles.
 Whether this changes the block dissemination constraint or introduces new ones depends on the solution architecture.
+* **Throughput Target Definition:** The 1,000 TPS target needs further quantification in terms of circuit composition.
+Is this for a "typical" workload of smart contracts, for the built-in circuits, or some other mix?
+"Typical workload" needs to be defined.
+Should this measurement be reworded in terms of kbps instead of nebulous txps?
+* **Fork Tolerance Thresholds:** What is the acceptable fork probability under both normal and adversarial conditions?
+What does 'near zero' mean? What is the importance of the duration of a fork?
+Can relatively frequent one-block forks be considered less harmful than a less frequent 30-block fork?
 
 ## Recommended MIPs
 
