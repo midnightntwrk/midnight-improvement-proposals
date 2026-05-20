@@ -4,7 +4,7 @@ Title: Midnight Improvement Proposal Process
 Authors:
   - Bob Blessing-Hartley (bobblessinghartley)
   - Kevin Millikin (kmillikin)
-Status: Proposed
+Status: Accepted
 Category: Governance
 Created: 29-APR-2025
 Requires: none
