@@ -31,6 +31,7 @@ MPS-0001: (reserved for process document)
 [MPS-0009: sig-rsa](/mps/mps-0009-sig-rsa.md)  
 [MPS-0010: sig-verify-ecdsa](/mps/mps-0010-sig-verify-ecdsa.md)  
 [MPS-0011: native-crypto-primitives](/mps/mps-0011-native-crypto-prims.md)  
+[MPS-0012: account-aliasing](/mps/mps-0012-account-aliasing.md)  
 
 # MIPs
 
