@@ -34,7 +34,7 @@ Despite cryptographic optimizations that reduced transaction verification time t
 
 * **Performance:** The consensus engine must sustain a minimum throughput of 1,000 TPS. Block times (soft finality) must remain under 2 seconds.  
 * **Compatibility:** The design must natively integrate with Midnight's dual-token tokenomics, facilitating DUST fee payments and NIGHT validator rewards.
-
+* **Degradation:** Throughput must not degrade under demand that exceeds capacity: i.e., observed throughput (averaged over a several-block time window) must be a non-decreasing function of transaction demand.
 ## **Success Metrics**
 
 * **Metric 1:** Transaction Throughput: Sustain \> 1,000 ZK-SNARK verified TPS in a live, geographically distributed testnet.  
