@@ -15,17 +15,17 @@
 -->
 
 ---
-MPS: 0006
-Title: Institutional Custody for Native Shielded Assets (ZSwap)
-Category: Core
-Status: Proposed
+MPS: 0006  
+Title: Institutional Custody for Native Shielded Assets (ZSwap)  
+Category: Core  
+Status: Proposed  
 Authors:
   - Jalal Hannan <Jalal-1>
-  - Hector Bulgarini <hbulgarini>
-Proposed Solutions: []
-Discussions: []
-Created: 2026-05-06
-License: CC-BY-4.0
+  - Hector Bulgarini <hbulgarini>  
+Proposed Solutions: []  
+Discussions: []  
+Created: 2026-05-06  
+License: CC-BY-4.0  
 ---
 
 ## Abstract

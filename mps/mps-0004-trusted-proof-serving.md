@@ -2,13 +2,14 @@
 MPS: 0004
 Title: Trustworthy Delegated Proof Generation for Privacy-Preserving Transactions
 Category: Ledger
-Status: Open
+Status: Proposed
 Authors:
   - Bob Blessing-Hartley <bob@shielded.io>
 Proposed Solutions: []
 Discussions: []
 Created: 2026-05-01
 License: CC-BY-4.0
+
 ---
 
 ## Abstract
