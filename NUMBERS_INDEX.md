@@ -36,4 +36,5 @@ MPS-0001: (reserved for process document)
 # MIPs
 
 [MIP-0001: mip-process](/mips/mip-0001-mip-process.md)  
-[MIP-0002: public-contract-log-emission](/mips/mip-0002-public-contract-log-emission.md)  
+[MIP-0002: public-contract-log-emission](/mips/mip-0002-public-contract-log-emission.md) 
+[MIP-0003: ECDSA-support](/mips/mip-0003-ecdsa-support.md)   
