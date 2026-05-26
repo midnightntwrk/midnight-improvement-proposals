@@ -13,7 +13,7 @@ This repository is the canonical home for Midnight's open development documents.
 
 ## How to contribute
 
-1. **Open a discussion first** if you'd like early feedback — via a GitHub issue, our [Discord](https://discord.com/invite/midnightnetwork), or the [Telegram](https://t.me/Midnight_Network_Official).
+1. **Open a discussion first** if you'd like early feedback — via the [Discussions tab](../../discussions) of this repository or our [Discord](https://discord.com/invite/midnightnetwork).
 2. **Fork this repository** and copy the appropriate template (`mip-template.md` or `mps-template.md`).
 3. **Submit a Pull Request** with your draft. Use `xxxx` in place of a number — an editor will assign one prior to merging.
 4. **Engage with reviewers.** Discussion happens in the Discussions tab of this repository. MIP Editors will help shepherd your proposal through the [process stages](./mips/mip-0001-mip-process.md): *Proposed → Review → Accepted → Implemented*.
