@@ -20,6 +20,10 @@ This repository is the canonical home for Midnight's open development documents.
 
 Pull requests should describe the change, not implement it — link to code repositories rather than including implementation code.
 
+### Authorship and AI assistance
+
+Contributors are welcome to use AI tools (such as Claude) to help draft, edit, or refine their proposals. However, **commits must be authored by the responsible human contributor** — do not configure Claude or any other AI assistant as the commit author or co-author. The named author of a MIP or MPS is accountable for its content, regardless of which tools were used to produce it.
+
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) before submitting.
 
 ## License
