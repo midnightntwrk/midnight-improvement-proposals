@@ -16,10 +16,10 @@
 
 ---
 MPS: 0012
-Title: Human-Readable Aliasing for Midnight Accounts
+Title: Human-Readable Aliasing for Midnight Accounts  
 Authors:
-  - Karmel Abdeljawad <Karmoola>
-  - Nick Stanford <nstanford5>  
+  - Karmel Elshinnawi <Karmoola>
+  - Nick Stanford <nstanford5>
 Status: Accepted  
 Category: Standards  
 Created: 21-May-2026  
