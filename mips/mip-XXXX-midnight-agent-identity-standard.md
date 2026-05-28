@@ -36,6 +36,8 @@ MAIS uses a three tier disclosure model for identity data. Public tier is for an
 
 The standard defines a Compact contract interface for agent registration, reputation building, and third party validation. Reputation claims are ZK provable, meaning an agent can prove its trust level without exposing the underlying data. The system supports two identity modes. A contract address mode for agents that want to be publicly discoverable. A ZK credential mode for agents that need operational privacy. An optional ERC-8004 bridge connects MAIS identities to the Ethereum agent identity ecosystem for agents that operate across both chains.
 
+An existing open-source implementation by apestchanker at [midnight-agent-did-manager](https://github.com/apestchanker/midnight-agent-did-manager) already provides a working DID registry on Midnight Preprod with W3C-aligned `did:midnight` identifiers, Compact contracts, 1AM wallet integration, selective disclosure Verifiable Credentials, and an MCP server for AI agent interaction. The MAIS spec and this implementation are being aligned to ensure the standard reflects what is already proven to work on-chain.
+
 ## Motivation
 
 ### The Gap
@@ -485,6 +487,20 @@ MAIS does not protect against a quantum adversary breaking the underlying ZK pro
 
 ## Implementation
 
+### Existing Reference Implementation
+
+The [midnight-agent-did-manager](https://github.com/apestchanker/midnight-agent-did-manager) project by apestchanker already provides a working MAIS-aligned Identity Registry on Midnight Preprod. This implementation demonstrates that the core concepts are viable:
+
+- Compact DID registry contract deployed on Midnight Preprod
+- W3C-aligned `did:midnight:<network>:<contract>:<agentKey>` identifiers
+- 1AM wallet integration for dust-free proving and transaction submission
+- Selective disclosure Verifiable Credentials via commitment-based Midnight proofs
+- Full MCP server (stdio + HTTP) for AI agent interaction
+- Postgres-backed service for DID requests, approvals, and credential issuance
+- Browser-safe private state provider patch for Midnight SDK
+
+This implementation serves as the starting point for the MAIS reference implementation. The Identity Registry component is already functional. The Reputation Registry, Validation Registry, and ERC-8004 bridge are the next components to be added, following the architecture described below.
+
 ### Compact Contract Structure
 
 The reference implementation has four Compact contracts.
@@ -604,6 +620,7 @@ Tests run against a local Midnight testnet set up through the Midnight.js SDK. A
 - ZK KYC. Zero Knowledge Proofs for KYC Compliance, reference implementations by various providers
 - 1AM Wallet: Dust-free ZK proving and wallet infrastructure. https://1am.xyz/developers
 - Midnight Passport: Seven-layer identity infrastructure (LFDT-Nightstream). https://midnight-passport.vercel.app
+- Midnight Agent DID Manager: Reference implementation of MAIS Identity Registry on Midnight Preprod. https://github.com/apestchanker/midnight-agent-did-manager
 
 ## Acknowledgements
 
