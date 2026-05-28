@@ -1,13 +1,13 @@
 ---
-MIP: "?"
+MIP: 0004
 Title: Fungible Token Standard with UTXO Conversion Extensions
 Authors:
   - Guido De Vita (dvgui)
-Status: Proposed
+Status: Draft
 Category: Standards
 Created: 2026-03-21
 Updated: 2026-05-27
-Requires: MIP-1
+Requires: none
 Replaces: none
 License: Apache-2.0
 ---
@@ -67,10 +67,10 @@ ledger mintCounter: Counter;
 ledger mintNonce: Bytes<32>;
 ```
 
-- `domain`: A domain separator set at construction, used to compute the [token color](https://docs.midnight.network/concepts/utxo) for UTXO operations. MUST be public (`export ledger`) so that any participant can read it and so that the conversion circuits can derive the token color at call time via `tokenType(domain, kernel.self())`.
+- `domain`: A domain separator set at construction, used to compute the [token color](https://docs.midnight.network/concepts/utxo) for UTXO operations. MUST be public so that any participant can read it and so that the conversion circuits can derive the token color at call time via `tokenType(domain, kernel.self())`.
 - `utxoSupply`: A running total of tokens currently held as UTXOs (both shielded and unshielded). Incremented by `shield` and `toUtxo`, decremented by `unshield` and `fromUtxo`. MUST be public (`export ledger`) for off-chain supply accounting.
-- `mintCounter`: A monotonically increasing counter used together with `mintNonce` to guarantee uniqueness of shielded coin commitments. SHOULD be private (`ledger`, not `export ledger`) to reduce information leakage.
-- `mintNonce`: A nonce that evolves with each `shield` operation to prevent commitment collisions. SHOULD be private (`ledger`, not `export ledger`) to reduce information leakage.
+- `mintCounter`: A monotonically increasing counter used together with `mintNonce` to guarantee uniqueness of shielded coin commitments. SHOULD be private to reduce information leakage.
+- `mintNonce`: A nonce that evolves with each `shield` operation to prevent commitment collisions. SHOULD be private to reduce information leakage.
 
 **Why not store `color` in the ledger?** An earlier version stored the token color as `export ledger color: Bytes<32>`, precomputed in the constructor via `tokenType(domainSep, kernel.self())`. This was found to produce a different hash than what `mintShieldedToken` and `mintUnshieldedToken` stamp on minted coins. The Compact runtime resolves `kernel.self()` differently during constructor execution vs circuit execution, causing a mismatch that breaks `unshield` color validation and `fromUtxo` UTXO absorption. The fix is to compute `tokenType(domain, kernel.self())` at call time in each circuit that needs it.
 
