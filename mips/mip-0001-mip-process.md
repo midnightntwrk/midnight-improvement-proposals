@@ -174,7 +174,15 @@ The Midnight Improvement Proposal (MIP) process consists of the following stages
    or a change might require updates to multiple components across the Midnight ecosystem.
    When an implemented MIP is deployed, the status is changed to **Active** and the relevant network upgrade is noted.
 
-### MIP Categories
+### Draft Phase Clarifications
+
+The draft phase of the MIP process is designed for open collaboration. The following clarifications address common questions about how drafts move through the system.
+
+**Drafts live in the repository from the start.** A MIP enters the repository as a PR when the author has a draft document (even if incomplete). This ensures that all discussion, revision history, and collaboration happens publicly in the repository from day one. There is no requirement to perfect a MIP outside the repository before creating the PR.
+
+**Numbers are assigned at draft time, not at acceptance.** When a MIP Editor numbers a draft MIP and merges its PR, the number is immediately assigned. This means a MIP has a stable identifier even while still in Draft status. See the [Status Transition Gates](#status-transition-gates) table for the full lifecycle. Numbers may have gaps in the sequence due to rejected or withdrawn proposals — this is expected and unavoidable.
+
+**Formal submission is separate from the initial PR.** Creating the PR to add a draft MIP does not automatically submit it for editor consideration. To formally propose a MIP for acceptance, the authors must file a separate issue in the repository explicitly asking the MIP Editors to review it. The editors will then begin the community commentary period and schedule a vote. This separation ensures that editors only consider MIPs when authors signal they are ready.
 
 MIPs are categorized to help organize and manage the different types of proposals:
 
