@@ -184,6 +184,8 @@ The draft phase of the MIP process is designed for open collaboration. The follo
 
 **Formal submission is separate from the initial PR.** Creating the PR to add a draft MIP does not automatically submit it for editor consideration. To formally propose a MIP for acceptance, the authors must file a separate issue in the repository explicitly asking the MIP Editors to review it. The editors will then begin the community commentary period and schedule a vote. This separation ensures that editors only consider MIPs when authors signal they are ready.
 
+**Community refinement happens in GitHub Discussions.** Once a draft MIP has been merged into the repository, public discussion and refinement should take place in a [GitHub Discussion](https://github.com/midnightntwrk/midnight-improvement-proposals/discussions). When discussion produces meaningful changes that require updates to the MIP document, the GitHub Discussion can be converted to an Issue, and the Issue can inform a follow-up Pull Request. This keeps the conversation public, searchable, and linked to the relevant code changes.
+
 MIPs are categorized to help organize and manage the different types of proposals:
 
 - **Core:** Changes to the core Midnight protocol, consensus mechanisms, virtual machine, or other fundamental aspects.
