@@ -30,7 +30,7 @@ Replaces: none
 
 AI agents are arriving on Midnight. Midnight City already runs Gemini agents in simulation. AlphaTON is building privacy agents for Telegram's one billion users. But there is no standard way for these agents to say who they are, prove they can be trusted, or get validated by others. Each team building agents on Midnight invents its own identity scheme from scratch. Without a shared standard the ecosystem will fragment into incompatible identity systems.
 
-Additionally, two complementary infrastructure layers are developing in parallel that would benefit from a shared agent identity standard. The 1AM wallet provides dust-free ZK proving via ProofStation, eliminating the need for users and agents to manage DUST balances for transactions. Midnight Passport, a seven-layer identity infrastructure currently in closed-source development, provides hardware-backed key protection, named accounts, and ZK credential issuance. These tools address the onboarding and credential layers respectively, but neither defines the agent-level identity, reputation, and validation primitives that MAIS addresses. This MPS describes the gap before any specific solution is proposed.
+Additionally, two complementary infrastructure layers are developing in parallel that would benefit from a shared agent identity standard. The 1AM wallet provides dust-free ZK proving via ProofStation, eliminating the need for users and agents to manage DUST balances for transactions. Midnight Passport, a seven-layer identity infrastructure currently in closed-source development, provides hardware-backed key protection, named accounts, and ZK credential issuance. And the [midnight-agent-did-manager](https://github.com/apestchanker/midnight-agent-did-manager) project by apestchanker already demonstrates a working DID registry on Midnight Preprod with W3C-aligned identifiers, Compact contracts, and selective disclosure credentials, proving that the core identity registration concept is viable. These tools address the onboarding, credential, and identity layers respectively, but none defines the complete agent-level identity, reputation, and validation framework that MAIS addresses. This MPS describes the gap before any specific solution is proposed.
 
 ## Vision
 
@@ -100,6 +100,7 @@ After the gap is addressed developers building agents on Midnight will use a sha
 - Midnight City Simulation. Midnight Network Developer Portal
 - 1AM Wallet: Dust-free ZK proving and wallet infrastructure. https://1am.xyz/developers
 - Midnight Passport: Seven-layer identity infrastructure (closed-source, LFDT-Nightstream). https://midnight-passport.vercel.app
+- Midnight Agent DID Manager: Working DID registry on Midnight Preprod with Compact contracts and selective disclosure VCs. https://github.com/apestchanker/midnight-agent-did-manager
 
 ## Acknowledgements
 
