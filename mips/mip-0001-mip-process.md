@@ -142,7 +142,7 @@ The Midnight Improvement Proposal (MIP) process consists of the following stages
    The editors will then merge the MIP.
 
 1. **Discussion and update:** The MIP authors finish the draft and address feedback to get it in shape for proposal.
-   Discussion should happen in some public forum, such as the Midnight Discord server.
+   Discussion should happen in some public forum, such as the GitHub Discussion forum of this repository.
    The relevant issue tracker can be used to raise and track issues with the MIP.
    Contributors can send pull requests to improve the draft MIP.
 
