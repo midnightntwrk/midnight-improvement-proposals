@@ -1,11 +1,11 @@
 ---
-MIP: (assigned by a MIP Editor)
+MIP: 0005
 Title: Offer Files
 Authors: Andrew Fleming @andrew-fleming
 Status: Proposed
 Category: Standards
 Created: 2026-02-25
-Replaces: MIP-? (Offer Files draft)
+Replaces: none
 ---
 
 ## Abstract
@@ -164,7 +164,7 @@ In both cases, verification requires checking against current ledger state.
 ## Relationship to Other MIPs
 
 This MIP defines the low-level encoding for individual offers.
-The P2P Atomic Swaps MIP (MIP-?) builds on this foundation by specifying an application-layer payload,
+The P2P Atomic Swaps MIP (MIP-0006) builds on this foundation by specifying an application-layer payload,
 discovery protocol, and optional authentication.
 The `transaction` field in that MIP's `OfferPayload` contains a bech32-encoded offer as specified here.
 
