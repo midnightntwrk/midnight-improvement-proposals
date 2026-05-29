@@ -1,5 +1,5 @@
 ---
-MIP: (assigned by a MIP Editor) \
+MIP: 0006
 Title: Peer-to-Peer Atomic Swaps \
 Authors: Andrew Fleming @andrew-fleming \
 Status: Proposed \
@@ -61,7 +61,7 @@ and the taker's input (50 NIGHT) funds the maker's output.
 Both parties' expected receipts are committed to in their respective partial transactions,
 ensuring neither can be shortchanged.
 
-### Relationship to Offer Files (MIP-?)
+### Relationship to Offer Files (MIP-0005)
 
 This MIP builds upon the Offer Files MIP,
 which specifies the bech32 encoding for serializing the underlying `zswap::Offer` type.
