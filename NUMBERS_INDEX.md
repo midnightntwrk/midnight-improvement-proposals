@@ -32,6 +32,7 @@ MPS-0001: (reserved for process document)
 [MPS-0010: sig-verify-ecdsa](/mps/mps-0010-sig-verify-ecdsa.md)  
 [MPS-0011: native-crypto-primitives](/mps/mps-0011-native-crypto-prims.md)  
 [MPS-0012: account-aliasing](/mps/mps-0012-account-aliasing.md)  
+[MPS-0013: zswap-business-logic](/mps/mps-0013-zswap-business-logic.md)  
 
 # MIPs
 
