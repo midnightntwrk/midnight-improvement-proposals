@@ -1,8 +1,8 @@
 ---
-MPS: <xxx> # assigned by editors  
+MPS: "0013"
 Title: zswap business logic
 Authors: Karmel E - karmoola
-Status: <Status> # All new MPS should be assigned Proposed  
+Status: Proposed  
 Category: Core   
 Created: 29-05-2026  
 Requires: [none]  
