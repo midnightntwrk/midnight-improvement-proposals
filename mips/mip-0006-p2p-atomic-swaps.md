@@ -274,7 +274,7 @@ By operating at the protocol level, swaps inherit the full security guarantees o
 ### Imbalanced Transactions
 
 The maker creates a transaction containing their spend authorizations and their expected payment outputs.
-This transaction is imbalanced becuase it outputs token types (the payments) that it doesn't input.
+This transaction is imbalanced because it outputs token types (the payments) that it doesn't input.
 The taker creates a complementary imbalanced transaction with their inputs and their expected receipts.
 When merged, the two transactions balance.
 Critically, because the maker's expected payments are included as outputs in their proven transaction,
