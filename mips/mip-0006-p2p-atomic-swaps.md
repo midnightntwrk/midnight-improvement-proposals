@@ -1,9 +1,9 @@
 ---
 MIP: 0006
-Title: Peer-to-Peer Atomic Swaps \
-Authors: Andrew Fleming @andrew-fleming \
-Status: Proposed \
-Category: Standards \
+Title: Peer-to-Peer Atomic Swaps
+Authors: Andrew Fleming @andrew-fleming
+Status: Proposed
+Category: Standards
 Created: 2026-02-12
 ---
 
