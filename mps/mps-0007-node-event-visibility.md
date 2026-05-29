@@ -1,3 +1,14 @@
+---
+MPS: 0007  
+Title: Node-Side Visibility of Ledger Events  
+Authors: Giles Cope <giles.cope@shielded.io>  
+Status: Proposed  
+Category: Core  
+Created: 2026-05-13  
+Requires: none  
+Replaces: none  
+---
+
 <!--
  Copyright 2026 Midnight Foundation
 
@@ -13,18 +24,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
----
-MPS: 0007  
-Title: Node-Side Visibility of Ledger Events  
-Authors: Giles Cope <giles.cope@shielded.io>  
-Status: Proposed  
-Category: Core  
-Created: 2026-05-13  
-Requires: none  
-Replaces: none  
-
----
 
 ## Abstract
 
