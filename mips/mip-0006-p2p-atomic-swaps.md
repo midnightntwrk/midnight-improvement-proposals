@@ -274,7 +274,7 @@ By operating at the protocol level, swaps inherit the full security guarantees o
 ### Imbalanced Transactions
 
 The maker creates a transaction containing their spend authorizations and their expected payment outputs.
-This transaction is imbalanced becuase it outputs token types (the payments) that it doesn't input.
+This transaction is imbalanced because it outputs token types (the payments) that it doesn't input.
 The taker creates a complementary imbalanced transaction with their inputs and their expected receipts.
 When merged, the two transactions balance.
 Critically, because the maker's expected payments are included as outputs in their proven transaction,
@@ -290,8 +290,8 @@ ensuring the `gives` and `wants` fields accurately reflect the underlying proven
 
 Authentication is not required for security because the core swap terms
 are cryptographically committed in the proven transaction.
-The maker's expected payments (token types, amounts, and receiving addresses)
-are embedded in their partial transaction and enforced by the ledger.
+The maker's expected payments (token types, amounts, and recipient)
+are committed in the outputs of their partial transaction and enforced by the ledger.
 No amount of metadata tampering can change what the maker actually receives.
 
 Making authentication optional simplifies implementations while preserving
@@ -302,7 +302,10 @@ the option for enhanced metadata integrity when desired.
 ### Metadata in Application Layer
 
 The underlying `zswap::Offer` (as defined in the Offer Files MIP) contains the proven partial transaction,
-which includes the maker's inputs, their expected payment outputs, and the receiving addresses.
+which includes the maker's inputs and their expected payment outputs.
+Each output commits to its recipient, value, and token type.
+These are bound inside the output's coin commitment and encrypted ciphertext.
+
 This MIP adds application-layer metadata for discovery.
 This separation allows the base offer format to remain focused on the cryptographic commitment while enabling rich marketplace functionality.
 
@@ -341,7 +344,7 @@ not from application-layer authentication.
 The maker's partial transaction cryptographically commits to:
 
 - The inputs being spent (what the maker gives)
-- The expected outputs (what the maker receives, including token types, amounts, and receiving addresses)
+- The expected outputs (what the maker receives, including token types, amounts, and recipient)
 
 The taker cannot modify these terms.
 When the merged transaction is submitted, the ledger enforces that commitments balance.
@@ -369,21 +372,10 @@ While on-chain activity is shielded, the indexer is a privacy leak:
 | Data | Visibility |
 | ------ | ------------ |
 | Token types and amounts | Public on indexer |
-| Maker receiving keys | Embedded in the proven transaction |
 | IP addresses | Visible to indexer operator |
 | On-chain transaction details | Shielded |
 
 Users requiring stronger privacy should access indexers via Tor or run their own instance.
-
-### Address Privacy
-
-The maker's receiving address is embedded in their proven transaction
-and can be extracted by anyone who deserializes the offer.
-This includes indexers, takers, and passive observers with access to the offer payload.
-Makers who reuse the same receiving address across multiple offers
-enable observers to correlate those offers to a single identity.
-To mitigate this, makers SHOULD generate a fresh receiving address for each offer.
-This ensures offers are unlinkable even if published on the same indexer.
 
 ### Denial of Service
 
