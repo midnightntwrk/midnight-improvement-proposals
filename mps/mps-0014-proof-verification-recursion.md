@@ -4,7 +4,7 @@ Title: Proof Verification in Compact (recursion)
 Authors: Karmel E - karmoola
 Status: Proposed  
 Category: Core   
-Created: 201-06-2026  
+Created: 02-06-2026  
 Requires: [none]  
 Replaces: [none]  
 
