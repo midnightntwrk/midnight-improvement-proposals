@@ -1,18 +1,14 @@
 ---
-
-MPS: TBD
+MPS: xxxx
 Title: Custodian-Compatible Shielded Wallet Generation
-Category: Core
-Status: Proposed
 Authors:
-
-* Jalal Hannan <Jalal-1>
-* Hector Bulgarini <hbulgarini>
-  Proposed Solutions: []
-  Discussions: []
-  Created: 2026-06-02
-  License: CC-BY-4.0
-
+  - Jalal Hannan <Jalal-1>
+  - Hector Bulgarini <hbulgarini>
+Status: Proposed
+Category: Core
+Created: 02-Jun-2026
+Requires: none
+Replaces: none
 ---
 
 ## Abstract
