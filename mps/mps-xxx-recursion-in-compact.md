@@ -1,8 +1,8 @@
 ---
-MPS: <xxx> # assigned by editors  
-Title: Recusion in Compact
+MPS: "0014" 
+Title: Proof Verification in Compact (recursion)
 Authors: Karmel E - karmoola
-Status: <Status> # All new MPS should be assigned Proposed  
+Status: Proposed  
 Category: Core   
 Created: 201-06-2026  
 Requires: [none]  
