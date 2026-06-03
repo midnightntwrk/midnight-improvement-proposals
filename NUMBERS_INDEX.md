@@ -33,6 +33,8 @@ MPS-0001: (reserved for process document)
 [MPS-0011: native-crypto-primitives](/mps/mps-0011-native-crypto-prims.md)  
 [MPS-0012: account-aliasing](/mps/mps-0012-account-aliasing.md)  
 [MPS-0013: zswap-business-logic](/mps/mps-0013-zswap-business-logic.md)  
+[MPS-0014: proof-verification-recursion](/mps/mps-0014-proof-verification-recursion.md)  
+[MPS-0015: agent-identity](/mps/mps-0015-agent-identity.md)  
 
 # MIPs
 
