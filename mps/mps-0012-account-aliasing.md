@@ -1,3 +1,16 @@
+---
+MPS: "0012"
+Title: Human-Readable Aliasing for Midnight Accounts  
+Authors:
+  - Karmel Elshinnawi <Karmoola>
+  - Nick Stanford <nstanford5>
+Status: Accepted  
+Category: Standards  
+Created: 21-May-2026  
+Requires: none  
+Replaces: none  
+---
+
 <!--
  Copyright 2026 Midnight Foundation
 
@@ -14,19 +27,6 @@
  limitations under the License.
 -->
 
----
-MPS: 0012
-Title: Human-Readable Aliasing for Midnight Accounts  
-Authors:
-  - Karmel Elshinnawi <Karmoola>
-  - Nick Stanford <nstanford5>
-Status: Accepted  
-Category: Standards  
-Created: 21-May-2026  
-Requires: none  
-Replaces: none  
-
----
 
 ## Abstract
 

@@ -70,9 +70,10 @@ with 32-byte components, and 32-byte signing keys.
 
 ### Key management
 
-A new role value (`4`) is introduced in the key derivation hierarchy. This allows a single wallet to
-derive both Schnorr and ECDSA keys under the same account while keeping key material for the two
-schemes strictly separated:
+A new role value (`4`) is introduced in the key derivation hierarchy (see
+[key management specification](https://github.com/midnightntwrk/midnight-architecture/blob/dc972159711251a1a7c073b3e0aa9982058b7131/components/WalletEngine/Specification.md#key-management)).
+This allows a single wallet to derive both Schnorr and ECDSA keys under the same account while
+keeping key material for the two schemes strictly separated:
 
 ```
 m / 44' / 2400' / account' / role / index
@@ -93,10 +94,12 @@ is the compressed SEC1 encoding of a secp256k1 point.
 ### Address generation
 
 The user-facing address format for unshielded tokens is unchanged: Bech32m encoding with the
-`mn_addr` prefix. Address derivation for Schnorr keys is also unchanged: `SHA-256(verifying_key)`,
-where `verifying_key` is the 32-byte BIP-340 x-only public key. ECDSA addresses are derived by
-prefixing the compressed SEC1 verifying key with a domain separator:
-`SHA-256("mn:ecdsa:" ‖ verifying_key)`, where `verifying_key` is the 33-byte compressed SEC1
+`mn_addr` prefix (see
+[address format specification](https://github.com/midnightntwrk/midnight-architecture/blob/dc972159711251a1a7c073b3e0aa9982058b7131/components/WalletEngine/Specification.md#unshielded-payment-address)).
+Address derivation for Schnorr keys is also unchanged: `SHA-256(verifying_key)`, where
+`verifying_key` is the 32-byte BIP-340 x-only public key. ECDSA addresses are derived by prefixing
+the compressed SEC1 verifying key with a domain separator:
+`SHA-256("midnight:ecdsa" ‖ verifying_key)`, where `verifying_key` is the 33-byte compressed SEC1
 encoding. This keeps the address format identical at the wire level (32 bytes) but binds each
 address to a specific authorization scheme.
 
@@ -105,7 +108,9 @@ address to a specific authorization scheme.
 Signatures and verifying keys appear in the following transaction structures: claim-rewards
 transactions, unshielded offers, UTXO spends, UTXO outputs (via the recorded owner address),
 contract maintenance authorities (set on contract deploy and updatable via maintenance updates), and
-contract maintenance updates:
+contract maintenance updates (see
+[Midnight Ledger Specification](https://github.com/midnightntwrk/midnight-ledger/tree/730dba0875e75bb317e3ac81200326ef634249be/spec)
+for reference):
 
 ```rust
 struct ClaimRewardsTransaction {
@@ -181,9 +186,10 @@ The ledger validation rules are extended as follows:
 
 ### DApp Connector API
 
-The DApp Connector API requires a single change: the return type of `signData` is extended with a
-`scheme` discriminator identifying the signature scheme used. The field is initially optional, with
-the default value `schnorr_bip340`; a future major version bump of the API will make it mandatory.
+[The DApp Connector API](https://github.com/midnightntwrk/midnight-dapp-connector-api/blob/dc772165869a62bd0c9b3a8f1389956a0e9f8b5c/SPECIFICATION.md)
+requires a single change: the return type of `signData` is extended with a `scheme` discriminator
+identifying the signature scheme used. The field is initially optional, with the default value
+`schnorr_bip340`; a future major version bump of the API will make it mandatory.
 
 ```typescript
 export type Signature = {
@@ -222,10 +228,10 @@ considered and rejected:
   from the same key, compromising the secret key and any funds it controls.
 
 **Address-level binding.** The domain separator in the ECDSA address-derivation rule
-(`SHA-256("mn:ecdsa:" ‖ verifying_key)`) ensures that even if a signing party were to accidentally
-produce both Schnorr and ECDSA signatures over an identical secret scalar, the two would resolve to
-different on-chain addresses. This provides a second line of defense beyond key-derivation
-separation.
+(`SHA-256("midnight:ecdsa" ‖ verifying_key)`) ensures that even if a signing party were to
+accidentally produce both Schnorr and ECDSA signatures over an identical secret scalar, the two
+would resolve to different on-chain addresses. This provides a second line of defense beyond
+key-derivation separation.
 
 **Opt-in adoption.** This MIP enables ECDSA support while keeping Schnorr the primary signature
 scheme; it does not mandate ECDSA. The minimal surface change in the DApp Connector reflects this
@@ -243,7 +249,8 @@ The MIP transitions to Active once the following are met:
    deployed in the corresponding `midnight-node` release; the new transaction format is the
    canonical wire format for that release.
 2. **Wallet SDK.** A released version of the wallet SDK supports the new role-`4` derivation path,
-   ECDSA address derivation with the `"mn:ecdsa:"` domain separator, and signing for both schemes.
+   ECDSA address derivation with the `"midnight:ecdsa"` domain separator, and signing for both
+   schemes.
 3. **DApp Connector.** A released version of `@midnight-ntwrk/dapp-connector-api` includes the
    optional `scheme` discriminator on `signData` responses.
 4. **Test vectors.** Test vectors covering ECDSA key derivation and address derivation are published
@@ -292,7 +299,7 @@ by:
 
 1. Separate BIP-44 roles for Schnorr (`0`/`1`) and ECDSA (`4`), so derivation never yields the same
    scalar under different schemes.
-2. Distinct address derivation (`SHA-256("mn:ecdsa:" ‖ vk)` vs. `SHA-256(vk)`), so even an
+2. Distinct address derivation (`SHA-256("midnight:ecdsa" ‖ vk)` vs. `SHA-256(vk)`), so even an
    accidental cross-scheme signing would address different UTXOs.
 
 **Within-scheme nonce reuse.** ECDSA signing uses deterministic nonces per RFC 6979, eliminating
@@ -358,6 +365,15 @@ the same test vectors — should be exercised via the integration test suite.
 - [SEC 1 v2 — Elliptic Curve Cryptography](https://www.secg.org/sec1-v2.pdf)
 - [RFC 6979 — Deterministic Usage of DSA and ECDSA](https://datatracker.ietf.org/doc/html/rfc6979)
 - [ADR-0017 — Signature scheme](https://github.com/midnightntwrk/midnight-architecture/blob/main/adrs/0017-signature-scheme.md)
+- [Midnight Wallet Specification](https://github.com/midnightntwrk/midnight-architecture/blob/dc972159711251a1a7c073b3e0aa9982058b7131/components/WalletEngine/Specification.md#unshielded-payment-address)
+- [Midnight Ledger Specification](https://github.com/midnightntwrk/midnight-ledger/tree/730dba0875e75bb317e3ac81200326ef634249be/spec),
+  most notably
+  [transaction structure](https://github.com/midnightntwrk/midnight-ledger/blob/730dba0875e75bb317e3ac81200326ef634249be/spec/intents-transactions.md)
+  and
+  [preliminaries](https://github.com/midnightntwrk/midnight-ledger/blob/730dba0875e75bb317e3ac81200326ef634249be/spec/preliminaries.md)
+- [Midnight DApp Connector API](https://github.com/midnightntwrk/midnight-dapp-connector-api) and
+  its
+  [specification](https://github.com/midnightntwrk/midnight-dapp-connector-api/blob/dc772165869a62bd0c9b3a8f1389956a0e9f8b5c/SPECIFICATION.md)
 
 ## Acknowledgements
 
