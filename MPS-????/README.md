@@ -1,7 +1,7 @@
 ---
-MPS: ????
+MPS: "0017"
 Title: Governance Observability for Builders
-Status: Open
+Status: Proposed
 Category: Tools
 Authors:
   - Noel Rimbert (noelrim)
