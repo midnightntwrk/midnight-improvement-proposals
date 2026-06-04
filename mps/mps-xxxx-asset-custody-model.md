@@ -15,7 +15,7 @@
 -->
 
 ---
-MPS: <Number> # assigned by editors
+MPS: "0018"
 Title: Multi-key Account Custody for Midnight-Native Assets
 Authors: Hector Bulgarini (hbulgarini), Nicolas Di Prima (NicolasDP)
 Status: Proposed
