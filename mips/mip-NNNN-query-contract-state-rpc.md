@@ -77,8 +77,8 @@ Both halves are part of the encoded form, so a `PathKey` constructed from `u8(0)
 
 The wire form of a `PathKey` is:
 
-- `"0x" + hex(tagged_serialize(av))`, lowercase hex, even length, with the leading `0x` prefix REQUIRED.
-- `tagged_serialize` is the tagged binary format defined in `midnight-serialize`. The tag carries the AlignedValue type identifier and version, so a future ledger upgrade that changes the untagged byte layout fails cleanly at deserialize rather than silently mis-decoding.
+- `"0x" + hex(serialize_untagged(av))`, lowercase hex, even length, with the leading `0x` prefix REQUIRED.
+- `serialize_untagged` is the untagged binary form defined in `midnight-serialize`: the alignment-and-value byte sequence produced by `AlignedValue::serialize` without the `midnight-serialize` type-tag prefix.
 - The hex-decoded byte length of each `PathKey` MUST NOT exceed `MAX_KEY_BYTES` (see [Limits](#limits)).
 - A `path` array MUST NOT be empty and MUST contain at most `MAX_PATH_DEPTH` entries (see [Limits](#limits)).
 
@@ -92,7 +92,7 @@ The wire form of a `PathKey` is:
 }
 ```
 
-Exactly one of `value` and `error` MUST be set on the wire. `value`, when present, is `"0x" + hex(tagged_serialize(resolved_state_value))`. `query` echoes the input query verbatim so callers can correlate responses without external state.
+Exactly one of `value` and `error` MUST be set on the wire. `value`, when present, is `"0x" + hex(serialize_untagged(resolved_state_value))`. `query` echoes the input query verbatim so callers can correlate responses without external state.
 
 ### Navigation semantics
 
@@ -108,7 +108,7 @@ The server starts at the contract's `StateValue` root (call it `current`). For e
 After all steps:
 
 - If `current` is `Array`, `Map`, or `BoundedMerkleTree`, yield a per-query error: "path resolves to a collection; provide a deeper path." The intent of this method is to return concrete field values; allowing a collection return would let a single query inflate the response to an unbounded size.
-- Otherwise return `value = "0x" + hex(tagged_serialize(current))`.
+- Otherwise return `value = "0x" + hex(serialize_untagged(current))`.
 
 #### Example: reading a counter `Cell`
 
@@ -129,7 +129,7 @@ To read `counter`, the client encodes the field index as `AlignedValue::from(2u8
   "params": [
     "<contract_address_hex>",
     [
-      { "path": ["0x<tagged hex of AlignedValue::from(2u8)>"] }
+      { "path": ["0x<untagged hex of AlignedValue::from(2u8)>"] }
     ]
   ]
 }
@@ -140,7 +140,7 @@ Server-side traversal:
 | step | `current` before        | key   | `current` after          |
 | ---  | ---                     | ---   | ---                      |
 | 1    | `Array(3) [...]`        | `u8(2)` | `Cell(AlignedValue: u64)` |
-| end  | `Cell` (leaf)           |       | return `tagged_serialize(Cell)` |
+| end  | `Cell` (leaf)           |       | return `serialize_untagged(Cell)` |
 
 Response:
 
@@ -149,13 +149,13 @@ Response:
   "result": [
     {
       "query": { "path": [...] },
-      "value": "0x<tagged hex of Cell(AlignedValue: u64)>"
+      "value": "0x<untagged hex of Cell(AlignedValue: u64)>"
     }
   ]
 }
 ```
 
-The client deserializes `value` back into a `StateValue` via the same `tagged_deserialize` routine the server used to produce it.
+The client deserializes `value` back into a `StateValue` via the untagged `Deserializable::deserialize` routine matching the server's `serialize_untagged`.
 
 Reading an entry from `balances` is a two-step path `[u8(1), Fr(<map_key>)]`: the first step navigates the top-level `Array` to the `Map` at field index 1, the second looks up the requested key inside the `Map`.
 
@@ -214,7 +214,7 @@ This RPC is a strict reduction of the over-fetch surface introduced by `midnight
 The reference implementation in `midnightntwrk/midnight-node` consists of:
 
 - A JSON-RPC method on the `MidnightApi` trait (`pallets/midnight/rpc/src/lib.rs`).
-- A wrapped wire type `PathKey(AlignedValue)` with serde impls that round-trip through tagged hex.
+- A wrapped wire type `PathKey(AlignedValue)` with serde impls that round-trip through untagged hex.
 - A runtime API method, `get_state_key`, that exposes the contract-state storage prefix (`pallets/midnight/src/runtime_api.rs`). This is a convenience, not a requirement: the same prefix can be read through substrate's storage API at any block hash. See [Backwards Compatibility Assessment](#backwards-compatibility-assessment).
 - A bridge function that walks the contract's `StateValue` tree lazily against ParityDB (`ledger/src/versions/common/mod.rs`).
 - OpenRPC entries and JSON schemas (`node/src/openrpc.rs`, regenerated `docs/openrpc.json`).
