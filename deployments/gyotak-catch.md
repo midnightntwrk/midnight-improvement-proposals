@@ -356,7 +356,7 @@ deploy wallet holds ≈ 382,307 DUST (verified read-only on the Mainnet indexer)
 so fee dust is not a constraint there.
 
 Preprod v2 address: `374df4da76f1fde6b0d73d94d0bba01f90f7194e8b04d57320d2ba6b37cfecd5`.
-Mainnet v2 address: «TBD (post-authorization)».
+Mainnet v2 address: `5f87dd3078d5938ae83a54161e549ee9f3e1a6ebd7640a527f0d674fb43741f7` (deployed 2026-06-04, block 1106629, tx `00defd999937a9ef9164b4710a6236f43efef3e4ae3b042e7e91b43c4d9645cd27`, owner == pk-A verified on the Mainnet indexer).
 
 ## 6. Operational posture
 
