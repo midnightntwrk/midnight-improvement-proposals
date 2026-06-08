@@ -14,19 +14,22 @@ auction closes the winner claims the shielded NFT, the auction house claims a
 10 % platform fee, the seller claims the remaining pot, and losing bidders
 reclaim their escrowed tokens.
 
-Three Compact contracts make up a deployed auction:
+Two Compact contracts are deployed per auction:
 
-- **Token contract** (deployed once per platform instance) — a mint-capped
-  shielded fungible token used as the bid denomination. Distribution for this
-  demo is via a faucet circuit; the token has no on-chain peg to any external
-  asset and is intended only for in-platform bidding.
-- **NFT contract** (one per auction) — mints a single shielded coin whose color
-  uniquely identifies the artwork; stores artwork metadata (name, description,
-  image URI, media type, edition) on the public ledger.
-- **Auction contract** (one per auction) — manages the full auction lifecycle:
-  NFT deposit, shielded-token bid escrow into a single accumulated `bid_pot`,
-  commit-reveal winner determination, NFT transfer to winner, payment split to
-  seller and auction house, and refunds to non-winners.
+- **NFT contract** — mints a single shielded coin whose color uniquely
+  identifies the artwork; stores artwork metadata (name, description, image URI,
+  media type, edition) on the public ledger.
+- **Auction contract** — manages the full auction lifecycle: NFT deposit,
+  shielded-token bid escrow into a single accumulated `bid_pot`, commit-reveal
+  winner determination, NFT transfer to winner, payment split to seller and
+  auction house, and refunds to non-winners. The auction is parameterized with
+  the bid-token color at construction.
+
+The bid denomination is a mint-capped shielded fungible token deployed
+separately as a platform-wide prerequisite, not as part of any individual
+auction's initialization. Distribution for this demo is via a faucet circuit;
+the token has no on-chain peg to any external asset and is intended only for
+in-platform bidding.
 
 ---
 
