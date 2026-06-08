@@ -1,5 +1,5 @@
 ---
-MPS: 0012
+MPS: "0012"
 Title: Human-Readable Aliasing for Midnight Accounts  
 Authors:
   - Karmel Elshinnawi <Karmoola>

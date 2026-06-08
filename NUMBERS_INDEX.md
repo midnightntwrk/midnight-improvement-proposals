@@ -32,6 +32,9 @@ MPS-0001: (reserved for process document)
 [MPS-0010: sig-verify-ecdsa](/mps/mps-0010-sig-verify-ecdsa.md)  
 [MPS-0011: native-crypto-primitives](/mps/mps-0011-native-crypto-prims.md)  
 [MPS-0012: account-aliasing](/mps/mps-0012-account-aliasing.md)  
+[MPS-0013: zswap-business-logic](/mps/mps-0013-zswap-business-logic.md)  
+[MPS-0014: proof-verification-recursion](/mps/mps-0014-proof-verification-recursion.md)  
+[MPS-0015: agent-identity](/mps/mps-0015-agent-identity.md)  
 
 # MIPs
 
@@ -39,3 +42,5 @@ MPS-0001: (reserved for process document)
 [MIP-0002: public-contract-log-emission](/mips/mip-0002-public-contract-log-emission.md)  
 [MIP-0003: ECDSA-support](/mips/mip-0003-ecdsa-support.md)   
 [MIP-0004: fungible-token-standard-with-utxo](/mips/mip-0004-fungible-token-standard-with-utxo.md)  
+[MIP-0005: offer-files](/mips/mip-0005-offer-files.md)  
+[MIP-0006: p2p-atomic-swaps](/mips/mip-0006-p2p-atomic-swaps.md)  
