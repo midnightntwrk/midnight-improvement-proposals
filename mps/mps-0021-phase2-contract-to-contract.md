@@ -10,7 +10,7 @@ Replaces: [none]
 
 ---
 
-# C2C Phase 2
+# Contract to Contract -- Phase 2
 
 ## **Abstract**
 
