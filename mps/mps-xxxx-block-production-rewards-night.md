@@ -4,7 +4,7 @@ Title: Block Production Rewards in NIGHT
 Authors: Karmel E - karmoola
 Status: Proposed  
 Category: Core   
-Created: 02-06-2026  
+Created: 06-08-2026  
 Requires: [none]  
 Replaces: [none]  
 
