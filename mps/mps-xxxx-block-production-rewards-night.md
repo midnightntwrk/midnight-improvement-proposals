@@ -1,5 +1,5 @@
 ---
-MPS: "xxxx" 
+MPS: "0019" 
 Title: Block Production Rewards in NIGHT
 Authors: Karmel E - karmoola
 Status: Proposed  
@@ -21,13 +21,13 @@ An existing Cardano SPO can estimate expected rewards before committing, watch t
 
 ## **Problem**
 
-At mainnet launch, blocks are produced by a permissioned. Reward mechanics become load-bearing only as the network decentralizes and Cardano SPOs earn NIGHT. 
+At mainnet launch, blocks are produced by permissioned validators. Reward mechanics become load-bearing only as the network decentralizes and Cardano SPOs earn NIGHT. 
 
 ## **The Gaps**
 
 **Forecasting before joining:** An SPO weighing participation wants to estimate likely rewards given their stake and network conditions. No exposed data or method exists, so the decision is blind.
 
-**Monitoring an active poo:.** A participating SPO wants to watch rewards accrue per block and epoch, confirm correct linkage, and know when they can withdraw. No public, fresh, complete query interface keyed to stake address exists.
+**Monitoring an active pool:** A participating SPO wants to watch rewards accrue per block and epoch, confirm correct linkage, and know when they can withdraw. No public, fresh, complete query interface keyed to stake address exists.
 
 **Getting paid:** An SPO wants to claim rewards into spendable mNIGHT via a CLI/SDK flow close to Cardano's, proving ownership, with fees handled and no dust outputs. No withdrawal path exists, so rewards are stranded.
 
