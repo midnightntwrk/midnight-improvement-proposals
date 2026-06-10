@@ -10,7 +10,7 @@ Replaces: [none]
 
 ---
 
-# Benchmarking - Improvements
+# Benchmarking -- Improvements
 
 ## **Abstract**
 
