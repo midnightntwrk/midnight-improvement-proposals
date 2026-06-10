@@ -1,6 +1,6 @@
 ---
 MPS: "0014" 
-Title: Proof Verification in Compact (recursion)
+Title: Proof Verification in Compact
 Authors: Karmel E - karmoola
 Status: Proposed  
 Category: Core   
@@ -9,7 +9,7 @@ Requires: [none]
 Replaces: [none]  
 
 ---
-# MPS: Recursion in Compact
+# MPS: Proof Verification in Compact
 
 ## **Abstract**
 
