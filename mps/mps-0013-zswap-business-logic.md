@@ -65,7 +65,7 @@ The current Midnight architecture does not yet support the regulated requirement
 
 1. Regulated asset classes become launchable
 2. Lower cost and faster time-to-launch for compliant assets
-3. Midnight becomes a credible venue for institutional tokenization
-4. A consistent due diligence framework (predictable disclosure and reconciliation behaviors across every compliant asset) for auditors and regulators
-5. Privacy and compliance stop being a tradeoff
-6. The broader builder ecosystem (developers who want to build non-privacy-preserving dapps) is unaffected
+3. The broader builder ecosystem (developers who want to build non-privacy-preserving dapps) is unaffected
+
+## Acceptance Criteria: 
+A regulated issuer can perform mint, burn, freeze, force transfer (seize), holder eligibility, and updatable restrictions on a shielded asset without bespoke per asset cryptographic engineering
