@@ -1,9 +1,9 @@
 ---
-MIP: xxxx
+MIP: 0007
 Title: Midnight Name Service — Canonical Registry and Resolver Standard
 Authors:
   - Midnames (midnames)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-05-28
 Requires: none
