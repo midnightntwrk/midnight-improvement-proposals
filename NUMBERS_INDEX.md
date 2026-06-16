@@ -35,6 +35,12 @@ MPS-0001: (reserved for process document)
 [MPS-0013: zswap-business-logic](/mps/mps-0013-zswap-business-logic.md)  
 [MPS-0014: proof-verification-recursion](/mps/mps-0014-proof-verification-recursion.md)  
 [MPS-0015: agent-identity](/mps/mps-0015-agent-identity.md)  
+[MPS-0016: custodian-shielded-wallet-generation](/mps/mps-0016-custodian-shielded-wallet-generation.md)  
+MPS-0017: governance-observability (in review)  
+[MPS-0018: asset-custody-model](/mps/mps-0018-asset-custody-model.md)  
+[MPS-0019: block-production-rewards-night](/mps/mps-0019-block-production-rewards-night.md)  
+[MPS-0020: performance-benchmarking-improvements](/mps/mps-0020-performance-benchmarking-improvements.md)  
+[MPS-0021: contract-to-contract-phase-2](/mps/mps-0021-phase2-contract-to-contract.md)  
 
 # MIPs
 
