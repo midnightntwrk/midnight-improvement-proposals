@@ -8,14 +8,14 @@ This repository is the canonical home for Midnight's open development documents.
 
 - **[`mips/`](./mips)** — **Midnight Improvement Proposals**. Concrete, technically-precise proposals to change the Midnight ecosystem. See [`mips/mip-template.md`](./mips/mip-template.md) and [MIP-0001](./mips/mip-0001-mip-process.md) for the full process.
 - **[`mps/`](./mps)** — **Midnight Problem Statements**. Solution-agnostic descriptions of friction, gaps, or opportunities in the ecosystem. MPS documents define *what* needs solving; MIPs propose *how*. See [`mps/mps-template.md`](./mps/mps-template.md).
-- **[`deployments/`](./deployments)** — Records of contracts and applications deployed on Midnight, contributed by ecosystem teams. This is a temporary process for MNF internal review of the [contract-deploy-rubric](./mps/contract-deployment-rubric.md) -- no community review is required.
+- **[`deployments/`](./deployments)** — Records of contracts and applications deployed on Midnight, contributed by ecosystem teams. This is a temporary process for MNF internal review of the [contract-deploy-rubric](./mps/contract-deployment-rubric.md) -- no community review is required. *Contract deploy requests are **not** audits!*
 - **[`NUMBERS_INDEX.md`](./NUMBERS_INDEX.md)** — Canonical index of assigned MIP and MPS numbers. Maintainers of this repository should reference this index for the next available number
 
 ## How to contribute
 
 1. **Open a discussion first** if you'd like early feedback — via the [Discussions tab](../../discussions) of this repository or our [Discord](https://discord.com/invite/midnightnetwork).
 2. **Fork this repository** and copy the appropriate template (`mip-template.md` or `mps-template.md`).
-3. **Submit a Pull Request** with your draft. Use `xxxx` in place of a number — an editor will assign one prior to merging.
+3. **Submit a Pull Request** with your draft. Use `xxxx` in place of a number — an editor will assign one prior to merging. If you are aware of the proper relevant reviewer for a particular topic, assing them for review -- otherwise, leave the asignees blank and it will auto-populate with the MIP editor group.
 4. **Engage with reviewers.** Discussion happens in the Discussions tab of this repository. MIP Editors will help shepherd your proposal through the [process stages](./mips/mip-0001-mip-process.md): *Proposed → Review → Accepted → Implemented*.
 
 Pull requests should describe the change, not implement it — link to code repositories rather than including implementation code.
