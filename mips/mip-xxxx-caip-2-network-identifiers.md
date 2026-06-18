@@ -1,5 +1,5 @@
 ---
-MIP: XXXX
+MIP: 0008
 Title: CAIP-2 Network Identifiers for Midnight
 Authors:
   - alba-press (alba-press)
