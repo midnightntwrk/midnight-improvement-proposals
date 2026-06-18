@@ -226,6 +226,11 @@ The trade-off is that the wire bytes carry no `[vN]` discriminator. Clients are 
 
 ### Acceptance Criteria
 
+The MIP transitions to Active once the following are met:
+
+- The `midnight_queryContractState` RPC implementation is merged into `midnight-node`;
+- The method is registered in the node's OpenRPC document for the corresponding release, so SDKs and tooling can discover and call it.
+
 ### Implementation Plan
 
 - `midnight-node`: ship the reference implementation of the JSON-RPC method, register it in the node's OpenRPC document, and add end-to-end coverage.
