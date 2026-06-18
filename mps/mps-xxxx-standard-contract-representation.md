@@ -1,5 +1,5 @@
 ---
-MPS: xxxx # assigned by editors
+MPS: "0022"
 Title: A Standard, Language-Agnostic Representation of Compiled Compact Contracts
 Authors: Rodrigo Quelhas @RomarQ
 Status: Proposed
