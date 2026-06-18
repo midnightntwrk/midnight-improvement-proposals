@@ -41,6 +41,9 @@ MPS-0017: governance-observability (in review)
 [MPS-0019: block-production-rewards-night](/mps/mps-0019-block-production-rewards-night.md)  
 [MPS-0020: performance-benchmarking-improvements](/mps/mps-0020-performance-benchmarking-improvements.md)  
 [MPS-0021: contract-to-contract-phase-2](/mps/mps-0021-phase2-contract-to-contract.md)  
+[MPS-0022: language-agnostic-compiled-compact-representation](/mps/mps-0022-standard-contract-representation.md)  
+[MPS-0023: rwa-standard-interface](/mps/mps-0023-rwa-standard-interface.md)  
+[MPS-0024: custodian-safe-shielded-spends](/mps/mps-0024-custodian-safe-shielded-spends.md)  
 
 # MIPs
 
@@ -51,3 +54,4 @@ MPS-0017: governance-observability (in review)
 [MIP-0005: offer-files](/mips/mip-0005-offer-files.md)  
 [MIP-0006: p2p-atomic-swaps](/mips/mip-0006-p2p-atomic-swaps.md)  
 [MIP-0007: name-service-registry](/mips/mip-0007-name-service-registry-and-resolver.md)  
+[MIP-0008: caip-2-network-ids](/mips/mip-0008-caip-2-network-identifiers.md)  
