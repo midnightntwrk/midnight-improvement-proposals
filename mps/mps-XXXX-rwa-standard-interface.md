@@ -15,7 +15,7 @@
 -->
 
 ---
-MPS: XXXX  
+MPS: "0023"  
 Title: Standard Interface for Privacy-Preserving Real World Assets  
 Authors: Muhammad Zidan Fatonie (mzf11125)
 Status: Proposed  
