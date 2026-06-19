@@ -1,3 +1,15 @@
+---
+MPS: <Number> # assigned by editors  
+Title: <Problem Statement Title>  
+Authors: <Name> <github-username>  
+Status: <Status> # All new MPS should be assigned Proposed  
+Category: <Core | Libraries and Tooling | Standards | Networking | Governance | Ecosystem>  
+Created: DD-MMM-YYYY  
+Requires: [List of other MPS or MIP this MPS depends on, or "none"]  
+Replaces: [List of MPS that this one replaces, or "none"]  
+
+---
+
 <!--
  Copyright [YEAR] Midnight Foundation
  
@@ -14,17 +26,6 @@
  limitations under the License.
 -->
 
----
-MPS: <Number> # assigned by editors  
-Title: <Problem Statement Title>  
-Authors: <Name> <github-username>  
-Status: <Status> # All new MPS should be assigned Proposed  
-Category: <Core | Libraries and Tooling | Standards | Networking | Governance | Ecosystem>  
-Created: DD-MMM-YYYY  
-Requires: [List of other MPS or MIP this MPS depends on, or "none"]  
-Replaces: [List of MPS that this one replaces, or "none"]  
-
----
 
 ## Abstract
 
