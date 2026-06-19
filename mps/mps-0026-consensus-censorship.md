@@ -1,3 +1,14 @@
+---
+MPS: "0026"
+Title: Censorship Vulnerabilities in Deterministic Block Producer Selection
+Authors: Bob Blessing-Hartley @bob-blessing-hartley, Dominik Zajkowski @dzajkowski, Jon Rossie @jon-rossie
+Status: Proposed
+Category: Core
+Created: 29-Apr-2026
+Requires: none
+Replaces: none
+
+---
 <!--
  Copyright 2026 Midnight Foundation
  
@@ -14,17 +25,6 @@
  limitations under the License.
 -->
 
----
-MPS: "0026"
-Title: Censorship Vulnerabilities in Deterministic Block Producer Selection
-Authors: Bob Blessing-Hartley @bob-blessing-hartley, Dominik Zajkowski @dzajkowski, Jon Rossie @jon-rossie
-Status: Proposed
-Category: Core
-Created: 29-Apr-2026
-Requires: none
-Replaces: none
-
----
 
 ## Abstract
 
