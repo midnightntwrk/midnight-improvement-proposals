@@ -44,6 +44,7 @@ MPS-0017: governance-observability (in review)
 [MPS-0022: language-agnostic-compiled-compact-representation](/mps/mps-0022-standard-contract-representation.md)  
 [MPS-0023: rwa-standard-interface](/mps/mps-0023-rwa-standard-interface.md)  
 [MPS-0024: custodian-safe-shielded-spends](/mps/mps-0024-custodian-safe-shielded-spends.md)  
+[MPS-0025: shielded-source-of-funds-evidence](/mps/mps-0025-shielded-source-of-funds.md)  
 
 # MIPs
 
