@@ -1,3 +1,14 @@
+---
+MPS: "0023"  
+Title: Standard Interface for Privacy-Preserving Real World Assets  
+Authors: Muhammad Zidan Fatonie (mzf11125)
+Status: Proposed  
+Category: Standards  
+Created: 11-Jun-2026  
+Requires: none  
+Replaces: none  
+
+---
 <!--
  Copyright 2026 Midnight Foundation
 
@@ -14,17 +25,6 @@
  limitations under the License.
 -->
 
----
-MPS: "0023"  
-Title: Standard Interface for Privacy-Preserving Real World Assets  
-Authors: Muhammad Zidan Fatonie (mzf11125)
-Status: Proposed  
-Category: Standards  
-Created: 11-Jun-2026  
-Requires: none  
-Replaces: none  
-
----
 
 ## Abstract
 
