@@ -15,7 +15,7 @@
 -->
 
 ---
-MPS: xxxx
+MPS: "0026"
 Title: Censorship Vulnerabilities in Deterministic Block Producer Selection
 Authors: Bob Blessing-Hartley @bob-blessing-hartley, Dominik Zajkowski @dzajkowski, Jon Rossie @jon-rossie
 Status: Proposed
