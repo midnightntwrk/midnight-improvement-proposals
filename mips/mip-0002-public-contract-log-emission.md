@@ -35,7 +35,7 @@ Consumers must poll contract state, diff serialized values, and reverse-engineer
 The infrastructure for log emission already exists but is disconnected: the Impact VM provides a `Log` opcode (0x09), the ledger wraps logged values as `EventDetails::ContractLog`, and the indexer discards them.
 
 This MIP connects the pipeline.
-The Compact language gains a `log` expression — proposed separately as [CoIP-xxxx](https://github.com/LFDT-Minokawa/compact/pull/442) — which compiles to the existing `Log` opcode.
+The Compact language gains an `emit` expression — proposed separately as [CoIP-xxxx](https://github.com/LFDT-Minokawa/compact/pull/442) — which compiles to the existing `Log` opcode.
 The ledger wraps payloads in a versioned envelope (`VersionedLogItem`), extending the `Log` opcode's data field while maintaining backwards compatibility.
 The indexer surfaces events via GraphQL.
 
@@ -236,6 +236,12 @@ For custom events (`Misc`) and future user-defined event types, a more flexible 
 This requires ZKIR-on-chain integration that is not yet in place.
 The current design is compatible with this path — `VersionedLogItem` and `LogEventType` do not preclude IR-based resolution in a future iteration.
 
+**Why `emit` keyword?**
+
+The Compact keyword was originally proposed as `emit`, then changed to `log` during drafting.
+The [Compact TC](https://github.com/LFDT-Minokawa/compact/blob/main/meetings/2026-06-03.md) reverted to `emit`, deeming it the most expressive name for the use case.
+The underlying VM opcode remains `Log` (0x09); only the Compact surface syntax is affected.
+
 **Why events are not consensus state?**
 
 Events are a notification mechanism, not a state commitment.
@@ -250,7 +256,7 @@ This proposal covers two layers of the event data flow:
 
 1. **Contract events** — the emission mechanism.
 A contract decides what happened and emits a structured record.
-Covered by `log`, `VersionedLogItem`, and disclosure rules.
+Covered by `emit`, `VersionedLogItem`, and disclosure rules.
 2. **Event stream access** — the query and subscription API.
 Consumers fetch or subscribe to events by contract, type, or indexed prefix.
 Covered by the indexer's GraphQL surface.
@@ -291,7 +297,7 @@ This is a significant change to how the indexer operates and can be pursued inde
 The workstreams are:
 
 - **Ledger**: adds `LogEventType` enum and `VersionedLogItem` parsing. Bumps `EventDetails` serialization tag. Prototype available in [Midnight Ledger PR](https://github.com/midnightntwrk/midnight-ledger/pull/503/changes).
-- **Compact compiler**: adds the `log` expression (proposed separately as [CoIP-xxxx](https://github.com/LFDT-Minokawa/compact/pull/442)). Maps standard event structs to `LogEventType` variants. Compact work tracked in [Compact issue](https://github.com/LFDT-Minokawa/compact/issues/377).
+- **Compact compiler**: adds the `emit` expression (proposed separately as [CoIP-xxxx](https://github.com/LFDT-Minokawa/compact/pull/442)). Maps standard event structs to `LogEventType` variants. Compact work tracked in [Compact issue](https://github.com/LFDT-Minokawa/compact/issues/377).
 - **Indexer**: removes the `ContractLog { .. } => None` filter, adds `Contract` variant to `LedgerEventGrouping`, adds storage and GraphQL surface. Ships with built-in schema knowledge for all `LogEventType` variants.
 - **SDK & Toolkit**: `compact-js` captures log events from circuit execution. `midnight-js` exposes event queries and subscriptions. The toolkit surfaces events to DApp developers and decodes event payloads.
 
@@ -329,7 +335,7 @@ Consumers must treat them accordingly, a malicious contract can emit misleading 
 This is inherent to any event system and not specific to this proposal.
 
 **Disclosure:**
-`log` is a disclosure site.
+`emit` is a disclosure site.
 The compiler enforces that all emitted fields are already disclosed.
 No new private data leakage is introduced, events carry values that are already public.
 
@@ -351,7 +357,7 @@ Malformed payloads are handled as parsing failures.
 - Parse `Log` opcode payload into `VersionedLogItem` during transaction application. Malformed payloads are handled as parsing failures.
 
 **Compact compiler** (proposed separately as [CoIP-xxxx](https://github.com/LFDT-Minokawa/compact/pull/442)):
-- Add `log` expression to parser, type checker, and code generator.
+- Add `emit` expression to parser, type checker, and code generator.
 - Map standard event structs to `LogEventType` variants.
 - Reject unknown variants in Phase 1.
 - Generate TypeScript descriptors for `Misc` events.
@@ -379,7 +385,7 @@ Malformed payloads are handled as parsing failures.
 - `LogEventType` enum: each variant maps to the correct standard event schema.
 
 **Compiler:**
-- `log` expression: emits correct `Log` opcode with `VersionedLogItem` payload.
+- `emit` expression: emits correct `Log` opcode with `VersionedLogItem` payload.
 - Disclosure enforcement: undisclosed fields produce compilation error.
 - Standard event structs map to correct `LogEventType` variants.
 - `Misc` variant accepts arbitrary struct data.
@@ -402,7 +408,7 @@ Malformed payloads are handled as parsing failures.
 - [Wallet Engine Specification — Indexing Service for Dust](https://github.com/midnightntwrk/midnight-architecture/blob/main/components/WalletEngine/Specification.md#indexing-service-for-dust)
 - [Monero View Tags](https://github.com/monero-project/research-lab/issues/73)
 - [Ethereum Logs and Events](https://docs.soliditylang.org/en/latest/abi-spec.html#events)
-- [CoIP-xxxx: Compact `log` expression](https://github.com/LFDT-Minokawa/compact/pull/442)
+- [CoIP-xxxx: Compact `emit` expression](https://github.com/LFDT-Minokawa/compact/pull/442)
 
 ## Acknowledgements
 
@@ -433,8 +439,8 @@ struct ShieldedSpend {
 
 struct ShieldedReceive {
     commitment: Bytes<32>,        // hint: indexed
-    contractAddress: Maybe<ContractAddress>,
-    ciphertext: Maybe<Bytes<512>> // hint: indexed
+    ciphertext: Maybe<Bytes<512>>,// hint: indexed
+    contractAddress: Maybe<ContractAddress>
 }
 
 struct ShieldedMint {
@@ -551,7 +557,7 @@ Sustained saturation is unlikely: events share the write budget with ledger stat
 
 Contract log events flow through the same indexer pipeline as existing event types (Zswap, Dust).
 The pipeline itself is unchanged, but the additional data volume will increase storage and query load on the indexer.
-The magnitude depends on event adoption — contracts without `log` produce no additional load.
+The magnitude depends on event adoption — contracts without `emit` produce no additional load.
 
 # Appendix C. Zerocash Example
 
@@ -597,10 +603,10 @@ To detect spends, a consumer must poll the full state, diff Merklized structures
 circuit spend(dest_public_key: public_key, input_coin: coin_info): [] {
   // ... existing logic unchanged ...
 
-  log(ShieldedSpend { nullifier: disclose(old_nullifier) });
+  emit(ShieldedSpend { nullifier: disclose(old_nullifier) });
 }
 ```
 
 `old_nullifier` is already disclosed.
-The `log` adds no new information — the data is already available on-chain.
+The `emit` adds no new information — the data is already available on-chain.
 The difference is that the contract is now explicit about which state changes are important, and consumers can discover them without knowledge of the contract's internal state layout.

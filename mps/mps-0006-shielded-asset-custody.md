@@ -1,3 +1,17 @@
+---
+MPS: 0006  
+Title: Institutional Custody for Native Shielded Assets (ZSwap)  
+Category: Core  
+Status: Proposed  
+Authors:
+  - Jalal Hannan <Jalal-1>
+  - Hector Bulgarini <hbulgarini>  
+Proposed Solutions: []  
+Discussions: []  
+Created: 2026-05-06  
+License: CC-BY-4.0  
+---
+
 <!--
  Copyright 2026 Midnight Foundation
 
@@ -13,20 +27,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
----
-MPS: 0006
-Title: Institutional Custody for Native Shielded Assets (ZSwap)
-Category: Core
-Status: Proposed
-Authors:
-  - Jalal Hannan <Jalal-1>
-  - Hector Bulgarini <hbulgarini>
-Proposed Solutions: []
-Discussions: []
-Created: 2026-05-06
-License: CC-BY-4.0
----
 
 ## Abstract
 
