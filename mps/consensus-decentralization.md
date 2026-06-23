@@ -1,39 +1,54 @@
-# MPS-xxxx: Decentralization Through Large-Scale Validator Participation
+<!--
+ Copyright 2026 Midnight Foundation
+ 
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+ 
+     https://www.apache.org/licenses/LICENSE-2.0
+ 
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
 
-**Category:** Decentralization
+---
+MPS: xxxx  
+Title: Decentralization Through Large-Scale Validator Participation  
+Authors: Dominik Zajkowski @dzajkowski  
+Status: Proposed  
+Category: Core  
+Created: 11-MAY-2026  
+Requires: none  
+Replaces: none  
 
-**Created:** 2026-05-11
-**Authors:** [Dominik Zajkowski](mailto:dominik.zajkowski@shielded.io)
+---
 
 ## Abstract
 
 Today Midnight is operated by a small, federated committee.
-Ideally it should be possible to move to an unfederated model.
-To achieve that two things need to be true:
-- The committee candidates cohort is large enough that it's statistically unlikely to have an adversary take over the chain.
-- The committee size is large enough that it's statistically unlikely to select a malicious committee.
+Ideally it should be possible to move to a permissionless model.
+To achieve that, the candidate pool must be large and diverse enough — and the committee selection mechanism secure enough — that the probability of an adversary controlling the committee is negligibly small.
 
 Unfortunately, growing the validator set introduces challenges the current architecture does not address: the network topologies that come with a large, distributed committee are in tension with throughput demands.
 
 ## Problem
 
-### Unfederated Participation isn't sufficiently refined
+### Permissionless Participation
 
-In an unfederated model, the protocol must handle the committee size dropping below safe thresholds, stake falling below economically secure levels, and degraded states that become significantly more likely when participants are independent operators with no out-of-band coordination channel.
+In a permissionless model, the protocol must handle the committee size dropping below safe thresholds, stake falling below economically secure levels, and degraded states that become significantly more likely when participants are independent operators with no out-of-band coordination channel.
 
 ### Network Topology
 
-A larger, geographically distributed committee will naturally operate over complex topologies — more hops, heterogeneous connectivity, variable latency between participants. As throughput targets increase and block sizes grow, these freeform topologies become an obstacle to propagation within the block window. The tension is between supporting the diverse topologies that come with a large committee and the propagation efficiency that high throughput demands.
-
-### Interaction with Throughput and Propagation Constraints
-
-Growing the committee does not happen in isolation. As described in MPS-xxxx (throughput) and MPS-xxxx (censorship resistance), the network's throughput targets and block propagation limits create tensions with committee size. A decentralization strategy must account for these constraints rather than treat committee growth as an independent variable.
+A larger, geographically distributed committee will naturally operate over complex topologies — more hops, heterogeneous connectivity, variable latency between participants. As throughput targets increase and block sizes grow, these freeform topologies become an obstacle to propagation within the block window. The tension is between supporting the diverse topologies that come with a large committee and the propagation efficiency that high throughput demands. This tension is shared with MPS-xxxx (throughput) and MPS-xxxx (censorship resistance), and a decentralization strategy must account for their constraints.
 
 ## Goals
 
 ### Primary Goal
 
-1. **Support a large, unfederated validator set:** The consensus architecture must support a committee size sufficient for meaningful decentralization, with protocol-level mechanisms for operating without central coordination.
+1. **Support permissionless validator participation:** The protocol must allow any eligible participant to enter the candidate pool, and the committee selection mechanism must maintain security guarantees as the candidate pool grows.
 
 ### Secondary Goals
 
@@ -44,16 +59,55 @@ Growing the committee does not happen in isolation. As described in MPS-xxxx (th
 
 * **Safety:** The network must maintain safety guarantees as the committee scales and as validators join and leave without coordination.
 * **Liveness:** The protocol must define thresholds and recovery strategies for scenarios where committee size or stake drops below safe levels.
-
-## Success Metrics
-
-* **Metric 1:** Defined and tested protocol-level thresholds and responses for degraded committee participation.
-* **Metric 2:** Consensus validated at target committee size on a geographically distributed testnet.
+* **Quantitative security thresholds:** The protocol must define and validate the security properties of its committee selection mechanism — whether that involves known committees, anonymous sortition, or a hybrid — expressed as the probability of adversary takeover given stake distribution and adversary resources. These thresholds must be established through research and testing.
 
 ## Open Questions
 
-* **What is the target committee size for credible decentralization?** This determines the scale at which the consensus protocol must be validated.
-* **What are the safe thresholds for committee size and stake?** Below what levels does the network's security model break down, and what should the protocol do when approaching them?
 * **How should topology be structured for large committees?** What relay or gossip strategies can reconcile diverse network topologies with high-throughput propagation requirements?
-* **What computational resources are required for validators?** CPU cores, memory, persistent storage, and network bandwith/latency all affect the ability of efficiency of a validator to participate in consensus. Having adequate resources is particularly important in high-throughput environments.
-* **Are validators required to archive the full history of blocks?** Or is that role delegated to special-purpose archival nodes?
+* **What computational resources are required for validators?** CPU cores, memory, persistent storage, and network bandwidth/latency all affect the ability and efficiency of a validator to participate in consensus. Having adequate resources is particularly important in high-throughput environments.
+* **How does validator storage interact with history management?** See MPS-xxxx (history management) for the full treatment of archival versus pruned node operation.
+
+## Vision
+
+Midnight operates with a permissionless validator candidate pool.
+The security properties of committee selection are well understood as a function of candidate pool size and stake distribution, and the protocol has strategies for handling pool shrinkage.
+The network maintains throughput and safety as participants join and leave independently.
+
+## Use Cases
+
+**UC1: Independent Validator**
+
+* **Scenario:** An independent operator joins the candidate pool and participates in consensus without requiring approval or coordination with existing validators.
+* **Limitations:** The current federated model does not support permissionless entry.
+* **Desired Outcome:** Any eligible participant can join the candidate pool and be selected for committee duty.
+
+**UC2: Degraded Participation**
+
+* **Scenario:** A significant number of validators leave the candidate pool or go offline, reducing the pool size and stake below previously healthy levels.
+* **Limitations:** The protocol does not define thresholds or recovery strategies for shrinking participation.
+* **Desired Outcome:** The protocol detects degraded participation and prioritizes safety, maintaining liveness where possible within defined thresholds.
+
+**UC3: Geographically Distributed Committee**
+
+* **Scenario:** Committee members are spread across diverse network topologies with heterogeneous latency and connectivity.
+* **Limitations:** Block propagation within the block window becomes harder as topology complexity grows, creating tension with throughput targets.
+* **Desired Outcome:** The network reconciles diverse topologies with high-throughput propagation requirements.
+
+## Expected Outcomes
+
+* The protocol supports permissionless validator participation with quantifiable security guarantees.
+* Committee selection remains secure across a range of candidate pool sizes and stake distributions.
+* The network detects degraded participation and has protocol-level strategies for recovery within defined thresholds, with clear escalation points beyond which out-of-band coordination is required.
+* Decentralization goals are achieved without conflicting with throughput and censorship resistance targets.
+
+## Recommended MIPs
+
+To be determined as the problem space is explored further.
+
+## Acknowledgements
+
+* Brian Bush (@bwbush)
+
+## Copyright
+
+This MPS is licensed under CC-BY-4.0.
