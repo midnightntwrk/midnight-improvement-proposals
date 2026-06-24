@@ -38,8 +38,7 @@ during execution - one that keeps the proof, VK, and public inputs private
 (`verifyProofHidden`), and one that exposes them (`verifyProofExposed`).
 ## Motivation
 
-**No in-circuit proof verification ([MPS 14](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0014-proof-verification-recursion.md)).**
-Compact provides no operation that verifies a proof inside a circuit.
+Currently, compact does not support **in-circuit proof verification ([MPS 14](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0014-proof-verification-recursion.md)).**
 Multi-step off-chain computations therefore cannot be expressed as a single
 on-chain claim, and every step of an off-chain computation requires a
 separate transaction.
