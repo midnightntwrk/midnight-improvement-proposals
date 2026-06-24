@@ -2,7 +2,7 @@
 
 **Repository:** https://github.com/SundaeSwap-finance/midnight-swaps-smart-contracts/blob/main/contracts/test-token/test-token.compact
 
-Note: the above repository is temporary, we will move this to the shieldedtech github org as soon as the repository for it is created.
+Note: the above repository is temporary, we will move this to the shieldedtech github org as soon as the repository for it is created. This is a Shielded project, not a Sundae Labs project.
 
 **Brief description:**
 
