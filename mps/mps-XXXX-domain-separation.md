@@ -1,7 +1,9 @@
 ---
-MPS: <Number> # assigned by editors
+MPS: "0027"
 Title: Domain Separation for Midnight Hash Constructions
-Authors: Hector Bulgarini (hbulgarini), Nicolas Di Prima (NicolasDP)
+Authors: 
+- Hector Bulgarini (hbulgarini)
+- Nicolas Di Prima (NicolasDP)
 Status: Proposed
 Category: Libraries and Tooling | Standards
 Created: 23-Jun-2026
@@ -105,19 +107,23 @@ from "tag forgotten" without reading the construction.
   ad-hoc prefix, or forget one. If it collides with a ledger or standard-library
   tag, two unrelated objects hash into the same space, and nothing warns them,
   at author time or ever.
+  
 - **Cross-implementation agreement:** a wallet (TypeScript), the ledger (Rust),
   and a Compact contract must compute the same commitment to recognise an
   object, yet each must reverse-engineer the correct tag from another's source.
   The coin-public-key divergence is this failure already realised between the
   specification and the implementation.
+  
 - **Security review:** an auditor cannot enumerate the domain-separation
   surface, confirm every use site is tagged, or verify that no two objects share
   a tag, without manually scanning the codebase, which is brittle, unrepeatable,
   and exactly what this MPS had to do.
+  
 - **Specification maintenance:** a maintainer updating the wallet specification
   or its diagram has no canonical reference to validate separators against, so
   the text, the diagram source, and the rendered image drift apart and ship
   inconsistent.
+  
 - **Evolving a tag:** a construction is revised and its separator should change
   (some tags already carry a `[v1]` suffix), but with no versioning convention
   and no registry to record it there is no safe, observable way to do so,
@@ -127,19 +133,25 @@ from "tag forgotten" without reading the construction.
 
 1. **One convention** for forming a domain separator (its scheme, length
    discipline, and versioning) that every hash use site follows.
+   
 2. **One source of truth:** a single authoritative record of all domain tags in
    use, citable and verifiable, against which the implementation and the
    specifications are checked.
+   
 3. **Completeness.** Every `persistentHash` / `transientHash` use site either
    carries a separator drawn from that source of truth, or is explicitly and
    visibly justified as not needing one.
+   
 4. **Collision-freedom.** No two distinct objects can share a separator, and an
    author can obtain one guaranteed not to collide with an existing tag.
+   
 5. **Cross-implementation agreement.** The ledger, the Compact standard library,
    the wallet, the specifications, and third-party contracts that compute the
    same object use the same separator for it.
+   
 6. **Discoverability.** A contract author can discover or reserve a separator
    without reading ledger or standard-library source.
+   
 7. **Privacy-preserving lookup.** Whatever interface exposes the source of truth
    does not itself become an oracle for participation patterns, for example by
    admitting enumeration of identifiers per domain, or scoped existence probes,
@@ -165,25 +177,32 @@ protocol that wallets, contracts, and the ledger share.
   `midnight:zswap-cc[v1]` / `midnight:zswap-cn[v1]` the same on-chain object (in
   which case the differing separators are a latent mismatch), or distinct
   commitment families that the naming simply fails to distinguish?
+  
 - **Which scheme is canonical?** `midnight:`, `mdn:`, or `ni`? Reconciling onto
   one is either a documentation fix or a consensus-affecting change, depending on
   whether separators are frozen at deployment.
+  
 - **Are separators frozen at deployment?** Like the address separators in
   MIP-0003, a domain tag that is an input to an on-chain hash may be frozen at
   network deployment. If so, reconciling the divergences is a migration or hard
   fork, not a refactor, and the convention must be settled before the relevant
   constructions are finalised.
+  
 - **Where does the source of truth live?** A specification document, an on-chain
   artefact, the Compact standard library, or several kept in sync? This shapes
   how it is enforced and queried.
+  
 - **Convention by discipline, or enforced?** Is conformance left to authors, or
   checked at compile time / build time by the Compact toolchain? What is
   feasible, and who owns the tooling?
+  
 - **Scope.** Does the convention cover only `persistentHash` / `transientHash`,
   or also the opening-based commitments and the key-derivation sampling that
   today carry their own separators?
+  
 - **Versioning semantics.** How does a tag version (e.g. `[v1]`) interact with
   circuit upgrades and any freeze-at-deployment constraint?
+  
 - **Registry as oracle.** What read interface exposes the source of truth
   without leaking participation patterns?
 
