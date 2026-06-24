@@ -36,7 +36,6 @@ This MIP introduces two capabilities to the Midnight stack: (i) a
 `verifyProof` primitives in Compact that let circuits verify those proofs
 during execution - one that keeps the proof, VK, and public inputs private
 (`verifyProofHidden`), and one that exposes them (`verifyProofExposed`).
-Together they close the gap.
 ## Motivation
 
 **No in-circuit proof verification ([MPS 14](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0014-proof-verification-recursion.md)).**
@@ -44,14 +43,6 @@ Compact provides no operation that verifies a proof inside a circuit.
 Multi-step off-chain computations therefore cannot be expressed as a single
 on-chain claim, and every step of an off-chain computation requires a
 separate transaction.
-
-Some use cases drive the gap:
-
-- **Multi-round off-chain computation:** a rollup (e.g. a game) runs N
-  rounds off-chain, each producing a proof; only the final accumulated proof
-  hits the chain.
-- **Identity and compliance composition:** an outer proof verifies knowledge
-  of a valid inner proof without revealing the inner proof's content.
 
 ## Specification
 
@@ -109,19 +100,22 @@ for reasoning about VKs inside a Compact circuit.
 
 Public inputs are passed as field elements and can be constrained freely using
 Compact's existing type system.
+
 #### Witness generation
 
 The application calls midnight-zk from TypeScript to generate the inner proof.
 The resulting proof bytes, the `transcript_repr` of the VK, and the public
 inputs are then passed into the Compact witness builder as opaque blobs.
+
 ### Transaction extension
 
-The transaction extension format differs between the two variants:
+In order to support proof verification in compact, we need to extend the 
+transaction format. The format differs between the two variants:
 
 - `verifyProofHidden`: the transaction carries the **aggregator** (accumulator)
   of the inner proof.  The node verifies the outer proof and runs the decider of
   the inner proof.
-- `verifyProofExposed`: the transaction carries thje **full inner proof**, the VK, 
+- `verifyProofExposed`: the transaction carries the **full inner proof**, the VK, 
   and the public inputs. The node verifies both proofs, inner and outer, directly.
 
 The encoding details are abstracted from the ledger and owned by midnight-zk.
@@ -155,6 +149,9 @@ cost.
 
 - A Compact circuit can accept a proof as input and verify it during
   execution.
+- A Compact circuit can verify a proof using `verifyProofHidden`, keeping the
+  VK and public inputs private, and prove in-circuit that the VK's
+  `transcript_repr` belongs to a set of accepted VKs.
 - A reference example demonstrates `N` off-chain IVC rounds folded into one
   on-chain submission, using the `midnight-zk` IVC interface.
 
@@ -168,33 +165,6 @@ cost.
    the deferred pairing data.
 5. Validate end-to-end on a devnet using a reference IVC example folding N
    off-chain rounds into a single on-chain proof.
-
-## Implementation
-
-The work touches `midnight-zk`, the Compact compiler and language, ZKIR, the
-ledger, and the proof server.
-
-**`midnight-zk`:**
-
-- New IVC module exposing the `Ivc` trait, `setup`, `IvcProver`, and
-  `IvcVerifier`.
-- Extend `zk-stdlib` to support verification of IVC proofs. 
-- Improvements to the performance of recursion.
-
-**Compact language and compiler:**
-
-- New `verifyProofHidden` and `verifyProofExposed` operations.
-- VKs represented in-circuit via their `transcript_repr` hash; public inputs
-  as field elements.
-- Type-sync mechanism between Compact and `midnight-zk` so the in-circuit
-  verification interface is callable directly from Compact. May require type
-  extensions and new ZKIR instructions.
-
-**Ledger and verifier:**
-
-- Transaction extension carries either an accumulator (`verifyProofHidden`) or
-  a full proof (`verifyProofExposed`); encoding owned by midnight-zk.
-- Verification criteria updated to evaluate the deferred check.
 
 ## Open Design Questions
 
