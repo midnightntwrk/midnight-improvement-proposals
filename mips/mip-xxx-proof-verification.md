@@ -91,8 +91,8 @@ on the ledger.
 
 #### VK representation in-circuit
 
-A verifying key is represented in-circuit by its `transcript_repr` - a hash
-of all VK components computed by midnight-zk. This is the canonical handle 
+A verifying key is uniquely represented in-circuit by the hash of its `transcript_repr` 
+together with the commitment to all its fixed columns. This is the canonical handle 
 for reasoning about VKs inside a Compact circuit.
 
 #### Public inputs in-circuit
