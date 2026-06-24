@@ -46,6 +46,7 @@ MPS-0017: governance-observability (in review)
 [MPS-0024: custodian-safe-shielded-spends](/mps/mps-0024-custodian-safe-shielded-spends.md)  
 [MPS-0025: shielded-source-of-funds-evidence](/mps/mps-0025-shielded-source-of-funds.md)  
 [MPS-0026: consensus-censorship](/mps/mps-0026-consensus-censorship.md)  
+[MPS-0027: domain-separation](/mps/mps-0027-domain-separation.md)  
 
 # MIPs
 
