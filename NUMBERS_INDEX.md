@@ -46,6 +46,7 @@ MPS-0017: governance-observability (in review)
 [MPS-0024: custodian-safe-shielded-spends](/mps/mps-0024-custodian-safe-shielded-spends.md)  
 [MPS-0025: shielded-source-of-funds-evidence](/mps/mps-0025-shielded-source-of-funds.md)  
 [MPS-0026: consensus-censorship](/mps/mps-0026-consensus-censorship.md)  
+[MPS-0027: domain-separation](/mps/mps-0027-domain-separation.md)  
 
 # MIPs
 
@@ -58,3 +59,5 @@ MPS-0017: governance-observability (in review)
 [MIP-0007: name-service-registry](/mips/mip-0007-name-service-registry-and-resolver.md)  
 [MIP-0008: caip-2-network-ids](/mips/mip-0008-caip-2-network-identifiers.md)  
 [MIP-0009: lazy-contract-state-query-rpc](/mip/mip-0009-query-contract-state-rpc.md)  
+[MIP-0010: aura-to-babe-migration](/mips/mip-0010-aura-to-babe-migration.md)  
+[MIP-0011: native-shielded-token-standard](/mips/mip-0011-native-shielded-token.md)  
