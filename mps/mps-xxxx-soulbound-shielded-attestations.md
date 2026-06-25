@@ -411,7 +411,12 @@ protocol-level predicate on the attestation tree (C18) itself. It should
 explicitly compose with C18 / C19 / C20 and not duplicate the issuance or
 disclosure-proof machinery they already specify. It should not specify the
 recovery mechanism (covered by MIP-C) or the disclosure proof refinements
-specific to non-transferable credentials (covered by MIP-B).
+specific to non-transferable credentials (covered by MIP-B). It should
+explicitly note that indirect-path non-transferability (resistance to
+wrapping, proxying, or holding the credential through a contract whose
+code can move it — Goal #1's indirect case) is out of scope for this MIP
+and is expected to be addressed by a future protocol-level primitive or
+companion MIP.
 
 **MIP-B: Selective Disclosure Proof for Non-Transferable Credentials.**
 This MIP should specify the proof refinements needed when the credential
