@@ -127,7 +127,7 @@ Compact developers will have a trustworthy mechanism for caller identity that ma
 
 4. **Migration guidance:** Should the compiler emit a warning when `ownPublicKey()` is used in a context that appears to be access-control (e.g., compared against a ledger value with `assert`)?
 
-5. **Interaction with MPS-0015:** The Agent Identity Gap MPS proposes agent identity standards. A `kernel.caller()` primitive would directly enable secure agent identity registration without coin-spend workarounds. The two MPS are complementary and a `kernel.caller()` implementation would unblock MAIS adoption.
+5. **Interaction with MPS-0015:** MPS-0015 (Agent Identity Gap, by Zidan/mzf11125) proposes agent identity standards on Midnight. A `kernel.caller()` primitive would directly enable secure agent identity registration without coin-spend workarounds, and would complement the goals described in that proposal.
 
 ## Recommended MIPs
 
