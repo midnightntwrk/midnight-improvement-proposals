@@ -1,9 +1,9 @@
 ---
-MIP: XXXX
+MIP: "0011"
 Title: Native Shielded Token Standard
 Authors: Iskander Andrews @0xisk (OpenZeppelin), Andrew Fleming @andrew-fleming (OpenZeppelin)
 Reviewers: Pepe Blasco @pepebndc (OpenZeppelin)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-06-10
 Requires: none
