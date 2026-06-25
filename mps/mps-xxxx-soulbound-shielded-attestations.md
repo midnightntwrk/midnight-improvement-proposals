@@ -105,39 +105,53 @@ re-introduce Sybil vulnerability. DAO and federation membership tokens that
 carry rights on-chain (vote, propose, claim allocation) must not be tradeable
 without the issuer forfeiting governance safety.
 
-**Midnight's shielded-coin model makes the design non-trivial.** On
-transparent chains, a soulbound token can be implemented by simply omitting
-a `transfer` function from the contract; the lack of a function is enforced
-by the contract's code. On Midnight, a *native* shielded coin (MIP-0011)
-transfers at the protocol level via `sendImmediateShielded` and `sendShielded`
-— the contract is not in the path. Therefore a soulbound credential cannot be
-a native shielded coin. It must be a contract-held note whose transfer
-logic is explicitly gated on identity, and whose proof of holding is
-unlinkable from the holder's other activity. This is a different shape of
-primitive than MIP-0011 specifies, and the standard does not currently cover
-it.
+**Why the Passport substrate (C18) is the right starting point for
+non-transferability.** On transparent chains, a soulbound token can be
+implemented by simply omitting a `transfer` function from the contract;
+the lack of a function is enforced by the contract's code. On Midnight,
+a *native* shielded coin (MIP-0011) transfers at the protocol level via
+`sendImmediateShielded` and `sendShielded` — the contract is not in the
+path — so a soulbound credential cannot be a native shielded coin.
+Midnight Passport's P9 solution is to anchor credentials not as
+shielded coins but as Merkle-tree leaves in an on-chain attestation
+tree (C18), where the issuer's policy governs movement under a
+credential-issuance flow (C19). The non-transferable specialization is
+therefore a *constraint on the C18 attestation tree*: it specifies that
+a credential leaf cannot be re-issued to a new alias and cannot be
+re-presented by a different holder, regardless of issuer policy. This is
+a different shape of constraint than C18 specifies, and the standard
+does not currently cover it.
 
-**Holder privacy and selective disclosure are unsolved.** Even if a
-soulbound credential is implemented as a contract-held note, the holder
-needs to *prove* possession of the credential to a verifier — a venue
-checking KYC, an employer verifying a degree, a smart contract gating
-access on membership. The proof must not leak the holder's other Midnight
-identity, must not leak which credential they hold to anyone other than the
-verifier, and must compose with Midnight's three-tier disclosure model
-(public / auditor / private). No existing Midnight standard specifies this
-shape of proof.
+**The non-transferable disclosure proof refinement is unsolved.** Passport's
+C20 selective-disclosure proof primitive covers the general case: a
+holder proves membership in an attestation-tree leaf (C18) without
+revealing the underlying attribute. The non-transferable specialization
+introduces a proof refinement that C20 does not require: the proof must
+demonstrate that the credential *cannot be re-presented by a different
+holder*. In the transferable case this is automatic — the holder has
+the credential — but in the non-transferable case it is load-bearing,
+because the proof must not itself be a transfer vector. The proof must
+also continue to not leak the holder's other Midnight identity, must not
+leak which credential they hold to anyone other than the verifier, and
+must compose with Midnight's three-tier disclosure model (public /
+auditor / private). This is the refinement MIP-B addresses, on top of
+C20 rather than from scratch.
 
-**Revocation interacts with custody and recovery.** When the issuer revokes
-a credential (e.g. expired licence, sanctions hit, lost diploma, terminated
-employment), the revocation must propagate to verifiers without the holder
-being able to present a stale proof. When the holder loses the wallet that
-controls the credential, recovery must be possible without breaking the
-non-transferability property — the credential cannot move to the new wallet
-as a transfer, but it may need to be re-bound to the new wallet under a
-defined recovery policy. MPS-0018 (multi-key account custody) addresses the
-asset-recovery side of this for fungible assets; the soulbound case adds a
-constraint: recovery must not be expressible as a transfer. No current
-document covers the intersection.
+**Revocation interacts with credential-side and wallet-side recovery.**
+When the issuer revokes a credential (e.g. expired licence, sanctions
+hit, lost diploma, terminated employment), the revocation must propagate
+to verifiers without the holder being able to present a stale proof.
+When the holder loses the wallet that controls the credential, recovery
+must be possible without breaking the non-transferability property — the
+credential cannot move to the new wallet as a transfer, but it may need
+to be re-bound to the new wallet under a defined recovery policy. The
+Passport program provides wallet-side recovery (sharded Google / Apple /
+social recovery) for the holder's wallet itself; this MPS scopes the
+*credential-side* re-binding that must not be expressible as a transfer.
+MPS-0018 (multi-key account custody) addresses the asset-recovery side
+of this for fungible assets; the soulbound case adds a constraint that
+recovery must not be expressible as a transfer, and the credential-side
+re-binding is not currently covered.
 
 
 ## Use Cases
@@ -220,10 +234,15 @@ MIPs downstream of this MPS.
    defined by the issuer at issuance and must not be expressible as a
    transfer to a different address.
 
-5. **Composability with existing standards.** Soulbound attestations must
-   compose cleanly with MIP-0004 (fungible), MIP-0011 (native shielded), and
-   any ratified successor. A soulbound attestation must not require a holder
-   to lock up or expose unrelated assets to use it.
+5. **Composability with the Passport credential substrate and existing
+   token standards.** Soulbound attestations must compose cleanly with
+   Midnight Passport's P9 deliverable (C18 attestation tree, C19
+   issuance, C20 selective-disclosure proof), with MIP-0004 (fungible),
+   with MIP-0011 (native shielded), and with any ratified successor. A
+   soulbound attestation must not require a holder to lock up or expose
+   unrelated assets to use it, and the non-transferability constraint
+   must not introduce additional verifier integration beyond what
+   transferable Passport credentials already require.
 
 6. **Standard disclosure proof.** The proof format a holder uses to show
    possession of a soulbound attestation to a verifier must be standardised
@@ -249,10 +268,16 @@ should expect:
   surface each time. This reduces the cost of building regulated,
   credential-gated, or personhood-gated applications on Midnight.
 
-- Compatibility with existing token standards (MIP-0004, MIP-0011) and
-  identity work (MPS-0015 / proposed MAIS) so that a soulbound credential
-  can be issued by, gated on, or composed with the rest of the Midnight
-  stack rather than sitting beside it.
+- Compatibility with the Midnight Passport credential substrate (P9) and
+  with existing token standards (MIP-0004, MIP-0011) and identity work
+  (MPS-0015 / proposed MAIS) so that a soulbound credential can be issued
+  by, gated on, or composed with the rest of the Midnight stack rather
+  than sitting beside it. Specifically, the non-transferability
+  constraint should not require a verifier to integrate with two
+  credential substrates; a verifier integrating with Passport should be
+  able to verify a non-transferable credential with no additional
+  primitive beyond the Passport substrate plus the
+  non-transferability marker this MPS specifies.
 
 - A clear separation of concerns between *issuing* a soulbound credential,
   *holding* it, *proving* possession, and *revoking* it. Each of these
@@ -273,14 +298,17 @@ should expect:
 The following questions require further discussion or research before a
 solution can be specified.
 
-1. **Where does the credential live — contract-held shielded note,
-   contract-held public balance, or protocol-level primitive?** A native
-   shielded coin transfers at the protocol level and cannot be made
-   non-transferable. The non-transferable property therefore requires the
-   credential to live in contract state (either a shielded note held by a
-   contract, a public balance in a contract-held registry, or a future
-   protocol primitive). Each option has different privacy and composability
-   trade-offs.
+1. **How does the non-transferability constraint compose with the C18
+   attestation tree?** Three candidate shapes are plausible: (a) a flag
+   bit on the attestation leaf that the issuance transaction sets and
+   that verifiers check; (b) a separate registry of non-transferable
+   credentials keyed by Passport alias, anchored to C18 by a secondary
+   Merkle root; (c) a sub-tree of C18 whose root is published under a
+   known non-transferable domain tag (composing with the Domain
+   Separation MPS). Each option has different verifier-cost, revocation
+   propagation latency, and on-chain footprint trade-offs. The choice
+   also determines whether non-transferability is opt-in per credential
+   or a property of the issuer's policy envelope.
 
 2. **How is the holder bound to the credential, and what does the binding
    itself correlate?** The recommended binding primitive is a Midnight
