@@ -266,12 +266,23 @@ solution can be specified.
    protocol primitive). Each option has different privacy and composability
    trade-offs.
 
-2. **How is the holder bound to the credential?** The binding must be a
-   ZK-provable statement that does not link to the holder's other Midnight
-   identity unless the holder chooses to disclose it. What is the right
-   cryptographic primitive — a per-credential spending key held by the
-   recipient, a holder-attested commitment, or a third-party witnessed
-   binding?
+2. **How is the holder bound to the credential, and what does the binding
+   itself correlate?** The binding must be a ZK-provable statement that does
+   not link to the holder's other Midnight identity unless the holder
+   chooses to disclose it. Possible primitives include a per-credential
+   spending key held by the recipient, a holder-attested commitment, or a
+   third-party witnessed binding. However, any persistent holder binding
+   is itself a correlation handle across verifiers and contexts, regardless
+   of how it is cryptographically realized: non-transferable and
+   non-correlating are in tension at the system level, not the primitive
+   level. Solutions should explicitly address which correlations the
+   binding does and does not introduce — for example, same-issuer
+   cross-credential correlation, cross-issuer correlation via a shared
+   binding key, on-chain linkability of presentation proofs across
+   sessions, and verifier-side policy that may itself de-anonymise the
+   holder. A credential that is provably bound but correlatable across
+   the issuer's full credential population is closer to a public SBT than
+   to a Midnight-native primitive.
 
 3. **What is the revocation latency model?** When an issuer revokes a
    credential, verifiers must observe the revocation within a defined
