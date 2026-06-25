@@ -44,9 +44,19 @@ without each project rebuilding its own ad hoc, contract-bound, non-portable
 solution. The shielded-coin model (MIP-0011) transfers at the protocol level,
 so a "soulbound" token cannot be a native shielded coin — it must be a
 contract-held attestation whose transfer logic explicitly refuses onward
-movement. This MPS frames the problem, the constraints any solution must
+solution. This MPS frames the problem, the constraints any solution must
 satisfy, and the design space the resulting MIPs will need to cover. It does
 not select a solution.
+
+The recommended holder-binding primitive is a Midnight Passport alias
+(where Passport is the user-facing identity and wallet layer) or, where
+Passport is out of scope, a per-credential spending key held by the
+recipient — both are shielded-address primitives over which
+non-transferability can be enforced. Cross-credential correlation (the
+same holder identifiable across distinct credentials) is mitigated by
+composing with the proposed Domain Separation for Midnight Hash
+Constructions MPS, which provides a registry of canonical domain tags
+that this MPS recommends for any binding construction.
 
 
 ## Vision
@@ -267,12 +277,11 @@ solution can be specified.
    trade-offs.
 
 2. **How is the holder bound to the credential, and what does the binding
-   itself correlate?** The binding must be a ZK-provable statement that does
-   not link to the holder's other Midnight identity unless the holder
-   chooses to disclose it. Possible primitives include a per-credential
-   spending key held by the recipient, a holder-attested commitment, or a
-   third-party witnessed binding. However, any persistent holder binding
-   is itself a correlation handle across verifiers and contexts, regardless
+   itself correlate?** The recommended binding primitive is a Midnight
+   Passport alias (where Passport is the user-facing identity and wallet
+   layer) or, where Passport is out of scope, a per-credential spending
+   key held by the recipient. However, any persistent holder binding is
+   itself a correlation handle across verifiers and contexts, regardless
    of how it is cryptographically realized: non-transferable and
    non-correlating are in tension at the system level, not the primitive
    level. Solutions should explicitly address which correlations the
@@ -280,9 +289,15 @@ solution can be specified.
    cross-credential correlation, cross-issuer correlation via a shared
    binding key, on-chain linkability of presentation proofs across
    sessions, and verifier-side policy that may itself de-anonymise the
-   holder. A credential that is provably bound but correlatable across
-   the issuer's full credential population is closer to a public SBT than
-   to a Midnight-native primitive.
+   holder. The recommended mitigation is to compose with the proposed
+   Domain Separation for Midnight Hash Constructions MPS, which provides
+   a registry of canonical domain tags that this MPS recommends a
+   solution use for any binding construction: distinct credentials issued
+   to the same holder should hash under distinct domain tags, making
+   cross-credential correlation structurally impossible even if the
+   underlying holder primitive is shared. A credential that is provably
+   bound but correlatable across the issuer's full credential population
+   is closer to a public SBT than to a Midnight-native primitive.
 
 3. **What is the revocation latency model?** When an issuer revokes a
    credential, verifiers must observe the revocation within a defined
@@ -389,15 +404,27 @@ recommends the full set but does not require it for partial adoption.
   framing of non-transferable credentials in a blockchain context.
   https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4105763
 
+- Midnight Passport (the user-facing identity and wallet layer for the
+  Midnight network; this MPS recommends a Midnight Passport alias as the
+  primary holder-binding primitive where Passport is in scope).
+  https://github.com/midnightntwrk/passport
+
+- MPS-xxxx: Domain Separation for Midnight Hash Constructions
+  (proposed in the Midnight Passport repository; provides the canonical
+  domain-tag registry this MPS recommends for binding construction).
+  https://github.com/midnightntwrk/passport/blob/main/docs/mps-mip/mps/mps-domain-separation.md
+
 
 ## Acknowledgements
 
 The author thanks the Midnight community for the prior work that motivates
 this proposal — particularly the MPS-0018 authors (Hector Bulgarini, Nicolas
 Di Prima) for the custody framing, the MPS-0015 / MAIS authors for the
-adjacent identity work, and the OpenZeppelin authors of MIP-0011 (Iskander
+adjacent identity work, the OpenZeppelin authors of MIP-0011 (Iskander
 Andrews, Andrew Fleming) for the shielded-coin model that makes the design
-space non-trivial. Any errors or omissions are the author's.
+space non-trivial, and Karmel Elshinnawi for the Midnight Passport
+workshop (June 2026) and the Domain Separation MPS that anchors the
+binding-construction recommendation. Any errors or omissions are the author's.
 
 Tooling disclosure: this document was drafted with AI assistance (Hermes,
 running on the MiniMax-M3 model) for structure and prose, then reviewed and
