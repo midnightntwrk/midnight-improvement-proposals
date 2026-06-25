@@ -1,3 +1,16 @@
+---
+MIP: "0010"
+Title: Consensus Migration from Aura to BABE
+Authors:
+  - Dominik Zajkowski (dzajkowski)
+Status: Proposed
+Category: Core
+Created: 2026-06-08
+Requires: none
+Replaces: none
+License: Apache-2.0
+---
+
 <!--
  Copyright 2026 Midnight Foundation
 
@@ -14,18 +27,6 @@
  limitations under the License.
 -->
 
----
-MIP: "0010"
-Title: Consensus Migration from Aura to BABE
-Authors:
-  - Dominik Zajkowski (dzajkowski)
-Status: Proposed
-Category: Core
-Created: 2026-06-08
-Requires: none
-Replaces: none
-License: Apache-2.0
----
 
 ## Abstract
 
