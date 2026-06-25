@@ -29,11 +29,17 @@ Replaces: none
 
 ## Abstract
 
-Midnight can issue money (MIP-0004 fungible, MIP-0011 native shielded), unique
-collectibles (the closed MRC-721 family), and identity attestations for AI
-agents (MPS-0015 / proposed MAIS), but it has no standardised way to issue a
-credential that is bound to *one specific holder* and provably cannot be
-transferred. The use cases this excludes are concrete and recurring: KYC and
+The Midnight Passport program (P9) defines the credential substrate for the
+network: an on-chain attestation tree (C18), an off-chain issuance flow (C19),
+and a selective-disclosure proof primitive (C20). Together these cover
+*transferable* credentials — credentials the holder can move to a new wallet
+or alias under the issuer's policy. What Passport does not currently specify
+is the *non-transferable* specialization: a credential that is bound to one
+holder and provably refuses to move, regardless of issuer policy. This MPS
+frames that gap and the design space the resulting MIPs will need to cover.
+It does not select a solution.
+
+The use cases this gap excludes are concrete and recurring: KYC and
 sanctions attestations that a regulated venue must revoke when a holder's
 status changes; education and professional credentials whose value is the
 identity of the recipient; event tickets with named attendees; governance
@@ -41,16 +47,10 @@ delegations to a specific delegate; proof-of-personhood stamps that must
 resist Sybil attacks by being non-tradeable; and non-transferable membership
 in a DAO or federation. None of these can be expressed on Midnight today
 without each project rebuilding its own ad hoc, contract-bound, non-portable
-solution. The shielded-coin model (MIP-0011) transfers at the protocol level,
-so a "soulbound" token cannot be a native shielded coin — it must be a
-contract-held attestation whose transfer logic explicitly refuses onward
-solution. This MPS frames the problem, the constraints any solution must
-satisfy, and the design space the resulting MIPs will need to cover. It does
-not select a solution.
+solution that opts out of the Passport transfer semantics.
 
-The recommended holder-binding primitive is a Midnight Passport alias
-(where Passport is the user-facing identity and wallet layer) or, where
-Passport is out of scope, a per-credential spending key held by the
+The recommended holder-binding primitive is a Midnight Passport alias or,
+where Passport is out of scope, a per-credential spending key held by the
 recipient — both are shielded-address primitives over which
 non-transferability can be enforced. Cross-credential correlation (the
 same holder identifiable across distinct credentials) is mitigated by
@@ -74,14 +74,20 @@ per project.
 
 ## Problem
 
-**There is no standard for a non-transferable token on Midnight.** The token
-standards in scope today are MIP-0004 (fungible, account-based, with optional
-UTXO conversion), MIP-0011 (native shielded, fungible, transfers at the
-protocol level), and the closed MRC-721 / MRC-1155 family (unique
-collectibles, transferable). Every token these standards can express is
-transferable; the `transfer` / `sendShielded` / `sendImmediateShielded`
-operations are part of the public surface. No standard specifies how to
-issue a token that *refuses* to transfer.
+**The Midnight Passport credential substrate covers transferable credentials;
+this MPS scopes the non-transferable specialization.** The Passport program's
+P9 deliverable — an on-chain attestation tree (C18) plus issuance (C19) and
+selective-disclosure proof (C20) — provides the substrate for issuer-issued
+credentials with proof-of-membership semantics. P9 does not specify that a
+credential *refuses* to transfer; the design assumes the issuer's policy
+governs movement, and a Passport credential can in principle be re-issued to
+a new alias under that policy. The non-transferable specialization is a
+*gap*: there is no standard for a credential whose transfer logic is
+explicitly refused at the protocol level, regardless of issuer policy. The
+token standards in scope today (MIP-0004 fungible, MIP-0011 native shielded,
+the closed MRC-721 / MRC-1155 family) all express transferable tokens; no
+standard specifies how to issue a token that *refuses* to transfer, and the
+Passport substrate inherits that assumption.
 
 **Soulbound credentials are not a niche use case; they are recurring.** KYC
 and sanctions compliance require an attestation that follows a specific
@@ -336,42 +342,61 @@ solution can be specified.
 
 ## Recommended MIPs
 
-The following MIPs are recommended to address the problem domains identified
-above. Each is described in terms of what it should specify, not how.
+The following MIPs are recommended to specify the non-transferable
+specialization on top of the Midnight Passport credential substrate (P9:
+C18 attestation tree, C19 issuance, C20 selective-disclosure proof). Each
+MIP is described in terms of what it should specify, not how. The MIPs are
+interdependent but separable: a single project can adopt one alone and
+migrate to the others later.
 
-**MIP-A: Soulbound Credential Primitive.** This MIP should specify the
-on-chain shape of a non-transferable credential: the issuer interface,
-the holder binding, the revocation surface, the recovery path, and the
-events verifiers and indexers observe. It should specify whether the
-credential lives in a contract-held shielded note, a public balance, or a
-future protocol primitive, and the privacy implications of each choice.
-It should not specify the disclosure proof format (covered by MIP-B) or
-the recovery mechanism in detail (covered by MIP-C).
+**MIP-A: Non-Transferability Constraint for Passport Credentials.** This
+MIP should specify the additional constraints a Passport credential must
+satisfy to be provably non-transferable: the holder-binding interface, the
+on-chain marker or predicate by which verifiers distinguish a
+non-transferable credential from a transferable Passport credential, the
+issuer's role in binding and revocation, and the events verifiers and
+indexers observe. It should specify whether the non-transferability
+constraint lives in the contract that holds the credential leaf, in a
+separate soulbound credential registry keyed by Passport alias, or in a
+protocol-level predicate on the attestation tree (C18) itself. It should
+explicitly compose with C18 / C19 / C20 and not duplicate the issuance or
+disclosure-proof machinery they already specify. It should not specify the
+recovery mechanism (covered by MIP-C) or the disclosure proof refinements
+specific to non-transferable credentials (covered by MIP-B).
 
-**MIP-B: Selective Disclosure Proof for Soulbound Credentials.** This MIP
-should specify the proof format a holder uses to demonstrate possession of
-a soulbound credential to a verifier. It should specify the supported
-disclosure granularities (e.g. existence only, attribute range, equality),
-the role of Midnight's three disclosure tiers, the verifier interface,
-and the freshness / revocation-check semantics. It should support
-composition with existing proof systems (MIP-0004 view keys, MIP-0011
-shielded ownership proofs, MAIS Disclosure-Tier Registry) where
+**MIP-B: Selective Disclosure Proof for Non-Transferable Credentials.**
+This MIP should specify the proof refinements needed when the credential
+being proved is non-transferable, building on the C20 selective-disclosure
+proof primitive. It should specify the supported disclosure granularities
+(existence only, attribute range, equality), the role of Midnight's three
+disclosure tiers (public / auditor / private), the verifier interface, and
+the freshness / revocation-check semantics. The non-transferable
+specialization introduces a requirement that C20 does not have: the proof
+must demonstrate that the credential cannot be re-presented by a different
+holder, which is automatic in the transferable case (the holder has it) but
+load-bearing here (the proof must not be a transfer vector). It should
+support composition with existing proof systems (MIP-0004 view keys,
+MIP-0011 shielded ownership proofs, MAIS Disclosure-Tier Registry) where
 applicable.
 
-**MIP-C: Recovery and Rotation for Soulbound Credentials.** This MIP
-should specify how a holder recovers a soulbound credential after losing
-the wallet that controls it, without breaking the non-transferability
-property. It should specify the issuer-defined recovery policy interface,
-the multi-key custody composition (cross-reference MPS-0018), the
-revocation interaction, and the upper bound on the recovery window. It
-should address the Sybil-resistance implication: a recovery path that
-is too easy effectively becomes a transfer path.
+**MIP-C: Recovery and Rotation for Non-Transferable Credentials.** This
+MIP should specify how a holder recovers a non-transferable Passport
+credential after losing the wallet that controls it, without breaking the
+non-transferability property. It should specify the issuer-defined recovery
+policy interface, the multi-key custody composition (cross-reference
+MPS-0018), the revocation interaction, and the upper bound on the recovery
+window. It should address the Sybil-resistance implication: a recovery path
+that is too easy effectively becomes a transfer path. The Passport program's
+own recovery model (sharded Google / Apple / social recovery, in scope of
+the broader Passport design but outside P9) provides the wallet-side
+recovery; this MIP specifies the *credential*-side re-binding that must
+not be expressible as a transfer.
 
 These three MIPs are interdependent but separable. A single project could
-adopt MIP-A alone (using an off-chain disclosure proof and an
-issuer-controlled recovery policy) and migrate to MIP-B and MIP-C
-later. This staged adoption is a goal, not a constraint; the MPS
-recommends the full set but does not require it for partial adoption.
+adopt MIP-A alone (using Passport's off-chain disclosure proof and an
+issuer-controlled recovery policy) and migrate to MIP-B and MIP-C later.
+This staged adoption is a goal, not a constraint; the MPS recommends the
+full set but does not require it for partial adoption.
 
 
 ## References
@@ -408,6 +433,16 @@ recommends the full set but does not require it for partial adoption.
   Midnight network; this MPS recommends a Midnight Passport alias as the
   primary holder-binding primitive where Passport is in scope).
   https://github.com/midnightntwrk/passport
+
+- Passport P9 credential substrate components:
+  - C18 — Attestation tree (Merkle-anchored on-chain substrate for
+    credentials). This MPS specifies the non-transferability constraint
+    on top of C18's tree.
+  - C19 — Credential issuance (off-chain issuer flow). This MPS does not
+    duplicate C19; it composes with it for issuance semantics.
+  - C20 — Selective-disclosure proof. MIP-B builds on C20 with the
+    non-transferability refinements.
+  https://github.com/midnightntwrk/passport/tree/main/docs/plans/components
 
 - MPS-xxxx: Domain Separation for Midnight Hash Constructions
   (proposed in the Midnight Passport repository; provides the canonical
