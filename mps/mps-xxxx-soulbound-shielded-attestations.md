@@ -333,6 +333,13 @@ solution can be specified.
    bound but correlatable across the issuer's full credential population
    is closer to a public SBT than to a Midnight-native primitive.
 
+   **This question is coupled to OQ#6:** the binding-format choice
+   constrains the disclosure-proof design space. A plaintext on-chain
+   owner field commits the binding to a value any verifier can read,
+   which structurally limits what the disclosure proof can guarantee
+   regardless of its own design — see OQ#6 for the corresponding
+   constraint on the proof format.
+
 3. **What is the revocation latency model?** When an issuer revokes a
    credential, verifiers must observe the revocation within a defined
    window. Should the window be a function of block time, a function of
@@ -361,6 +368,16 @@ solution can be specified.
    verifier trust assumptions, and the ability to support selective
    disclosure at multiple granularity levels.
 
+   **This question is coupled to OQ#2:** the disclosure-proof design
+   space is constrained by the binding-format choice. The proof must be
+   specifiable against a binding that is provable-but-not-plaintext; a
+   plaintext on-chain owner field (an answer rejected by MIP-A's
+   plaintext-binding prohibition) would make Goal #2 (holder-side
+   privacy) structurally unreachable regardless of what this question
+   resolves to. MIP-B's design must therefore assume MIP-A has not
+   committed to a public owner field, and must not rely on one to
+   achieve its privacy guarantees.
+
 7. **What is the right scoping for an MIP vs continued problem-framing in
    the MPS?** If the design space is too broad for a single MIP, the
    recommendation may be two or more MIPs (e.g. one for the credential
@@ -379,10 +396,14 @@ migrate to the others later.
 
 **MIP-A: Non-Transferability Constraint for Passport Credentials.** This
 MIP should specify the additional constraints a Passport credential must
-satisfy to be provably non-transferable: the holder-binding interface, the
-on-chain marker or predicate by which verifiers distinguish a
-non-transferable credential from a transferable Passport credential, the
-issuer's role in binding and revocation, and the events verifiers and
+satisfy to be provably non-transferable: the holder-binding interface (with
+the constraint that the binding must be provable but not a plaintext
+on-chain owner field — a public owner field would commit the binding to a
+value any verifier can read, structurally precluding the holder-side
+privacy guarantees required by Goal #2 regardless of what MIP-B
+specifies), the on-chain marker or predicate by which verifiers distinguish
+a non-transferable credential from a transferable Passport credential,
+the issuer's role in binding and revocation, and the events verifiers and
 indexers observe. It should specify whether the non-transferability
 constraint lives in the contract that holds the credential leaf, in a
 separate soulbound credential registry keyed by Passport alias, or in a
