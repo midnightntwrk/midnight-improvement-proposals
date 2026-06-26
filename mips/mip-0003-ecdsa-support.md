@@ -99,7 +99,7 @@ The user-facing address format for unshielded tokens is unchanged: Bech32m encod
 Address derivation for Schnorr keys is also unchanged: `SHA-256(verifying_key)`, where
 `verifying_key` is the 32-byte BIP-340 x-only public key. ECDSA addresses are derived by prefixing
 the compressed SEC1 verifying key with a domain separator:
-`SHA-256("midnight:ecdsa" ‖ verifying_key)`, where `verifying_key` is the 33-byte compressed SEC1
+`SHA-256("midnight:ecdsa:" ‖ verifying_key)`, where `verifying_key` is the 33-byte compressed SEC1
 encoding. This keeps the address format identical at the wire level (32 bytes) but binds each
 address to a specific authorization scheme.
 
@@ -228,7 +228,7 @@ considered and rejected:
   from the same key, compromising the secret key and any funds it controls.
 
 **Address-level binding.** The domain separator in the ECDSA address-derivation rule
-(`SHA-256("midnight:ecdsa" ‖ verifying_key)`) ensures that even if a signing party were to
+(`SHA-256("midnight:ecdsa:" ‖ verifying_key)`) ensures that even if a signing party were to
 accidentally produce both Schnorr and ECDSA signatures over an identical secret scalar, the two
 would resolve to different on-chain addresses. This provides a second line of defense beyond
 key-derivation separation.
@@ -249,7 +249,7 @@ The MIP transitions to Active once the following are met:
    deployed in the corresponding `midnight-node` release; the new transaction format is the
    canonical wire format for that release.
 2. **Wallet SDK.** A released version of the wallet SDK supports the new role-`4` derivation path,
-   ECDSA address derivation with the `"midnight:ecdsa"` domain separator, and signing for both
+   ECDSA address derivation with the `"midnight:ecdsa:"` domain separator, and signing for both
    schemes.
 3. **DApp Connector.** A released version of `@midnight-ntwrk/dapp-connector-api` includes the
    optional `scheme` discriminator on `signData` responses.
@@ -299,7 +299,7 @@ by:
 
 1. Separate BIP-44 roles for Schnorr (`0`/`1`) and ECDSA (`4`), so derivation never yields the same
    scalar under different schemes.
-2. Distinct address derivation (`SHA-256("midnight:ecdsa" ‖ vk)` vs. `SHA-256(vk)`), so even an
+2. Distinct address derivation (`SHA-256("midnight:ecdsa:" ‖ vk)` vs. `SHA-256(vk)`), so even an
    accidental cross-scheme signing would address different UTXOs.
 
 **Within-scheme nonce reuse.** ECDSA signing uses deterministic nonces per RFC 6979, eliminating
