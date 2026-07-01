@@ -93,6 +93,11 @@ The network maintains throughput and safety as participants join and leave indep
 * **Limitations:** Block propagation within the block window becomes harder as topology complexity grows, creating tension with throughput targets.
 * **Desired Outcome:** The network reconciles diverse topologies with high-throughput propagation requirements.
 
+**UC4: Cardano SPO Operator**
+
+**Scenario:** A Cardano stake pool operator extends their existing operation to also run a Midnight validator, using the same hardware and operations team.
+**Limitations:** Midnight's resource and operational requirements may exceed what an existing Cardano SPO can absorb without significant new infrastructure or expertise.
+**Desired Outcome:** Running a Midnight validator fits within the operating envelope of an existing Cardano stake pool, expanding the candidate pool with operators whose infrastructure and practices are already proven.
 ## Expected Outcomes
 
 * The protocol supports permissionless validator participation with quantifiable security guarantees.
