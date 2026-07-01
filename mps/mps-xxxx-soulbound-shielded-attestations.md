@@ -449,8 +449,146 @@ not be expressible as a transfer.
 These three MIPs are interdependent but separable. A single project could
 adopt MIP-A alone (using Passport's off-chain disclosure proof and an
 issuer-controlled recovery policy) and migrate to MIP-B and MIP-C later.
-This staged adoption is a goal, not a constraint; the MPS recommends the
-full set but does not require it for partial adoption.
+This staged adoption is a goal, not a constraint; the MPS recommends
+the full set but does not require it for partial adoption.
+
+
+## Composition with MAIS (Open Question #5, expanded)
+
+The proposed MAIS (MPS-0015) introduces a *Disclosure-Tier Registry*
+that specifies the surface for the three-tier disclosure mechanics
+(public, auditor, private) used by agent credentials and any other
+identity attestation that wants to compose with the MAIS verifier set.
+The soulbound credential surface this MPS recommends shares that
+three-tier mechanics and should compose against the same registry
+rather than introduce a parallel one.
+
+Concretely, mapped onto the Midnight Passport substrate (P9: C18
+attestation tree, C19 issuance, C20 selective-disclosure proof):
+
+- The **public** disclosure tier under the registry maps to MIP-B's
+  *existence-only* disclosure proof on top of C20: "this Passport
+  alias holds a valid non-transferable attestation from issuer X as of
+  challenge Y." A verifier checking the proof uses the registry's
+  public-tier verifier and does not learn holder identity beyond
+  what the attestation itself discloses.
+
+- The **auditor** tier maps to MIP-B's *attribute* disclosure proof:
+  "this Passport alias holds a non-transferable attestation from
+  issuer X with attribute Z in range W." The auditor is named in the
+  registry entry, holds a disclosure key, and can resolve the proof
+  against the registry's auditor-tier resolver without learning
+  holder activity outside the named scope of the audit.
+
+- The **private** tier maps to MIP-B's *none-disclosure* proof: the
+  holder demonstrates possession to the verifier through a direct
+  presentation under the registry's private-tier surface (analogous
+  to a viewing key). The verifier learns nothing other than the
+  result of the boolean check.
+
+This shared registry surface is the right primitive for the
+soulbound case for three reasons:
+
+1. **Verifiers integrate once.** A venue that integrates the
+   Disclosure-Tier Registry for MAIS agent credentials gets the
+   soulbound disclosure proof as a free second consumer of the same
+   verifier, with no per-issuer integration. The standardisation
+   value compounds across the Passport and MAIS credential surfaces.
+
+2. **Holder-side anonymity set is shared.** A non-transferable
+   Passport credential presented under the registry's private tier
+   is unlinkable from a MAIS agent credential presented under the
+   same tier. The anonymity set across human and agent attestations
+   is the union, which is stronger than either surface alone.
+
+3. **Revocation propagates through the registry.** When an issuer
+   revokes a non-transferable Passport credential, the revocation
+   is registered against the registry's revocation surface and any
+   verifier — human-facing or agent-facing — observes it within the
+   same window. A separate soulbound revocation surface would create
+   fragmentation and stale-proof windows at the verifier.
+
+The recommended MIPs above should therefore *reference* the
+Disclosure-Tier Registry as the disclosure surface (MIP-B) and
+coordinate with its authors on the revocation surface (MIP-A),
+rather than defining parallel primitives. Where the registry does
+not yet exist or does not yet cover a case the soulbound surface
+needs (e.g. credential-side re-binding without transferability in
+§MIP-C), the soulbound MPS should propose the addition to the
+registry rather than building a sidecar.
+
+Open Question #5 is therefore reframed: rather than "are
+soulbound Passport credentials and MAIS agent credentials the same
+primitive or two primitives," the question becomes "what additions
+to the Disclosure-Tier Registry does the soulbound case require that
+the agent case does not, and which of those are backward-compatible
+extensions versus new surface?" This MPS takes the position that
+the soulbound case is largely a strict subset of the registry's
+three-tier mechanics with one extra constraint (non-transferability)
+enforced at issuance rather than at disclosure — i.e. the additions
+are backward-compatible extensions of the registry surface — but
+flags this as an open position for editor review. If
+non-transferability turns out to require new disclosure-time
+surface (e.g. a per-credential revocation-binding the registry does
+not otherwise need), the recommendation splits into parallel
+surfaces and the rest of this section needs revisiting.
+
+
+## Threat model — entropy of the holder binding
+
+The recommended holder-binding constructions throughout this MPS —
+whether via a Midnight Passport alias, a per-credential spending key,
+or a future holder-attested commitment — reduce at the cryptographic
+level to a witness over a secret that binds the credential to the
+holder. Where this secret is hashed into a public on-chain surface
+(e.g. a per-credential commitment under C18, a per-credential
+revocation witness, or a per-credential domain-tag binding), the
+privacy property depends on the secret being high-entropy. A secret
+drawn from a memorable wordlist (a recovery passphrase, a memorable
+"answer to a challenge question", a 6-digit code) is recoverable by
+an observer who can pre-compute the hash for every candidate and
+watch for matches on chain.
+
+Any MIP downstream of this MPS that defines a holder-binding witness
+or a per-credential commitment MUST therefore specify the entropy
+floor on the secret — concretely, full 32 random bytes (2^256
+pre-image space) drawn from a cryptographically secure source, or an
+equivalent high-entropy secret that makes brute-force infeasible.
+Implementations that allow low-entropy secrets for usability (e.g.
+"memorable recovery codes") MUST keep that path separate from any
+high-entropy path, with a distinct domain tag, and MUST document the
+threat model in their reference implementation. This is not a soft
+recommendation: a witness-based holder-binding proof with a
+low-entropy secret on a public ledger collapses to a publicly
+recoverable secret and breaks the privacy guarantee the disclosure
+tier is supposed to provide.
+
+This threat model is consistent with the recommendation in Open
+Question #2 to compose with the Domain Separation for Midnight Hash
+Constructions MPS, which provides the canonical domain-tag registry
+this MPS recommends for any binding construction. Specifically:
+
+- The canonical pattern is `persistentHash([tag, secret])` where
+  `tag` is drawn from the registry and `secret` is high-entropy.
+- Ad-hoc tags (any tag not registered under MPS-0027) MUST NOT be
+  used in holder-binding constructions because ad-hoc tags collide
+  across contracts and break cross-credential unlinkability.
+- The tag scheme must coordinate across the soulbound surface and
+  any other credential surface that hashes the same holder
+  primitive, otherwise a holder bound under the soulbound tag and
+  the same holder bound under a different credential tag become
+  trivially correlatable by anyone observing the on-chain surface.
+
+Editorial note: this MPS currently references the Domain Separation
+MPS at `midnightntwrk/passport/.../mps-domain-separation.md`, but the
+canonical numbered version is MPS-0027 in the
+`midnightntwrk/midnight-improvement-proposals` repository. The two
+URLs returned distinct content as of the date of this revision —
+the passport mirror appears to be a pre-numbering copy. The
+References section should be updated to point at the canonical
+MPS-0027 URL once editor review confirms the numbering, and the
+passport mirror should either be retired or marked as a deprecated
+copy.
 
 
 ## References
@@ -499,9 +637,13 @@ full set but does not require it for partial adoption.
   https://github.com/midnightntwrk/passport/tree/main/docs/plans/components
 
 - MPS-xxxx: Domain Separation for Midnight Hash Constructions
-  (proposed in the Midnight Passport repository; provides the canonical
-  domain-tag registry this MPS recommends for binding construction).
-  https://github.com/midnightntwrk/passport/blob/main/docs/mps-mip/mps/mps-domain-separation.md
+  (the canonical numbered version is MPS-0027 in this repository;
+  the passport mirror at
+  `https://github.com/midnightntwrk/passport/blob/main/docs/mps-mip/mps/mps-domain-separation.md`
+  is a pre-numbering copy and should be retired or marked as
+  deprecated once this MPS is editor-confirmed — see editorial note
+  in §Threat model).
+  https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0027-domain-separation.md
 
 
 ## Acknowledgements
