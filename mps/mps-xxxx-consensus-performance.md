@@ -58,6 +58,12 @@ The bottleneck is architectural, verification is sequential and cannot be parall
 * **Scenario:** A decentralized exchange (DEX) on Midnight experiences a surge in trading volume, processing hundreds of concurrent shielded transactions.
 * **Limitations:** The sequential verification caps the maximum throughput well below the network's TPS target, causing mempool congestion, delayed execution, and higher operational latency.
 
+**UC2: Cross-Chain Settlement**
+
+**Scenario:** A bridge moves value between Midnight and another chain, waiting for hard finality on the Midnight side before releasing the corresponding value on the destination chain.
+**Limitations:** Finality on Midnight today takes around 15 seconds, which is several times slower than on competing settlement layers, so a bridge built on Midnight cannot offer users a competitive cross-chain settlement experience and that traffic will route elsewhere.
+**Desired Outcome:** Hard finality on Midnight is fast enough that a bridge can settle at parity with the fastest production settlement layers, and cross-chain users have a reason to keep their workflows on the chain.
+
 ## Goals
 
 1. **Sustain 1,000+ ZK-SNARK verified TPS:** The verification architecture must support processing 1,000+ proofs per second.
