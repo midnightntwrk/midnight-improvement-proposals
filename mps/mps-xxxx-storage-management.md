@@ -62,8 +62,8 @@ They cannot be replaced by a summary proof; they are live state.
 It is not obvious how to compact or partition them without compromising the guarantees they provide.
 
 **User-facing data availability.**
-History management affects not only consensus but also the data available to users constructing and verifying transactions.
-Reducing what nodes retain may limit what they can serve, and the protocol must account for this without assuming where that serving responsibility lives.
+History management affects not only consensus but also the data available to users constructing and verifying transactions, and to external services querying historical state.
+Reducing what nodes retain limits what they can serve — a pruned node cannot answer queries outside its retention window, and the protocol must define the boundary between consensus-required data and query-serving data so that indexers and other consumers can identify appropriate data sources.
 
 **Privacy under transformation.**
 Any procedure that compresses, reorganizes, or discards historical data must not leak information about the transactions involved.
@@ -84,7 +84,7 @@ Any procedure that compresses, reorganizes, or discards historical data must not
 
 **UC3: Light Client Bootstrap**
 
-* **Scenario:** A new validator or light client joining the network and bootstrapping into current consensus state.
+* **Scenario:** A new validator or light client joining the network and bootstrapping into current consensus state. "Light client" encompasses a range of device profiles — from laptops to low-end mobile devices — with significantly different memory, CPU, bandwidth, and trust constraints. MIPs addressing this use case must define concrete resource profiles for each client class they target.
 * **Limitations:** Joining requires syncing full chain history.
 * **Desired Outcome:** New participants can verify current state legitimacy and join consensus without syncing full chain history.
 
@@ -97,8 +97,8 @@ Any procedure that compresses, reorganizes, or discards historical data must not
 **UC5: Indexer and Arbitrary History Queries**
 
 * **Scenario:** An indexer or analytics service ingesting blockchain data to support queries against arbitrary historical state — for example, past balances, historical transaction patterns, or contract state at a given block height.
-* **Limitations:** If only archival nodes retain full history, indexers depend on archival node availability for ingestion. A pruned node cannot serve as a data source for queries outside its retention window. The protocol currently does not distinguish between data needed for consensus and data needed for historical queries.
-* **Desired Outcome:** The protocol clearly defines which data is available from pruned versus archival nodes, enabling indexers to choose their data source based on query requirements. Pruned nodes can serve recent-history queries, while archival nodes or dedicated history-serving infrastructure support arbitrary historical lookups.
+* **Limitations:** The protocol currently does not distinguish between data needed for consensus and data needed for historical queries. A pruned node retains only a recent window of history and cannot serve as a data source for queries outside that window — an indexer requiring arbitrary historical state must ingest from an archival node. However, whether the retention window is protocol-defined or operator-configured is unspecified, and nodes do not advertise their retention capabilities, so an indexer has no protocol-level way to discover which nodes can serve which historical ranges.
+* **Desired Outcome:** The protocol defines a clear boundary between consensus-required data and historical query data. Nodes advertise their retention profile (pruned with window size, or archival), enabling indexers to discover appropriate data sources. A pruned node can serve as a data source for indexers querying within its retention window. Archival nodes or dedicated history-serving infrastructure support arbitrary historical lookups. An indexer that tracks the chain tip continuously can operate against pruned nodes alone, ingesting blocks as they arrive; only indexers that need to backfill historical gaps or query arbitrary past state require access to archival nodes.
 
 **UC6: Regulatory Audit Under Privacy Preservation**
 
