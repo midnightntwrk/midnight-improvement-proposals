@@ -48,7 +48,7 @@ A larger, geographically distributed committee will naturally operate over compl
 
 ### Primary Goal
 
-1. **Support permissionless validator participation:** The protocol must allow any eligible participant to enter the candidate pool, and the committee selection mechanism must maintain security guarantees as the candidate pool grows.
+1. **Support permissionless validator participation:** The protocol must allow any eligible participant — one who meets the protocol-defined eligibility criteria (e.g., minimum stake, operational requirements) — to enter the candidate pool, and the committee selection mechanism must maintain security guarantees as the candidate pool grows. The implementing MIP must precisely define these criteria before proceeding to implementation.
 
 ### Secondary Goals
 
@@ -83,13 +83,13 @@ The network maintains throughput and safety as participants join and leave indep
 
 **UC2: Degraded Participation**
 
-* **Scenario:** A significant number of validators leave the candidate pool or go offline, reducing the pool size and stake below previously healthy levels.
+* **Scenario:** A substantial fraction of validators — the precise threshold to be defined by the implementing MIP — leave the candidate pool or go offline, reducing the pool size and stake below levels defined as safe by the implementing MIP.
 * **Limitations:** The protocol does not define thresholds or recovery strategies for shrinking participation.
 * **Desired Outcome:** The protocol detects degraded participation and prioritizes safety, maintaining liveness where possible within defined thresholds.
 
 **UC3: Geographically Distributed Committee**
 
-* **Scenario:** Committee members are spread across diverse network topologies with heterogeneous latency and connectivity.
+* **Scenario:** Committee members operate across heterogeneous network topologies — varying hop counts, bandwidth, and latency — that are largely outside the protocol's control once participation becomes permissionless. The implementing MIP must define acceptable bounds on topology diversity, including minimum connectivity and maximum tolerable latency.
 * **Limitations:** Block propagation within the block window becomes harder as topology complexity grows, creating tension with throughput targets.
 * **Desired Outcome:** The network reconciles diverse topologies with high-throughput propagation requirements.
 
