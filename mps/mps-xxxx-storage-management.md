@@ -100,6 +100,12 @@ Any procedure that compresses, reorganizes, or discards historical data must not
 * **Limitations:** If only archival nodes retain full history, indexers depend on archival node availability for ingestion. A pruned node cannot serve as a data source for queries outside its retention window. The protocol currently does not distinguish between data needed for consensus and data needed for historical queries.
 * **Desired Outcome:** The protocol clearly defines which data is available from pruned versus archival nodes, enabling indexers to choose their data source based on query requirements. Pruned nodes can serve recent-history queries, while archival nodes or dedicated history-serving infrastructure support arbitrary historical lookups.
 
+**UC6: Regulatory Audit Under Privacy Preservation**
+
+**Scenario:** A regulator or third-party auditor with a legal mandate to verify a specific compliance property of historical transactions, such as confirming that funds did not pass through sanctioned addresses or that an asset trail matches a declared origin.
+**Limitations:** The current architecture leaves the auditor with two extremes: full archival access that breaks the privacy of all users, or no access at all. There is no protocol-level mechanism for selective disclosure of historical state under a defined legal basis.
+**Desired Outcome:** The protocol supports selective disclosure of historical data to authorized parties, allowing a regulator to verify compliance properties on specific transactions without compromising the privacy of unrelated users.
+
 ## Goals
 
 ### Primary Goal
