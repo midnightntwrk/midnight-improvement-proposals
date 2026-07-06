@@ -111,6 +111,36 @@ The proving engine currently ships as part of the midnight-ledger Rust crate wor
 
 **Desired Outcome**: A single proof server binary detects its TEE platform at runtime and produces platform-appropriate attestation documents. Clients verify attestation using a unified verification flow, regardless of which cloud the server runs on.
 
+### UC5: Proof-Server Economic Operation                                                                                       
+  
+**Scenario:** A proof-server operator runs a TEE-based proof server as a service to wallet users. They need a sustainable cost model covering hardware, network, and operational costs as load grows over time.
+
+**Current Approach:** No protocol-level cost or compensation mechanism exists. Operators fund their own infrastructure and either run servers as part of a wallet vendor's business (cost absorbed by the wallet operator), as a community service (depending on operator goodwill), or as a paid third-party service (depending on out-of-band payment arrangements).
+
+**Limitations:** Free community servers create a public-goods problem because operators bear all the cost, users have no incentive to compensate, and the service becomes vulnerable to sustainability gaps as load grows. Wallet-vendor-only models concentrate proof generation in the few providers large enough to operate infrastructure, undermining the decentralization story. Out-of-band payment arrangements work for enterprise users but exclude self-custodial individuals.
+
+**Desired Outcome:** The protocol defines or accommodates a sustainable economic model for proof-server operation, whether through per-proof on-chain micropayments, a network-level subsidy from block rewards, or another mechanism. The model supports a diverse ecosystem of operators (community-run, commercial, foundation-backed) rather than concentrating proof generation in any single class of actor.
+
+### UC6: Proof-Server Discovery and Trust
+
+**Scenario:** A user installs a new Midnight wallet on a fresh device and needs to select a proof server to delegate proof generation to. They have no prior relationship with any operator and want assurance that the server is honest (running attested TEE code that matches a published build) and reliable (acceptable uptime and latency history).
+  
+**Current Approach:** The wallet ships with an initial or hard-coded list of proof-server endpoints chosen by the wallet vendor. Users have no protocol-level mechanism to discover alternative servers, compare reputations, or verify operator claims beyond inspecting the attestation document for each server individually at use time.
+  
+**Limitations:** Centralized hard-coded lists give the wallet vendor full control over which servers users can reach. Without a discovery mechanism, the ecosystem cannot support independent third-party proof servers without each new server requiring inclusion in every wallet's list. Reputation is implicit and unverifiable: users cannot see how long a server has been operating, how many proofs it has served, or whether it has previously failed attestation verification.
+
+**Desired Outcome:** The ecosystem provides a discovery mechanism for proof servers (e.g., an on-chain registry, a verifiable directory, or a gossip protocol) that lets a wallet enumerate available servers and compare their attestation status, operational history, and  reputation. The mechanism supports permissionless entry of new operators while making operator misbehaviour visible.
+
+### UC7: TEE-Unavailable Degraded Mode
+
+**Scenario:** A user wants to send a shielded transaction during a regional outage or TEE-platform incident that takes all reachable attested proof servers offline. Their wallet has no way to generate the proof remotely under the standard security guarantee.
+
+**Current Approach:** The wallet either falls back to client-side proof generation (slow and sometimes infeasible on the user's device), fails outright leaving the user unable to transact, or silently falls back to a non-attested server. The fallback behaviour is wallet-specific and not consistently presented to the user.
+  
+**Limitations:** Silent fallback to a non-attested server breaks Midnight's privacy guarantees in exactly the situation where users have the least ability to detect or react to the change. Client-side fallback fails on constrained devices and is incompatible with the original motivation for delegating proof generation. Outright failure makes the wallet unusable during outages and gives the user no recourse.
+  
+**Desired Outcome:** The wallet has a defined behaviour for TEE-unavailable conditions, presented to the user as an explicit trust decision rather than a silent downgrade. The user can choose to retry later (preserving full privacy), fall back to a less-private mode with explicit acknowledgement (e.g., trusted third-party server without TEE attestation), or fall back to client-side proving if their device supports it.
+
 ## Goals
 
 ### Primary Goals
