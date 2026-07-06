@@ -1,3 +1,7 @@
+---
+This is a legacy MPS that pre-dates the defined process, the components within may not conform to the MPS template.
+---
+
 # Signature Verification - **ECDSA/secp256k1**
 
 # Summary
