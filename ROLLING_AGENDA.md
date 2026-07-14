@@ -22,3 +22,5 @@ This index holds the rolling agenda for MIP working sessions. It's purpose is to
 
 - 7 July 2026 -- MIP-0007 Midnight Name Service (Facu, Nicolas Di Prima)
 - 14 July 2026 -- Agenda doc, MIP-0007, PR cleanup
+- 21 July 2026 -- Aura to BABE, MIP-0007
+- 28 July 2026 -- special guest (specific MIP review)
