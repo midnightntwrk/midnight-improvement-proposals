@@ -1,5 +1,5 @@
 ---
-MPS: <Number> # assigned by editors
+MPS: "0028"
 Title: Pre-Finality State Visibility for Indexer and Wallet
 Authors: Giles Cope <giles.cope@shielded.io>
 Status: Proposed
