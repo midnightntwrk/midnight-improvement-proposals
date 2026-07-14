@@ -15,7 +15,7 @@
 -->
 
 ---
-MPS: xxxx  
+MPS: "0030"
 Title: Decentralization Through Large-Scale Validator Participation  
 Authors: Dominik Zajkowski @dzajkowski  
 Status: Proposed  
