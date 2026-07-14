@@ -1,5 +1,5 @@
 ---
-MIP: "0012"
+MIP: xxxx
 Title: Native Unshielded Token Standard
 Authors:
   - Jay Albert
