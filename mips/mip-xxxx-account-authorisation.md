@@ -15,16 +15,16 @@
 -->
 
 ---
-MIP: XXXX
+MIP: "0013"
 Title: Multi-key Account Authorisation for Custody Contracts
 Authors:
   - Hector Bulgarini (hbulgarini)
   - Nicolas Di Prima (NicolasDP)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-07-10
 License: Apache-2.0
-Requires: Contract Custody of Midnight-Native Assets (MIP number pending)
+Requires: MIP-0012: Contract Custody of Midnight-Native Assets
 Replaces: none
 ---
 
