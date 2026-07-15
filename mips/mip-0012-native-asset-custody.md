@@ -1,15 +1,15 @@
 ---
-MIP: "0012"
-Title: Contract Custody of Midnight-Native Assets
+MIP: "0012"  
+Title: Contract Custody of Midnight-Native Assets  
 Authors:
   - Nicolas Di Prima (NicolasDP)
-  - Hector Bulgarini (hbulgarini)
-Status: Proposed
-Category: Standards
-Created: 2026-07-07
-License: Apache-2.0
-Requires: none
-Replaces: none
+  - Hector Bulgarini (hbulgarini)  
+Status: Proposed  
+Category: Standards  
+Created: 2026-07-07  
+License: Apache-2.0  
+Requires: none  
+Replaces: none  
 ---
 
 <!--
