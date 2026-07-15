@@ -1,3 +1,17 @@
+---
+MIP: "0012"
+Title: Contract Custody of Midnight-Native Assets
+Authors:
+  - Nicolas Di Prima (NicolasDP)
+  - Hector Bulgarini (hbulgarini)
+Status: Proposed
+Category: Standards
+Created: 2026-07-07
+License: Apache-2.0
+Requires: none
+Replaces: none
+---
+
 <!--
  Copyright 2026 Midnight Foundation
 
@@ -13,20 +27,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
----
-MIP: "0012"
-Title: Contract Custody of Midnight-Native Assets
-Authors:
-  - Nicolas Di Prima (NicolasDP)
-  - Hector Bulgarini (hbulgarini)
-Status: Proposed
-Category: Standards
-Created: 2026-07-07
-License: Apache-2.0
-Requires: none
-Replaces: none
----
 
 ## Abstract
 
