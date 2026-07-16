@@ -41,8 +41,9 @@ Assets MIP (hereafter "the custody MIP") deliberately left abstract.
 Authorisation is by digital signature: each device holds an independent
 Schnorr keypair on the JubJub curve, and every asset-releasing circuit
 verifies, in-circuit, a signature over a challenge that binds the
-account, the circuit, its arguments, and a per-account authorisation
-counter. The choice of an asymmetric signature scheme over the cheaper
+account, the circuit, its arguments, the witness values it consumes
+(pinning the private state the operation executes against), and a
+per-account authorisation counter. The choice of an asymmetric signature scheme over the cheaper
 hash-preimage alternative is deliberate, and carries the standard's
 three load-bearing properties. First, Schnorr admits the FROST
 threshold-signing protocol, so a key can be held as shares across an
@@ -296,8 +297,8 @@ above, and no wire format is consensus-relevant.
 The challenge for a gated circuit is:
 
 ```compact
-const h: Bytes<32> = persistentHash<[Bytes<32>, ContractAddress, JubjubPoint, JubjubPoint, ...Args, Uint<64>, Uint<64>]>(
-  [DST_CIRCUIT, kernel.self(), sig_r, pk, ...args, auth_nonce, grind_nonce]
+const h: Bytes<32> = persistentHash<[Bytes<32>, ContractAddress, JubjubPoint, JubjubPoint, ...Args, ...Witnesses, Uint<64>, Uint<64>]>(
+  [DST_CIRCUIT, kernel.self(), sig_r, pk, ...args, ...witness_values, auth_nonce, grind_nonce]
 );
 const c: Field = h as Field;
 ```
@@ -315,6 +316,16 @@ where:
 - `...args` is the gated circuit's full argument list, excluding the
   authorising material itself, in declaration order, with their Compact
   types.
+- `...witness_values` is the ordered sequence of values returned by
+  every witness invocation the gated circuit performs, excluding the
+  authorising material, with their Compact types. This pins the
+  private state. Witness values are drawn from a client-held mutable
+  store (a JSON document in current client stacks) that the proving
+  environment reads, and can edit; a challenge that did not cover them
+  would authorise a call shape rather than an execution (Rationale R9,
+  AUTH-10). Because the circuit recomputes the challenge over the
+  witness values it actually consumes, a proof generated against any
+  altered value cannot satisfy the verification equation.
 - `auth_nonce` is the current authorisation counter (pre-increment).
 
 The preimage MUST include every element above. Implementations
@@ -347,8 +358,11 @@ To authorise a call, a device:
    (Security Considerations S1).
 2. Computes `R = r·G`.
 3. Grinds the challenge per section 5.2 over the exact preimage of
-   section 5.1, using the `auth_nonce` value the call will execute
-   against.
+   section 5.1, using the `auth_nonce` value and the witness values the
+   call will execute against. The approver therefore MUST be given the
+   witness values by the client pipeline, and SHOULD render them for
+   review before signing: approval covers the state the operation runs
+   against, not only its arguments (R9).
 4. Computes `s = r + c·sk mod r_J`.
 5. Outputs `(R, s, grind_nonce)`.
 
@@ -473,6 +487,11 @@ addition to the custody MIP's INV-1 through INV-8.
   once when it is consumed. In particular, no device identifier is
   stable across two authorised calls, and no ledger value is equal
   between two accounts that register the same device key.
+- **AUTH-10 (private-state binding).** Every challenge covers every
+  witness value the gated circuit consumes. A proof generated against
+  a private state that differs, in any consumed value, from the state
+  the signer approved cannot satisfy the verification equation: the
+  signature authorises an execution, not a call shape.
 
 ### 10. Versioning
 
@@ -686,6 +705,33 @@ more force than to the challenge, and the same relief applies: should
 the toolchain expose a version-pinned algebraic hash, adopting it for
 both is a successor scheme under section 10.
 
+**R9. The challenge pins the private state, not only the arguments.**
+The private state is not consensus data: it is a mutable, client-held
+document (JSON in current client stacks) from which witness invocations
+draw their values, and the proving environment reads it and can edit
+it. Delegated and remote proving (MPS-0004) make that environment a
+distinct trust domain, and even a local proving stack is a larger
+attack surface than a signing device. A challenge that covered only
+the circuit, its arguments, and the nonce would let such an
+environment keep the signature valid while substituting what the call
+actually consumes: a different coin selected for an approved
+withdrawal, an altered stored value steering a branch. The approver
+would have authorised a call shape; something else executes. Binding
+the witness values closes the gap by construction: the circuit
+recomputes the challenge over the values it actually consumes, so any
+substitution diverges the challenge and no satisfying assignment
+exists: the prover's discretion reduces to executing exactly the
+approved call against exactly the approved state, or dropping it (S6).
+The consequence for R5's division of roles is deliberate: the approver
+receives the full preimage, witness values included, so approval is
+informed in the hardware-wallet sense (what is reviewed is what
+executes), while the prover contributes proving capacity and nothing
+else. The cost is preimage growth: SHA-256 input proportional to the
+witness data a circuit consumes, on the same accounting as R8;
+custody-class circuits consume few, small witness values, and a
+circuit whose witness data is large pays proportionally and should
+weigh a digest-carrying design under a successor scheme.
+
 ## Path to Active
 
 ### Acceptance Criteria
@@ -788,9 +834,12 @@ unaffected.
   a signature can execute the approved call or withhold it, and it
   sees the circuit's other witnesses — for a shielded withdrawal, the
   coin description being spent. Signature-based authorisation removes
-  the *credential* from the proving environment (AUTH-4); it does not
-  make the prover blind. Delegation choices should weigh MPS-0004's
-  analysis.
+  the *credential* from the proving environment (AUTH-4), and the
+  private-state binding removes its discretion (AUTH-10): editing the
+  witness store before proving changes a covered value, the in-circuit
+  challenge diverges, and no valid proof exists. What remains is
+  visibility (the prover is not blind) and liveness (it can withhold
+  the call). Delegation choices should weigh MPS-0004's analysis.
 - **S7. Add-device channel.** `add_device` grants full authority to
   the holder of the added key. The gated circuit authenticates *who
   authorised the addition*, not *whose key is added*; clients MUST
@@ -878,8 +927,11 @@ Conformance is demonstrated by a suite exercising, against a real node:
    challenge; unregistered `pk`; `pk` registered under a stale epoch;
    wrong `use_counter` with an otherwise-valid signature; an entry
    already consumed by a prior call; tampered argument with an
-   otherwise-valid signature; stale `auth_nonce`; reused signature
-   after a successful call (AUTH-1, AUTH-2, AUTH-3, AUTH-6, AUTH-9).
+   otherwise-valid signature; a substituted witness value (an edited
+   private state, e.g. a different coin selected than the one signed
+   over) with an otherwise-valid signature; stale `auth_nonce`; reused
+   signature after a successful call (AUTH-1, AUTH-2, AUTH-3, AUTH-6,
+   AUTH-9, AUTH-10).
    This matrix is the guard against a vacuously accepting verifier
    (S10).
 3. **Cross-account replay**: one device key registered in two
