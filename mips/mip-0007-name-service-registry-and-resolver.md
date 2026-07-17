@@ -66,7 +66,7 @@ The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY are to be interpreted 
 - **Name / domain**: a label registered under a parent, e.g. `alice` under `.night`, rendered `alice.night`.
 - **TLD**: the top-level domain. For the canonical namespace this is `night`.
 - **Register / resolver**: the contract instance for a single name. It *resolves* that name (its target and records) and *registers* that name's direct children. "Register" and "resolver" denote the same contract in two roles.
-- **Account**: the controlling identity behind a name, represented on-chain by a 32-byte **owner commitment** that is a hash over a wallet-seed-derived secret (see [Ownership and Recovery](#ownership-and-recovery-model)).
+- **Account**: the controlling identity behind a name, represented on-chain by a 32-byte **owner commitment** that is a hash over a wallet-seed-derived secret (see [Ownership and Recovery](#ownership-and-recovery-model)). Forward-looking authorization arms allow the owner record to designate a contract address or an ECDSA public key instead, once the corresponding network capabilities are available (see [Forward-looking authorization arms](#forward-looking-authorization-arms)).
 - **Target**: the primary address a name resolves to.
 - **Field / record**: a key/value string pair attached to a name, analogous to a DNS record.
 
@@ -209,6 +209,16 @@ circuit assert_is_owner(): [] {
 
 Because `secretKey()` is derived from the wallet seed, ownership is **recovery-safe** ([MPS-0012](../mps/mps-0012-account-aliasing.md) Goal 3): restoring the wallet from its BIP-39 mnemonic reproduces the same secret, so the same names remain controllable. No name becomes re-registrable while the owner is offline, because uniqueness is keyed on the name within its canonical parent, not on any session or device state.
 
+#### Forward-looking authorization arms
+
+The commitment check above is the baseline every conforming implementation MUST provide. Two additional arms are specified so that this standard does not need to be reopened as the network gains capabilities; each is OPTIONAL and gated on the availability of the underlying feature on the target network.
+
+1. **Contract-owned names (cross-contract authorization).** The owner record MAY designate a contract address instead of a commitment. An owner-gated circuit then accepts a call when it is made by the designated contract through a cross-contract call; the owning contract applies its own authorization rules (multi-key, threshold signature, DAO vote, or any other policy) before making that call. This is the arm that admits smart-wallet accounts and other contract-based entities as name owners: such entities hold no single secret, so no preimage gate can ever admit them. Cross-contract calls are not yet live on Midnight mainnet; implementations MUST NOT accept contract owners before the capability is available on the target network.
+
+2. **ECDSA-key owners.** Where native ECDSA support ([MIP-0003](./mip-0003-ecdsa-support.md)) is available on the target network, the owner record MAY hold an ECDSA public key, with owner-gated circuits verifying a signature over the requested operation against that key instead of recomputing a commitment. This admits owners whose key custody lives in existing ECDSA infrastructure (hardware modules, MPC and threshold services, external chains).
+
+Both arms are additive. They change only the shape of the owner record and the `assert_is_owner` check; resolution, records, delegation, uniqueness, and pricing semantics are untouched, and existing commitment-owned names continue to verify exactly as specified above. A registry SHOULD record which arm an owner record uses (for example a small tag alongside `DOMAIN_OWNER`) so verifiers apply the correct check, and a name MAY move between arms through the existing `change_owner` and `transfer_domain` operations.
+
 ### Uniqueness Guarantee
 
 A full name path is globally unique because (a) there is exactly one canonical `.night` root contract, and (b) each delegation step looks up a label in exactly one parent's `domains` map, which `register_domain_for` guarantees is collision-free. Resolution from the canonical root is therefore deterministic, and the binding `name path → account/target` is verifiable from chain state alone, satisfying [MPS-0012](../mps/mps-0012-account-aliasing.md) Goal 2. Uniqueness depends on the canonical root being agreed; that agreement is what this MIP proposes.
@@ -248,7 +258,7 @@ Admitting Unicode would import the entire confusables/normalization problem ([MP
 
 ### Why hash-commitment ownership instead of a stored public key?
 
-It is simultaneously the secure choice (avoids the bypassable `ownPublicKey()` pattern) and the recovery-safe choice (the secret is seed-derived, so device loss does not lose the name). Storing a raw wallet public key would either be insecure (if checked via the witness) or break recovery and multi-device use.
+It is simultaneously the secure choice (avoids the bypassable `ownPublicKey()` pattern) and the recovery-safe choice (the secret is seed-derived, so device loss does not lose the name). Storing a raw wallet public key would either be insecure (if checked via the witness) or break recovery and multi-device use. The commitment is the right default for person-held names; it is deliberately not the only arm, because entities that hold no single secret (smart-wallet account contracts, threshold schemes, DAOs) can never satisfy a preimage gate. The [forward-looking authorization arms](#forward-looking-authorization-arms) admit them without weakening this default.
 
 ### Why propose midnight.domains as canonical?
 
