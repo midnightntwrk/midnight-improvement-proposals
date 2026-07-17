@@ -237,9 +237,39 @@ commitment, which is a fixed pseudonym disclosed on every call; a
 rolling entry is disclosed at most twice, once when inserted and once
 when consumed (Rationale R8, Security Considerations S4).
 
-The account is deployed with an initial device set of exactly one
-entry at epoch 0 and use counter 0, `device_count = 1`, and
-`auth_nonce = 0`.
+The entry construction carries a bootstrap constraint: a contract's
+address is derived from the deploy transaction's content, so no
+deploy-time code can know it, and `kernel.self()` evaluates to the
+zero address inside a constructor. The initial entry therefore cannot
+be computed at deploy time. An account is deployed dormant and
+activated by its first call:
+
+- The constructor takes a **boot commitment**
+
+  ```compact
+  persistentHash<[Bytes<32>, Bytes<32>, JubjubPoint]>([DST_BOOT, salt, pk])
+  ```
+
+  where `DST_BOOT` is the tag `"midnight:account:boot:v1"` zero-padded
+  to 32 bytes and `salt` is 32 bytes fresh per account, and stores it
+  with an empty device set, `device_count = 0`, and `auth_nonce = 0`.
+  Gated circuits are unusable before activation, and assets deposited
+  in the gap are releasable only by the committed key.
+- A permissionless circuit `activate_initial_device(pk, salt)`
+  asserts the account is not yet activated, recomputes the commitment
+  from its arguments and asserts it matches the stored one, inserts
+  the device entry for `pk` at epoch 0 and use counter 0, sets
+  `device_count = 1`, and burns the commitment. Activation is
+  deterministic in the committed key: a front-runner replaying an
+  observed `(pk, salt)` can only install the key the deployer
+  committed to, so the call needs no authorisation.
+- The salt MUST be fresh per account. Without it the commitment is a
+  stable function of the device key alone, equal across every account
+  the same key deploys, and pre-activation state would link a user's
+  accounts (the property the address-bound entries exist to prevent).
+
+Deployment and activation SHOULD be submitted back to back; the
+account is usable once both are final.
 
 ### 4. Seam instantiation
 
@@ -961,6 +991,10 @@ Conformance is demonstrated by a suite exercising, against a real node:
 9. **Non-exfiltration audit**: the proving pipeline's inputs for every
    gated call are enumerated and contain no device private key or key
    share (AUTH-4).
+10. **Bootstrap**: activation with the committed `(pk, salt)` succeeds
+    and installs the entry at epoch 0 and use counter 0; a second
+    activation aborts; an activation whose arguments do not match the
+    commitment aborts (section 3).
 
 ## References (Optional)
 
