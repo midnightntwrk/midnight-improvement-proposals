@@ -368,8 +368,12 @@ Semantics (authorised):
    communication commitment and are not public.
 5. `round` is incremented.
 
-The recipient type is deliberately `ZswapCoinPublicKey` and not
-`Either<ZswapCoinPublicKey, ContractAddress>`: see section 6.6.
+The baseline spend circuit's recipient type is deliberately
+`ZswapCoinPublicKey`. A contract MAY additionally expose a
+contract-recipient spend circuit (recipient type `ContractAddress`) for
+the direct transfer mode of section 6.6; its output MUST be claimed by
+the receiving contract in the same transaction, and its onward change
+handling is identical to the baseline circuit's.
 
 #### 6.4 InboxEntry format
 
@@ -432,24 +436,43 @@ an ecosystem dependency in Path to Active.
 
 #### 6.6 Counterparty rules
 
-- A conforming custody contract MUST NOT create a shielded output whose
-  recipient is a contract address, except the self-recipient change
-  output of section 6.3. A shielded output addressed to a contract
-  carries that contract address in cleartext and must be claimed by the
-  receiving contract in the same transaction, so a direct
-  contract-to-contract payment publishes the pair of accounts. (Outputs
-  addressed to a different contract are additionally rejected by the
-  current ledger.)
-- Payments between two custody contracts MUST be routed as one hop: the
-  paying contract sends to a shielded coin public key controlled by the
-  recipient; the recipient deposits into their own contract in a
-  separate transaction. The observer then sees two events that share no
-  address, amount, or token type.
+Two payment modes exist between custody accounts, distinguished by what
+an observer learns.
+
+- **One-hop routing (the default).** The paying contract sends to a
+  shielded coin public key controlled by the recipient; the recipient
+  deposits into their own contract in a separate transaction. The
+  observer sees two events that share no address, amount, or token type
+  (INV-6).
+- **Direct transfer (linking accepted).** The paying contract creates a
+  shielded output whose recipient is the receiving contract's address
+  (the contract-recipient spend circuit of section 6.3), and the
+  receiving contract claims it through its deposit path (6.2) in the
+  same transaction. A contract-addressed output carries that address in
+  cleartext and the transaction carries both contracts' calls, so a
+  direct payment publishes the pair of accounts to every observer,
+  permanently. Direct transfer is validated on the current network
+  without cross-contract calls: the send and the claim are composed
+  client-side into one transaction. (Composition note: the claim call's
+  intent is added to the sending transaction; merging two
+  independently built transactions instead duplicates the claimed
+  output, which the claiming call's builder also materialises for the
+  wallet-deposit case, and fails balancing.) When cross-contract calls
+  are available on the target network, the paying contract MAY invoke
+  the claim directly, changing nothing in this rule.
+- Conforming clients MUST default to one-hop routing, and MUST NOT
+  produce a direct transfer except by a deliberate per-payment choice
+  that accepts the counterparty disclosure. Payment to a deliberately
+  public account (a disclosed merchant or treasury) is the motivating
+  case. A contract that exposes no contract-recipient circuit remains
+  fully conforming; the direct mode is optional surface.
 - Because a coin deposited directly into a custody contract has no
   owner secret, its depositor can compute its nullifier and observe its
   first onward move, including deterministically derived same-value
-  descendants. Clients SHOULD break this trail for received funds (for
-  example by splitting value across spends, or routing through a
+  descendants. This applies to both modes (in the direct mode the payer
+  knows the transferred coin's description exactly as a wallet
+  depositor would). Clients SHOULD break this trail for received funds
+  (for example by splitting value across spends, or routing through a
   user-held coin) before privacy-sensitive use.
 
 #### 6.7 Encryption-key lifecycle
@@ -487,9 +510,11 @@ A conforming implementation MUST satisfy all of the following.
 - **INV-5 (capture safety).** No coin-store capture strategy can cause
   an unintended spend: an incorrect qualified description fails at
   proving, before any transaction exists.
-- **INV-6 (counterparty unlinkability).** A conforming payment between
-  two custody contracts produces no transaction containing both
-  contract addresses.
+- **INV-6 (counterparty unlinkability, one-hop mode).** A payment
+  routed per section 6.6's one-hop rule produces no transaction
+  containing both contract addresses. A direct transfer (6.6)
+  deliberately waives this property for that payment; it MUST NOT be
+  the client default.
 - **INV-7 (round monotonicity).** Every state-changing call strictly
   increases `round`.
 - **INV-8 (mirror soundness).** `unshielded_balances` never exceeds
@@ -777,6 +802,13 @@ instance. Wallets unaware of this standard are unaffected.
   this specification and diverges from it in known ways (its deposits
   do not increment `round`, and its shielded path is the public-map
   control pattern).
+- Direct transfer (section 6.6) is validated end to end by the
+  contract-to-contract transfer experiment in the same workspace: a
+  composed transaction pairing a contract-recipient spend with the
+  payee's deposit claim, accepted by a production node, with the payee
+  spending the received coin in a later transaction and a byte-level
+  observer audit confirming that exactly the two contract addresses,
+  and no value, token type, or nonce, are exposed.
 - Upstream status: the change-rule defect report and the library fix
   are filed and merged (References); the fixed pattern is validated on
   a node by the stateless custody experiment, whose change chains run
@@ -819,6 +851,13 @@ observe the failures this standard rules out):
 7. **One-hop payment**: a payment between two custody contracts routed
    per section 6.6; no transaction in the flow contains both contract
    addresses (INV-6).
+8. **Direct transfer** (where the contract-recipient circuit is
+   implemented): one composed transaction pairing the payer's
+   contract-recipient spend with the payee's deposit claim lands on a
+   real node; the payee's received coin is discoverable through its
+   inbox entry and spendable in a later transaction; the transaction
+   contains both contract addresses and no cleartext value, token type,
+   or nonce.
 
 `round` monotonicity (INV-7) is asserted as a post-condition of every
 test above; INV-1 is exercised by running each authorised circuit once
