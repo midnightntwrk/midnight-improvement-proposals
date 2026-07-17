@@ -373,7 +373,19 @@ The baseline spend circuit's recipient type is deliberately
 contract-recipient spend circuit (recipient type `ContractAddress`) for
 the direct transfer mode of section 6.6; its output MUST be claimed by
 the receiving contract in the same transaction, and its onward change
-handling is identical to the baseline circuit's.
+handling is identical to the baseline circuit's. Unlike the baseline
+circuit, it MUST return the sent coin description alongside the
+surviving change:
+
+```compact
+): [ShieldedCoinInfo, Maybe<ShieldedCoinInfo>]  // [sent, change]
+```
+
+The send evolves the coin's nonce, so the sent description exists only
+inside the circuit; the composing client needs it to build the
+receiving contract's claim call and the sealed inbox entry of the same
+transaction. Return values travel in the communication commitment
+(item 4 above), so nothing additional is disclosed.
 
 #### 6.4 InboxEntry format
 
