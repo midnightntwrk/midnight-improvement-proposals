@@ -41,8 +41,9 @@ Assets MIP (hereafter "the custody MIP") deliberately left abstract.
 Authorisation is by digital signature: each device holds an independent
 Schnorr keypair on the JubJub curve, and every asset-releasing circuit
 verifies, in-circuit, a signature over a challenge that binds the
-account, the circuit, its arguments, and a per-account authorisation
-counter. The choice of an asymmetric signature scheme over the cheaper
+account, the circuit, its arguments, the witness values it consumes
+(pinning the private state the operation executes against), and a
+per-account authorisation counter. The choice of an asymmetric signature scheme over the cheaper
 hash-preimage alternative is deliberate, and carries the standard's
 three load-bearing properties. First, Schnorr admits the FROST
 threshold-signing protocol, so a key can be held as shares across an
@@ -61,10 +62,11 @@ generation can live in different trust domains.
 
 The scheme has been validated end to end on a devnet node, with
 independent TypeScript and Rust signers producing interchangeable
-signatures against the same in-circuit verifier. The device set carries
-an epoch mechanism that revokes every stale authorisation in one step,
-and a recovery seam, left abstract here, for the recovery-paths MIP
-recommended by MPS-0018.
+signatures against the same in-circuit verifier. The device set stores
+rolling, single-use entries, so no stable device identifier ever rests
+in ledger state; it carries an epoch mechanism that revokes every
+stale authorisation in one step, and a recovery seam, left abstract
+here, for the recovery-paths MIP recommended by MPS-0018.
 
 ## Motivation
 
@@ -140,8 +142,13 @@ interpreted as described in RFC 2119.
 - **Device key**: an independent Schnorr keypair `(sk, pk = sk·G)` on
   the JubJub curve. Device keys are never derived from one another or
   from a shared seed.
-- **Device commitment**: the domain-separated hash of a device public
-  key, used as the key of the on-ledger device set.
+- **Device entry**: the domain-separated hash of a device public key
+  together with the account address, the current epoch, and the
+  device's use counter, stored as a single-use element of the
+  on-ledger device set. Every authorised call consumes the acting
+  device's current entry and records its successor.
+- **Use counter**: a per-device monotone counter bound into the device
+  entry; it advances by one each time the device authorises a call.
 - **Epoch**: a monotone counter over the device set; device entries are
   valid only if their recorded epoch equals the current one.
 - **Authorisation counter** (`auth_nonce`): a monotone counter bound
@@ -188,11 +195,13 @@ no invariant of its section 7 is weakened, and no coin material is
 recorded.
 
 ```compact
-export ledger devices: Map<Field, Uint<32>>;
-// device commitment -> epoch at registration.
+export ledger devices: Set<Bytes<32>>;
+// Single-use device entries (below). Every gated call consumes the
+// acting device's current entry and inserts its successor (section 4).
 
 export ledger device_epoch: Uint<32>;
-// Bumped by recovery. Entries recorded under an older epoch are inert.
+// Bumped by recovery. Entries hashed under an older epoch can never
+// match an in-circuit recomputation, so they are inert (AUTH-6).
 
 export ledger device_count: Uint<8>;
 // Devices active in the current epoch. Guards the last-device rule.
@@ -203,10 +212,12 @@ export ledger auth_nonce: Uint<64>;
 // most one call.
 ```
 
-The device commitment for a public key `pk` is:
+The device entry for a public key `pk` at use counter `k` is:
 
 ```compact
-persistentHash<[Bytes<32>, JubjubPoint]>([DST_DEVICE, pk])
+persistentHash<[Bytes<32>, ContractAddress, JubjubPoint, Uint<32>, Uint<64>]>(
+  [DST_DEVICE, kernel.self(), pk, device_epoch, k]
+)
 ```
 
 where `DST_DEVICE` is the domain-separation tag
@@ -214,8 +225,21 @@ where `DST_DEVICE` is the domain-separation tag
 introduced by this MIP are to be registered under the registry
 recommended by MPS-0027.
 
+Each bound element carries an obligation. The account address makes
+entries for the same key in different accounts unequal, so a device
+key registered in several accounts produces no matching ledger values
+anywhere. The epoch makes revocation total without enumerating the
+set: after a bump, no stale entry can match a recomputation under the
+current epoch. The use counter makes every entry single-use, so the
+ledger never holds a device identifier that is stable across two
+authorised calls (AUTH-9). This is the departure from a static device
+commitment, which is a fixed pseudonym disclosed on every call; a
+rolling entry is disclosed at most twice, once when inserted and once
+when consumed (Rationale R8, Security Considerations S4).
+
 The account is deployed with an initial device set of exactly one
-commitment at epoch 0, `device_count = 1`, and `auth_nonce = 0`.
+entry at epoch 0 and use counter 0, `device_count = 1`, and
+`auth_nonce = 0`.
 
 ### 4. Seam instantiation
 
@@ -231,6 +255,7 @@ authorising material:
 
 ```compact
 pk:          JubjubPoint,  // the signing device's public key
+use_counter: Uint<64>,     // the device's current use counter
 sig_r:       JubjubPoint,  // Schnorr commitment R = r·G
 sig_s:       Field,        // Schnorr response s = r + c·sk (mod r_J)
 grind_nonce: Uint<64>,     // challenge-grinding counter (section 5.2)
@@ -238,9 +263,11 @@ grind_nonce: Uint<64>,     // challenge-grinding counter (section 5.2)
 
 and performs, in order:
 
-1. **Membership.** Compute the device commitment of `pk` (section 3);
-   assert `devices.member(commitment)` and
-   `devices.lookup(commitment) == device_epoch`.
+1. **Consume the device entry.** Compute the device entry of `pk` at
+   `use_counter` under the current `device_epoch` (section 3); assert
+   `devices.member(entry)`, remove it, and insert the successor entry
+   at `use_counter + 1`. An unregistered key, a stale epoch, and a
+   wrong counter all fail this step identically.
 2. **Challenge.** Recompute the challenge `c` over this call's preimage
    (section 5).
 3. **Verification.** Assert `ecMulGenerator(sig_s) ==
@@ -257,9 +284,9 @@ with this seam and MUST NOT weaken any invariant of section 9.
 
 The authorising material is witness data of the transaction's proof: it
 appears in no public output, and MUST NOT be disclosed by the circuit.
-The device commitment computed in step 1 is disclosed by the ledger
-lookup itself; the consequences are bounded in Security Considerations
-S4. Transport of the signature between signer and prover is
+The entry consumed and the successor inserted in step 1 are disclosed
+by the ledger operations themselves; both are single-use values, and
+the consequences are bounded in Security Considerations S4. Transport of the signature between signer and prover is
 client-internal and out of scope: the circuit consumes the typed values
 above, and no wire format is consensus-relevant.
 
@@ -270,8 +297,8 @@ above, and no wire format is consensus-relevant.
 The challenge for a gated circuit is:
 
 ```compact
-const h: Bytes<32> = persistentHash<[Bytes<32>, ContractAddress, JubjubPoint, JubjubPoint, ...Args, Uint<64>, Uint<64>]>(
-  [DST_CIRCUIT, kernel.self(), sig_r, pk, ...args, auth_nonce, grind_nonce]
+const h: Bytes<32> = persistentHash<[Bytes<32>, ContractAddress, JubjubPoint, JubjubPoint, ...Args, ...Witnesses, Uint<64>, Uint<64>]>(
+  [DST_CIRCUIT, kernel.self(), sig_r, pk, ...args, ...witness_values, auth_nonce, grind_nonce]
 );
 const c: Field = h as Field;
 ```
@@ -289,6 +316,16 @@ where:
 - `...args` is the gated circuit's full argument list, excluding the
   authorising material itself, in declaration order, with their Compact
   types.
+- `...witness_values` is the ordered sequence of values returned by
+  every witness invocation the gated circuit performs, excluding the
+  authorising material, with their Compact types. This pins the
+  private state. Witness values are drawn from a client-held mutable
+  store (a JSON document in current client stacks) that the proving
+  environment reads, and can edit; a challenge that did not cover them
+  would authorise a call shape rather than an execution (Rationale R9,
+  AUTH-10). Because the circuit recomputes the challenge over the
+  witness values it actually consumes, a proof generated against any
+  altered value cannot satisfy the verification equation.
 - `auth_nonce` is the current authorisation counter (pre-increment).
 
 The preimage MUST include every element above. Implementations
@@ -321,8 +358,11 @@ To authorise a call, a device:
    (Security Considerations S1).
 2. Computes `R = r·G`.
 3. Grinds the challenge per section 5.2 over the exact preimage of
-   section 5.1, using the `auth_nonce` value the call will execute
-   against.
+   section 5.1, using the `auth_nonce` value and the witness values the
+   call will execute against. The approver therefore MUST be given the
+   witness values by the client pipeline, and SHOULD render them for
+   review before signing: approval covers the state the operation runs
+   against, not only its arguments (R9).
 4. Computes `s = r + c·sk mod r_J`.
 5. Outputs `(R, s, grind_nonce)`.
 
@@ -333,13 +373,21 @@ runtime — the property Rationale R5 builds on.
 
 ### 6. Device lifecycle
 
-- `add_device(new_pk: JubjubPoint)` (gated): computes the commitment of
-  `new_pk`, inserts `commitment -> device_epoch`, increments
-  `device_count`. MUST fail if the commitment is already active in the
-  current epoch.
-- `remove_device(commitment: Field)` (gated): removes an active device
-  entry. MUST fail if the commitment is not active in the current
-  epoch, or if `device_count == 1` (AUTH-5). Decrements `device_count`.
+- `add_device(new_pk: JubjubPoint)` (gated): computes the device entry
+  of `new_pk` at the current epoch and use counter 0, inserts it, and
+  increments `device_count`. MUST fail if that entry is already
+  present. The contract cannot detect re-registration of an active key
+  whose chain has advanced past counter 0 (its current entry is not
+  recomputable without the counter); a re-registered key yields two
+  parallel entries for one credential and inflates `device_count`
+  until both are removed. Clients MUST track the device roster and
+  MUST NOT re-add an active key (S11).
+- `remove_device(entry: Bytes<32>)` (gated): removes a device's
+  current entry. MUST fail if the entry is not present, or if
+  `device_count == 1` (AUTH-5). Decrements `device_count`. The caller
+  supplies the literal set element, so removing a lost device requires
+  that device's public key and current use counter; a client recovers
+  the counter from its roster or by the rescan of S11.
 - Lost-device response is `remove_device` from a surviving device.
   Compromised-device response is the same, and Security Considerations
   S7 bounds the exposure window.
@@ -388,8 +436,11 @@ The contract MUST expose exactly one path that changes the device set
 without an active device: a recovery circuit that (a) verifies a
 recovery authorisation whose mechanism this MIP does not specify,
 (b) increments `device_epoch`, (c) registers exactly one fresh device
-commitment at the new epoch and sets `device_count` to 1, and
-(d) increments `auth_nonce` and `round`.
+entry at the new epoch and use counter 0 and sets `device_count` to 1,
+and (d) increments `auth_nonce` and `round`. Entries recorded under
+earlier epochs are not removed (the set cannot be enumerated
+in-circuit); they are permanently inert (AUTH-6), and their number is
+bounded by `device_count` at the moment of the bump.
 
 Under contract custody, recovery restores asset access by construction:
 assets sit in the contract, the epoch bump changes who may authorise,
@@ -420,7 +471,9 @@ addition to the custody MIP's INV-1 through INV-8.
 - **AUTH-5 (no lock-out by ceremony).** `remove_device` cannot remove
   the last active device.
 - **AUTH-6 (revocation totality).** After an epoch bump, no credential
-  recorded under a previous epoch can authorise any operation.
+  recorded under a previous epoch can authorise any operation. Entries
+  bind the epoch inside the hash, so staleness needs no per-entry
+  state: a stale entry can never match an in-circuit recomputation.
 - **AUTH-7 (seedlessness).** Device keys are mutually independent; no
   flow requires a shared seed or derives one device's key from
   another's.
@@ -428,6 +481,17 @@ addition to the custody MIP's INV-1 through INV-8.
   (deposits, inbox appends) do not read or advance `auth_nonce`; a
   third party's deposit cannot invalidate a pending authorisation
   (Rationale R4).
+- **AUTH-9 (single-use device handles).** No value identifying a
+  device appears in ledger state, or in any circuit's disclosed
+  operations, more than twice: once when its entry is inserted and
+  once when it is consumed. In particular, no device identifier is
+  stable across two authorised calls, and no ledger value is equal
+  between two accounts that register the same device key.
+- **AUTH-10 (private-state binding).** Every challenge covers every
+  witness value the gated circuit consumes. A proof generated against
+  a private state that differs, in any consumed value, from the state
+  the signer approved cannot satisfy the verification equation: the
+  signature authorises an execution, not a call shape.
 
 ### 10. Versioning
 
@@ -592,6 +656,82 @@ compromise a fleet event. Independent keys make `remove_device` and the
 epoch mechanism meaningful: revocation removes exactly one credential,
 and recovery invalidates all of them (AUTH-6, AUTH-7).
 
+**R8. Rolling entries, not static commitments.** A static device
+commitment of the form `H(tag, pk)` is a fixed pseudonym with three
+unwanted properties: it is disclosed by the membership lookup of every
+call the device authorises, so an account's whole history is groupable
+by a constant; it is equal across every account in which the same key
+is registered, so shared devices link accounts; and anyone holding a
+candidate public key can test it against any account's state, at any
+time, offline, forever. Binding the account address, the epoch, and a
+per-device use counter into the entry and rolling the entry on every
+call removes all three: nothing at rest identifies a device, no two
+accounts ever hold an equal value, and testing a candidate key now
+requires enumerating counters per account and epoch rather than
+comparing one constant. The counter is per-device deliberately.
+Binding the account-wide `round` would let any permissionless deposit
+orphan every device entry permanently, a strictly worse variant of the
+griefing R4 removes; binding `auth_nonce` would let each authorised
+call orphan every other device's entry. A device's chain must advance
+exactly when that device acts. What rolling does not provide is
+unlinkability against an observer of the contiguous transaction
+transcript: consumption and successor insertion happen in one call, so
+that observer can chain a device's entries across calls (S4). The
+claim is deliberately bounded. Rolling eliminates the static, offline,
+and cross-account correlators at essentially no cost (one set removal
+and one insertion in place of one map lookup), while full per-call
+unlinkability requires the membership-proof-over-accumulator extension
+S4 contemplates, at materially higher circuit cost.
+
+The entries are hashed with `persistentHash`, and the cost is
+acknowledged: a gated call now evaluates it twice (the consumed entry
+and its successor) in addition to the challenge hash, and SHA-256 is
+the expensive primitive in-circuit by a wide margin. `transientHash`
+would remove most of that cost, but absent a version-pinned algebraic
+hash it cannot be trusted for anything that outlives a compilation:
+the toolchain documents its output as not guaranteed to persist
+between upgrades. Device entries rest in ledger state while an
+account's circuits are replaceable in place through contract
+maintenance; a replacement circuit compiled with a toolchain whose
+`transientHash` had drifted would orphan every registered device in a
+single upgrade, recoverable only through the recovery seam. Entries
+are also recomputed off-circuit, by continually rebuilt client
+runtimes, for the rescan and lost-device removal of S11. The
+account-custody prototype hashed its device commitments with
+`transientHash` and records the non-survival of a toolchain upgrade as
+an accepted prototype-only caveat; a standard cannot inherit that
+caveat. R3's stability argument therefore applies to the entries with
+more force than to the challenge, and the same relief applies: should
+the toolchain expose a version-pinned algebraic hash, adopting it for
+both is a successor scheme under section 10.
+
+**R9. The challenge pins the private state, not only the arguments.**
+The private state is not consensus data: it is a mutable, client-held
+document (JSON in current client stacks) from which witness invocations
+draw their values, and the proving environment reads it and can edit
+it. Delegated and remote proving (MPS-0004) make that environment a
+distinct trust domain, and even a local proving stack is a larger
+attack surface than a signing device. A challenge that covered only
+the circuit, its arguments, and the nonce would let such an
+environment keep the signature valid while substituting what the call
+actually consumes: a different coin selected for an approved
+withdrawal, an altered stored value steering a branch. The approver
+would have authorised a call shape; something else executes. Binding
+the witness values closes the gap by construction: the circuit
+recomputes the challenge over the values it actually consumes, so any
+substitution diverges the challenge and no satisfying assignment
+exists: the prover's discretion reduces to executing exactly the
+approved call against exactly the approved state, or dropping it (S6).
+The consequence for R5's division of roles is deliberate: the approver
+receives the full preimage, witness values included, so approval is
+informed in the hardware-wallet sense (what is reviewed is what
+executes), while the prover contributes proving capacity and nothing
+else. The cost is preimage growth: SHA-256 input proportional to the
+witness data a circuit consumes, on the same accounting as R8;
+custody-class circuits consume few, small witness values, and a
+circuit whose witness data is large pays proportionally and should
+weigh a digest-carrying design under a successor scheme.
+
 ## Path to Active
 
 ### Acceptance Criteria
@@ -668,13 +808,19 @@ unaffected.
   inherit RedJubjub's deployment history. The cryptographer review is
   the control; until it concludes, the scheme's status is
   experimentally validated, not reviewed.
-- **S4. Device linkability.** The ledger lookup of step 1 (section 4)
-  discloses the acting device's commitment per gated call, linking an
-  account's operations by device. This is a known, bounded metadata
-  leak on top of the custody MIP's activity metadata (its S4): it
-  reveals which credential acted, never the operation's contents. A
-  membership proof over a commitment accumulator would hide it and is
-  a permitted extension.
+- **S4. Device linkability.** Step 1 (section 4) discloses the entry
+  consumed and the successor inserted. Both are single-use (AUTH-9),
+  so the ledger carries no stable per-device pseudonym: an observer of
+  state snapshots, an observer of other accounts, and an adversary
+  testing a candidate public key all lose their correlator (R8). What
+  remains is transcript chaining: the two values appear in one call,
+  so an observer of the contiguous transaction history can still link
+  one device's calls into a chain, and the set's cardinality still
+  discloses the active device count. The residual leak is bounded as
+  before, revealing which handle acted and never the operation's
+  contents, on top of the custody MIP's activity metadata (its S4). A
+  membership proof over a commitment accumulator would remove
+  transcript chaining as well and is a permitted extension.
 - **S5. Key compromise.** Any active device is sufficient to authorise
   (1-of-n), so a compromised device is full compromise of asset
   release until removed. The response surface is `remove_device` from
@@ -688,9 +834,12 @@ unaffected.
   a signature can execute the approved call or withhold it, and it
   sees the circuit's other witnesses — for a shielded withdrawal, the
   coin description being spent. Signature-based authorisation removes
-  the *credential* from the proving environment (AUTH-4); it does not
-  make the prover blind. Delegation choices should weigh MPS-0004's
-  analysis.
+  the *credential* from the proving environment (AUTH-4), and the
+  private-state binding removes its discretion (AUTH-10): editing the
+  witness store before proving changes a covered value, the in-circuit
+  challenge diverges, and no valid proof exists. What remains is
+  visibility (the prover is not blind) and liveness (it can withhold
+  the call). Delegation choices should weigh MPS-0004's analysis.
 - **S7. Add-device channel.** `add_device` grants full authority to
   the holder of the added key. The gated circuit authenticates *who
   authorised the addition*, not *whose key is added*; clients MUST
@@ -718,6 +867,19 @@ unaffected.
   conformance tests (Testing 2) that catch a verifier which accepts
   everything or rejects everything, and MUST pin toolchain versions
   whose hash outputs are stable, per the custody MIP's S6.
+- **S11. Counter tracking and desync.** The use counter is client
+  state: it appears in no readable ledger value (only inside hashes),
+  so a device that loses it cannot form its next entry. Recovery is a
+  rescan: recompute entries for counters 0, 1, 2, … under the current
+  epoch and test membership against the set (or walk the account's
+  transcript); the chain length equals the number of calls the device
+  has authorised, so the search is short and over the client's own
+  data. Two sessions signing for the same device race on one entry;
+  the loser fails step 1 with no state change and re-syncs. Clients
+  MUST maintain, per account, the device roster (public keys and
+  last-known counters): it is what keeps `remove_device` executable
+  against a lost device (section 6) and what prevents duplicate
+  registration of an active key.
 
 ## Implementation
 
@@ -740,7 +902,9 @@ unaffected.
   epoch, and lifecycle surfaces under a hash-preimage placeholder
   expressly structured so that this MIP's verifier replaces a single
   internal circuit; the custody MIP's section 4 was specified against
-  that seam.
+  that seam. The prototype's device set is a static-commitment map;
+  the rolling entry set of section 3 supersedes it and is exercised by
+  the reference implementation, not by the prototype.
 - **Threshold path.** An existing audited threshold-signatures library
   (MIT-licensed) implements FROST-style RedDSA signing over JubJub with
   distributed key generation; the FROST profile of section 7 requires
@@ -761,10 +925,15 @@ Conformance is demonstrated by a suite exercising, against a real node:
 2. **Rejection matrix**: the same call aborts, with no state change,
    under each single fault — wrong `sig_s`; `sig_r` for a different
    challenge; unregistered `pk`; `pk` registered under a stale epoch;
-   tampered argument with an otherwise-valid signature; stale
-   `auth_nonce`; reused signature after a successful call (AUTH-1,
-   AUTH-2, AUTH-3, AUTH-6). This matrix is the guard against a
-   vacuously accepting verifier (S10).
+   wrong `use_counter` with an otherwise-valid signature; an entry
+   already consumed by a prior call; tampered argument with an
+   otherwise-valid signature; a substituted witness value (an edited
+   private state, e.g. a different coin selected than the one signed
+   over) with an otherwise-valid signature; stale `auth_nonce`; reused
+   signature after a successful call (AUTH-1, AUTH-2, AUTH-3, AUTH-6,
+   AUTH-9, AUTH-10).
+   This matrix is the guard against a vacuously accepting verifier
+   (S10).
 3. **Cross-account replay**: one device key registered in two
    accounts; a signature for account one is rejected by account two
    (AUTH-3).
@@ -774,9 +943,14 @@ Conformance is demonstrated by a suite exercising, against a real node:
 5. **Deposit independence**: a permissionless deposit lands between
    signing and submission; the pending authorisation still executes
    (AUTH-8).
-6. **Lifecycle**: add device, authorise from it, remove it, observe
-   rejection; last-device removal fails; epoch bump invalidates all
-   prior devices in one step (AUTH-5, AUTH-6).
+6. **Lifecycle**: add device, authorise from it repeatedly (entry
+   rolls each time), remove it by presenting its current entry,
+   observe rejection; last-device removal fails; epoch bump
+   invalidates all prior devices in one step (AUTH-5, AUTH-6).
+   Additionally: a client with no local counter state re-derives its
+   current counter by the rescan of S11 and then authorises
+   successfully; the ledger transcript of the run contains no repeated
+   device handle (AUTH-9).
 7. **Cross-implementation signing**: a signature produced by an
    independent signer implementation, exercising its own hash and
    curve stack, is accepted (AUTH-4's boundary; already demonstrated
