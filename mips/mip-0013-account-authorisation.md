@@ -335,11 +335,14 @@ const c: Field = h as Field;
 
 where:
 
-- `DST_CIRCUIT` is a per-circuit domain-separation tag of the form
-  `"midnight:account:auth:v1:<circuit-name>"`, zero-padded or hashed to
-  32 bytes, distinct for every gated circuit and registered under the
-  MPS-0027 registry. Distinct tags make signatures for one circuit
-  unusable for any other, independent of argument encoding.
+- `DST_CIRCUIT` is a per-circuit domain-separation tag: the
+  `persistentHash` of the ASCII tag
+  `"midnight:account:auth:v1:<circuit-name>"` zero-padded to 64 bytes
+  (`persistentHash<[Bytes<64>]>`), regardless of the tag's length. Tags
+  MUST NOT exceed 64 bytes, are distinct for every gated circuit, and
+  are registered under the MPS-0027 registry. Distinct tags make
+  signatures for one circuit unusable for any other, independent of
+  argument encoding.
 - `kernel.self()` is the account's own contract address. Its inclusion
   makes a signature for one account unusable against another account
   in which the same device key is registered.
