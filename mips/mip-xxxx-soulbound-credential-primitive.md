@@ -151,9 +151,30 @@ Revocation is a **public** event: `revoke` publishes the handle and its bracket,
 
 This MIP defines commitment suite `mipa:cred:v1`, issuer tag `mipa:issuer:pk:v1`, holder-key tag `mipa:holder:pk:v1`, namespace tag `mipa:ns:v1`, IMT leaf tag `mipa:revleaf:v1`, and nullifier tag `mipa:present:v1`. Any change to a preimage layout, element order, hash function, or domain tag is a new suite version.
 
-### Non-transferability (scope)
+### Non-transferability: direct and indirect paths (normative scope)
 
-Guaranteed: no non-issuer interface mutates a credential's binding. Out of scope: a holder sharing `holderSecret`/`holderIdentitySecret`, transferring their whole wallet, issuer-holder collusion, or duplicate issuance. The wallet profile resists *casual* sharing (presentation requires the identity secret) but cannot prevent a willing holder from delegating; full non-delegation needs hardware-bound keys / Schnorr-in-circuit and is out of scope for v1.
+**What soulbound binds to here.** On a privacy chain a credential is not a movable object; it is a hiding commitment stored in the issuer's tree, bound to the holder's key and control secret. "Soulbound" therefore means one precise thing in this primitive: the ability to present a credential is bound to knowledge of the holder's secrets, and for the wallet profile that binding is enforced at presentation time by `deriveUserPk(holderIdentitySecret)`. Non-transferability is a property of that binding, not of a token that could change custody.
+
+**Direct non-transferability (guaranteed).** The contract exposes no interface that re-binds or moves a commitment. `issue` appends a new leaf, `revoke` splices a handle into the revoked set, `provePresentation` is read-only, and `proposeIssuer`/`acceptIssuer` rotate issuer authority only. None of them rewrites a holder binding from one `holderPk` to another, and there is no `release`, `claim`, or `transfer`. A conforming implementation MUST NOT add one. This closes the naive "ERC-721 with transfer disabled" gap: non-transferability is the structural absence of any re-binding path, verifiable by inspecting the circuit surface, not a runtime flag.
+
+**Indirect paths (Goal #1): what omission alone does not cover.** Omitting a transfer circuit stops the credential from moving on-chain. It does not stop control of the credential from moving off-chain, and on this architecture all three indirect vectors reduce to a single root cause: custody of the presenting secrets.
+
+1. **Proxying.** A holder who hands their opening (`holderSecret`, `holderIdentitySecret`, `credentialNonce`, and the handle) to another party lets that party present as them. The wallet profile resists casual proxying, because a bare proof is not replayable without the identity secret, but it cannot stop a holder who chooses to share the secret. This is intrinsic to secret-knowledge authentication and is not reachable by anything the contract omits.
+
+2. **Wrapping.** A wrapper contract cannot take custody of a credential the way it can an ERC-721, because there is no transfer to call and no object to escrow: the commitment lives in the issuer's tree, bound to `holderPk`. The only thing a wrapper can custody is the secret material, after which it presents on the holder's behalf. Wrapping therefore collapses into proxying and carries no additional on-chain surface.
+
+3. **Contract-held issuance.** An issuer may issue to a `holderPk` controlled by a contract rather than a person. The credential is then only as non-transferable as control of that contract, so the contract's own governance becomes an effective transfer surface. This is an issuance-policy decision outside the primitive: the primitive cannot tell whether a `holderPk` is a human wallet or a contract-controlled key, and MUST NOT be relied on to enforce human holding by itself.
+
+**Bearer profile is outside the soulbound guarantee by design.** The bearer profile omits the identity check, so possession is exactly knowledge of the opening. A bearer credential is transferable by handing over that opening; that is the point of a bearer instrument. The soulbound guarantee in this section is a wallet-profile claim. Integrators who need non-transferability MUST issue wallet-profile credentials.
+
+**Path to closing the indirect gap (out of scope for v1).** Because the residual gap is secret custody, closing it requires binding presentation to something a holder cannot hand over as bytes:
+
+- non-exportable or hardware-held holder keys, so the identity secret cannot be copied;
+- an interactive challenge that proves live control of the holder key at presentation rather than mere knowledge of a secret (Schnorr-in-circuit);
+- a cryptographically enforced caller identity, so presentation can require the transaction sender to be the holder key rather than any prover who knows the secret (see "Caller Identity Access in Compact Circuits", #213); and
+- issuance policy that binds `holderPk` to an attested device.
+
+None of these are in v1. Holder recovery and rotation, the legitimate counterpart to "control moved", are deferred to the companion recovery MIP; a holder with a lost or rotated key recovers through re-issuance, not through a transfer path.
 
 ## Rationale
 
@@ -189,7 +210,7 @@ New primitive; no existing standard changes. Intentionally non-transferable/non-
 - **`deploymentSalt` is load-bearing.** Per-instance namespace separation depends entirely on the deployer supplying a fresh, unique salt; reuse across same-issuer+schema deployments collapses namespaces and re-enables cross-instance commitment confusion. `kernel.self()` cannot substitute (unavailable in-constructor).
 - **`verifierChallenge`** MUST be a verifier-chosen, fresh, audience-bound 32-byte challenge; the contract cannot enforce freshness. Intentional reuse yields the same nullifier (in-session reuse detection); reuse across contexts degrades unlinkability. Anti-replay is the verifier's responsibility (fresh challenge per presentation).
 - **Opaque issuance.** `issue(cm)` cannot validate well-formedness/uniqueness; issuers MUST only issue out-of-band-vetted `mipa:cred:*:v1` commitments with unique non-zero handles. Junk/duplicate leaves are unpresentable but consume tree slots. Because presentation now enforces holder identity (wallet) and opening knowledge, on-chain risk is limited to issuer-policy failures.
-- **Holder control / delegation.** The wallet profile binds `holderPk = deriveUserPk(holderIdentitySecret)`; possession requires that secret. A willing holder can still delegate by sharing secrets — documented limitation.
+- **Holder control / delegation.** Specified normatively in the Non-transferability section: proxying, wrapping, and contract-held issuance all reduce to custody of the presenting secrets, and the residual gap (a willing holder sharing secrets) plus its path to closing are documented there.
 - **Correlation.** Commitments carry no deterministic public holder id, preventing direct cryptographic linkage; metadata/timing/issuer-record correlation is not prevented (see Anonymity set).
 - **Disclosure.** Only commitments, public Merkle roots, and the nullifier cross the boundary; `issuerSecretKey`, `holderSecret`, `holderIdentitySecret`, `credentialNonce`, and the handle never do.
 
@@ -204,6 +225,7 @@ Unit: issuer-only enforcement, forged-secret rejection, two-step rotation, `hand
 ## References
 
 - Soulbound and Non-Transferable Shielded Attestations (problem statement), midnight-improvement-proposals PR #211.
+- Caller Identity Access in Compact Circuits, midnight-improvement-proposals PR #213.
 - MIP-0004, MIP-0011 (token standards this composes alongside).
 - Reference implementation: https://github.com/DpacJones/midnight-nft (Apache-2.0).
 
