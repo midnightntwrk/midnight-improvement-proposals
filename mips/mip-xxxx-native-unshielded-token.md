@@ -106,7 +106,7 @@ export circuit _mint(
 3. The `Uint<64>` cap is the protocol primitive's; larger issuance uses multiple mints.
 4. A consumer composing the supply extension MUST pair each mint with `_addMinted(domain, amount)`.
 
-An unshielded mint is publicly valued: recipient, color, and amount are visible, and the recipient's wallet detects the UTXO by scanning. A wallet recipient is `right<ContractAddress, UserAddress>(address)`; minting to the issuer itself uses `left<ContractAddress, UserAddress>(kernel.self())`. Because these values become part of the public transcript, the arguments passed to `mintUnshieldedToken` are wrapped in `disclose()`, which is expected here since an unshielded coin is public by construction.
+An unshielded mint is publicly valued: recipient, color, and amount are visible, and the recipient's wallet detects the UTXO by scanning. A wallet recipient is `right<ContractAddress, UserAddress>(address)`; minting to the issuer itself uses `left<ContractAddress, UserAddress>(kernel.self())`. Because these values become part of the public transcript, the arguments passed to `mintUnshieldedToken` are wrapped in `disclose()`, which is expected here since an unshielded coin is public.
 
 A **fixed-supply** issuer mints its entire supply in the constructor and exposes no further mint circuit. After construction the contract has no role in the token's life; the supply exists as ordinary unshielded UTXOs.
 
