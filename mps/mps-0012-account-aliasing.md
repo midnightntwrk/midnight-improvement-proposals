@@ -1,14 +1,14 @@
 ---
 MPS: "0012"
-Title: Human-Readable Aliasing for Midnight Accounts  
+Title: Human-Readable Aliasing for Midnight Accounts
 Authors:
   - Karmel Elshinnawi <Karmoola>
   - Nick Stanford <nstanford5>
-Status: Accepted  
-Category: Standards  
-Created: 21-May-2026  
-Requires: none  
-Replaces: none  
+Status: Accepted
+Category: Standards
+Created: 21-May-2026
+Requires: none
+Replaces: none
 ---
 
 <!--
@@ -27,14 +27,13 @@ Replaces: none
  limitations under the License.
 -->
 
-
 ## Abstract
 
 A single Midnight wallet seed deterministically produces three distinct on-chain addresses — Shielded, Unshielded, and Dust — each with its own Bech32m encoding (`mn_shield-addr1…`, `mn_addr1…`, `mn_dust1…`). Future capabilities, such as Sig.Network-style external-chain address derivation, will add more. Asking users to manage, copy, and disambiguate these addresses raises onboarding friction and increases the risk of misdirected funds.
 
 Several ecosystem partners are independently building human-readable naming layers. Without a network-level standard, these efforts risk namespace fragmentation: two providers could allow the same human-readable name to bind to different accounts, or the same name could resolve to different addresses across wallets, indexers, and dApps. There is no authoritative on-chain primitive guaranteeing that a name is bound to exactly one Midnight account globally.
 
-This MPS identifies the absence of a single, authoritative standard for binding human-readable names to Midnight accounts and to the family of addresses derived from those accounts. It defines the problem space so that future MIPs can specify a registry, resolver interface, and rendering rules that wallets, dApps, indexers, and partner services can adopt uniformly.
+This MPS identifies the absence of a standard for binding human-readable names to Midnight accounts and to the family of addresses derived from those accounts. It defines the problem space so that future MIPs can specify a registry, resolver interface, and rendering rules that wallets, dApps, indexers, and partner services can adopt uniformly.
 
 ## Vision
 

@@ -47,6 +47,9 @@ MPS-0017: governance-observability (in review)
 [MPS-0025: shielded-source-of-funds-evidence](/mps/mps-0025-shielded-source-of-funds.md)  
 [MPS-0026: consensus-censorship](/mps/mps-0026-consensus-censorship.md)  
 [MPS-0027: domain-separation](/mps/mps-0027-domain-separation.md)  
+[MPS-0028: pre-finality-state-visibility](/mps/mps-0028-pre-finality-state-visibility.md)  
+[MPS-0029: caller-identity-access-in-compact](/mps/mps-0029-compact-caller-identity.md)  
+[MPS-0030: consensus-decentralization](/mps/mps-0030-consensus-decentralization)  
 
 # MIPs
 
