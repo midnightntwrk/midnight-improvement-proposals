@@ -57,7 +57,7 @@ The distinction from the other token standards is not whether a contract is used
 
 This is the property Discussion #142 asked for directly: value must move to a recipient known only by `UserAddress`, with neither party first transacting with a contract. A standard that required a contract round trip to recognize or transfer a token would just be describing a contract token, which MIP-0004 already covers.
 
-This proposal references its neighbors to reuse settled decisions rather than relitigate them. The bounded-supply model is the same one MIP-0011 establishes for the shielded case, because the underlying limit is identical: out-of-band destruction is invisible to the contract. The mint-authorization requirement is the hash-based pattern MIP-0004 establishes, because the hazard is identical: `ownPublicKey()` is caller-supplied. The shielded-interoperability section below is written so that an issuer who later wants a shielded representation of the same asset can reach for a conversion mechanism, such as MIP-0004's UTXO conversion, without this standard having to define one.
+This proposal reuses decisions from related standards instead of making new ones. It takes the bounded-supply model from MIP-0011, because unshielded tokens face the same limit shielded ones do: the contract cannot see coins destroyed outside it. It takes the mint-authorization pattern from MIP-0004, because the risk is the same: `ownPublicKey()` can be faked by the caller, so a hash commitment is used instead. The interoperability section is written so that an issuer who later wants a shielded version of the same asset can use a separate conversion mechanism, like the one in MIP-0004, without this standard having to define it.
 
 ## Specification
 
@@ -71,7 +71,7 @@ This proposal references its neighbors to reuse settled decisions rather than re
 
 ### Token Lifecycle
 
-A conforming token's lifecycle separates into contract-bound supply operations and a contract-free middle. The contract is an issuer, not a custodian: it is in the loop only to create or retire supply, never to hold or move it between users.
+A conforming token only touches its contract to create or destroy supply. Minting and burning go through the contract; everything in between, holding, transferring, receiving, and checking balances, happens natively with no contract involved. The contract is an issuer, not a custodian: it never holds or moves tokens between users.
 
 Contract-bound, at supply changes: **mint** and **burn**. Minting is always a contract circuit, `mintUnshieldedToken`, and the color it produces is `tokenType(domain, contractAddress)`, so a color can only originate from the contract whose address derives it. There is no contractless mint. Burn is also a contract operation: it sends coins to an unspendable output for permanent removal and emits a burn event for accounting, mirroring how MIP-0011 burns shielded tokens, and is covered under Burn. A fixed-supply token mints its whole supply once, at genesis; a mintable token calls back for each later mint; and either MAY expose a burn circuit. The contract acts for nothing else.
 
@@ -246,7 +246,7 @@ Ledger state is public and untrusted for identity, so on-chain `name`/`symbol` w
 
 ### Acceptance Criteria
 
-- A reference implementation, ideally an unshielded counterpart to the MIP-0011 modules in the OpenZeppelin Compact Contracts library, with a simulator-based test suite, covering fixed-supply and mintable issuers.
+- A reference implementation, ideally an unshielded counterpart to the MIP-0011 modules in the OpenZeppelin Compact Contracts library, covering fixed-supply and mintable issuers, with a test suite that runs against a live network, devnet at a minimum and preferably preview or preprod.
 - A Midnight testnet deployment exercising genesis issuance, a later mint on the mintable variant, the bounded supply getters, and a burn to an unspendable output with its `UnshieldedBurn` event.
 - A demonstrated wallet-to-wallet transfer constructed from color and recipient `UserAddress` alone, with neither party interacting with the issuer, and a multi-recipient transfer.
 - A wallet or indexer that derives color from `(domain, issuer)`, resolves color-keyed metadata, and reports an indexed circulating supply.
@@ -255,9 +255,9 @@ Ledger state is public and untrusted for identity, so on-chain `name`/`symbol` w
 ### Implementation Plan
 
 1. Land reference native unshielded token modules (fixed-supply and mintable, single-color and multi-color issuers) plus an optional supply extension.
-2. Add simulator and unit coverage for all behaviors, including revert cases.
+2. Add unit and simulator coverage for all behaviors including revert cases, then validate against a live network, devnet at a minimum.
 3. Coordinate metadata resolution with PR #104.
-4. Deploy to testnet, then submit for formal MIP review.
+4. Promote through the public networks to preprod, then submit for formal MIP review.
 
 ## Backwards Compatibility Assessment
 
