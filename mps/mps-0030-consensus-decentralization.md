@@ -1,3 +1,15 @@
+---
+MPS: "0030"
+Title: Decentralization Through Large-Scale Validator Participation  
+Authors: Dominik Zajkowski @dzajkowski  
+Status: Proposed  
+Category: Core  
+Created: 11-MAY-2026  
+Requires: none  
+Replaces: none  
+
+---
+
 <!--
  Copyright 2026 Midnight Foundation
  
@@ -14,17 +26,6 @@
  limitations under the License.
 -->
 
----
-MPS: "0030"
-Title: Decentralization Through Large-Scale Validator Participation  
-Authors: Dominik Zajkowski @dzajkowski  
-Status: Proposed  
-Category: Core  
-Created: 11-MAY-2026  
-Requires: none  
-Replaces: none  
-
----
 
 ## Abstract
 
