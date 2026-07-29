@@ -1,3 +1,15 @@
+---
+MPS: "0018"
+Title: Multi-key Account Custody for Midnight-Native Assets
+Authors: Hector Bulgarini (hbulgarini), Nicolas Di Prima (NicolasDP)
+Status: Proposed
+Category: Libraries and Tooling | Standards
+Created: 04-Jun-2026
+Requires: none
+Replaces: none
+
+---
+
 <!--
  Copyright 2026 Midnight Foundation
 
@@ -13,18 +25,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
----
-MPS: "0018"
-Title: Multi-key Account Custody for Midnight-Native Assets
-Authors: Hector Bulgarini (hbulgarini), Nicolas Di Prima (NicolasDP)
-Status: Proposed
-Category: Libraries and Tooling | Standards
-Created: 04-Jun-2026
-Requires: none
-Replaces: none
-
----
 
 ## Abstract
 

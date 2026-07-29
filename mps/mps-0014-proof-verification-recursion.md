@@ -1,6 +1,6 @@
 ---
 MPS: "0014" 
-Title: Proof Verification in Compact (recursion)
+Title: Proof Verification in Compact
 Authors: Karmel E - karmoola
 Status: Proposed  
 Category: Core   
@@ -9,7 +9,7 @@ Requires: [none]
 Replaces: [none]  
 
 ---
-# MPS: Recursion in Compact
+# MPS: Proof Verification in Compact
 
 ## **Abstract**
 
@@ -39,6 +39,32 @@ End state:
 
 ## **Use Cases**
 
+## **UC 1: A game with many rounds**
+
+Two players play a turn based battle (like Pokémon). The game has 30 rounds. They play the whole thing on their own devices. Every round has to be reported to the chain. 30 rounds means 30 chain transactions and 30 fees. The chain also sees every move along the way, which is more information than anyone needs.
+
+**What should happen:** The players play all 30 rounds locally. At the end, one final result is sent to the chain (the winner, the final score or whatever the game needs). The chain doesn't see the move by move history. The players pay for one transaction not 30.
+
+**Why it matters:** Any game with more than a couple of turns is too expensive to run on Midnight today.
+
+## **UC 2: Combining proof of multiple different things from two different sources**
+
+A user wants to trade on a regulated DEX. The DEX requires two things: the user is over 18, and the user is not a US resident. Two different services handle this: Service A handles age, Service B handles residency. Each is happy to give the user a "yes, this is true" without revealing the underlying documents.
+
+The DEX has to check two separate things, or one service has to do the other's job. There's no clean way for the user to walk up with one piece of evidence that means both of these are true about me.
+
+**What should happen:** The user gets the "over 18" answer from Service A and the "non-US" answer from Service B. They combine the two into a single piece of evidence: "I'm over 18 AND I'm a non-US resident, and it's the same me in both." They hand that one combined thing to the DEX. The DEX checks one thing, sees both facts are true, and lets them trade.
+
+**Why it matters:** This is the building block for real-world compliance use cases. Identity, KYC, accreditation, sanctions screening, healthcare eligibility, they all involve combining facts from different sources, and right now there's no clean way to do that on Midnight.
+
+## **UC 3: Lots of small updates batched into one**
+
+A sealed-bid auction. 1,000 people bid over the course of an hour. Bids are private. Every bid is a chain transaction, or you have to trust someone off-chain to collect them. Neither is good.
+
+**What should happen:** Bids are collected off-chain over the hour. Periodically, one transaction submits a checkpoint and eventually aresult: who won, what they paid. Losing bids stay private. The chain didn't have to process 1,000 separate events.
+
+**Why it matters:** The same pattern shows up in any high-frequency, private use case: voting, micropayments, repeated order updates, recurring private transfers. Without this, none of them are practical on Midnight.
+
 **Gaming: many rounds, one transaction.** A Pokémon-style battle runs N rounds off-chain. Each round produces a proof. Recursion folds them into one final proof that hits the chain. The chain sees one transaction; the player paid for one transaction; the game still has a full audit trail of every round. Today this costs N transactions.
 
 **Multi-party off-chain flows.** An Among Us style game where players pass a running proof between each other. Each player adds their action, the proof gets re-wrapped to include the new step, and only the final state goes on-chain. Today this is impossible because each step would need its own on-chain submission.
@@ -48,3 +74,8 @@ End state:
 **Rollup-style batching for any high-frequency contract.**
 
 Any application with frequent state updates (auctions, order updates, voting, micropayments) can batch many off-chain updates into one on-chain proof. Without recursion, every update is its own transaction.
+
+## Acceptance Criteria: 
+** A developer can write a Compact contract where a circuit accepts a previously generated proof of the same circuit as input and produces a single new proof that covers both the current and previous computation.
+** A developer can write a Compact contract that accepts proofs from different circuits and produces a single proof that attests to the validity of all inputs.
+** Performance benchmarks are published covering proof generation time and final proof size across increasing recursion depths for both same-circuit and cross-circuit composition. 
