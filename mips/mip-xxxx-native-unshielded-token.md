@@ -1,9 +1,9 @@
 ---
-MIP: xxxx
+MIP: "0013"
 Title: Native Unshielded Token Standard
 Authors:
   - Jay Albert
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-07-14
 Requires: none
