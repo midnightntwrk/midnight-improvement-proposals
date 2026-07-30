@@ -32,10 +32,9 @@ License: Apache-2.0
 ## Abstract
 
 This MIP introduces two capabilities to the Midnight stack: (i) a
-`midnight-zk` IVC interface for generating recursive proofs, and (ii) two
-`verifyProof` primitives in Compact that let circuits verify those proofs
-during execution - one that keeps the proof, VK, and public inputs private
-(`verifyProofHidden`), and one that exposes them (`verifyProofExposed`).
+`midnight-zk` IVC interface for generating recursive proofs, and (ii) a
+`verifyProof` primitive in Compact that lets circuits verify those proofs
+during execution against a verifying key fixed at circuit compile time.
 ## Motivation
 
 Currently, compact does not support **in-circuit proof verification ([MPS 14](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0014-proof-verification-recursion.md)).**
@@ -52,10 +51,10 @@ the IVC machinery (folding, accumulator handling, decider) abstracted away
 from the application developer. For the common case, the developer specifies
 only three things:
 
-- The **genesis state** of the recursive computation.
+- The **genesis state** of the recursive computation. 
 - The **in-circuit and off-circuit representation** of the state, i.e. how
   it is assigned and constrained inside the circuit, and how it is computed
-  natively.
+  natively. 
 - The **step function** that advances the state by one round, both in-circuit and off-circuit.
 
 From these, `midnight-zk` derives the recursive circuit and instantiates the
@@ -63,35 +62,26 @@ prover and verifier.
 
 For experienced users who need more control, it will also be possible to
 build **arbitrary proof-carrying data schemes**, not constrained to a linear
-IVC chain, composing recursive statements over arbitrary DAG topologies.
+IVC chain, composing recursive statements over arbitrary DAG topologies. 
 
-### `verifyProof` variants in Compact
+### `verifyProof` in Compact
 
-The Midnight standard library gains two proof-verification primitives:
+The Midnight standard library gains a proof-verification primitive:
 
 ```
-export circuit verifyProofHidden(proof, vk, public_inputs): Bool;
-export circuit verifyProofExposed(proof, vk, public_inputs): Bool;
+export circuit verifyProof(proof, vk, public_inputs): Bool;
 ```
 
-They differ in where verification happens and what appears in the transaction.
-
-**`verifyProofHidden`** - verification happens in-circuit. All three arguments
-are private witnesses; the inner proof, VK, and public inputs never appear in
-the transaction. The midnight-zk aggregator folds the inner proof into the
-outer proof; the transaction carries only the resulting inner proof's accumulator
-and the outer proof. This variant is cheaper on the ledger but more expensive to
-generate, as the PLONK verifier runs inside the circuit.
-
-**`verifyProofExposed`** - verification happens off-circuit. All three
-arguments are public; the proof, VK, and public inputs appear in the
-transaction and the node verifies them directly. No in-circuit verification
-work is required, making this variant cheaper to generate but more expensive
-on the ledger.
+Verification happens in-circuit. The verifying key is public and fixed at
+circuit compile time: it appears in the signature so the developer names
+which VK the circuit verifies against, but it is not a witness that can
+vary at proving time. The proof and public inputs are witnesses. The
+midnight-zk aggregator folds the inner proof into the outer proof; the
+transaction carries the resulting accumulator and the outer proof.
 
 #### VK representation in-circuit
 
-A verifying key is uniquely represented in-circuit by the hash of its `transcript_repr` 
+A verifying key is uniquely represented in-circuit by the hash of its `transcript_repr`  
 together with the commitment to all its fixed columns. This is the canonical handle 
 for reasoning about VKs inside a Compact circuit.
 
@@ -103,19 +93,17 @@ Compact's existing type system.
 #### Witness generation
 
 The application calls midnight-zk from TypeScript to generate the inner proof.
-The resulting proof bytes, the `transcript_repr` of the VK, and the public
-inputs are then passed into the Compact witness builder as opaque blobs.
+The resulting proof bytes and the public inputs are then passed into the
+Compact witness builder as opaque blobs. The VK is not passed at witness time;
+it is already fixed in the compiled circuit.
 
 ### Transaction extension
 
 In order to support proof verification in compact, we need to extend the 
-transaction format. The format differs between the two variants:
-
-- `verifyProofHidden`: the transaction carries the **aggregator** (accumulator)
-  of the inner proof.  The node verifies the outer proof and runs the decider of
-  the inner proof.
-- `verifyProofExposed`: the transaction carries the **full inner proof**, the VK, 
-  and the public inputs. The node verifies both proofs, inner and outer, directly.
+transaction format. The transaction carries the **aggregator** (accumulator)
+of the inner proof. At transaction validation time the node verifies the outer
+proof and finalises the inner proof's deferred pairing in the same step, so
+no separate decider pass is needed.
 
 The encoding details are abstracted from the ledger and owned by midnight-zk.
 The node verifies the transaction without needing to know how many proofs are
@@ -138,28 +126,24 @@ compiler work that Compact-level recursion would require.
 
 The BLS12-381 pairing required to finalise an in-circuit proof verification
 is prohibitively expensive in-circuit. Carrying it as a transaction extension
-is the only practical path. When `verifyProofHidden` is used, the outer and
-inner decider pairings can be batched into a single pairing, reducing ledger 
-cost.
+is the only practical path. The outer and inner decider pairings are batched
+into a single pairing at validation time, reducing ledger cost.
 
 ## Path to Active
 
 ### Acceptance Criteria
 
 - A Compact circuit can accept a proof as input and verify it during
-  execution.
-- A Compact circuit can verify a proof using `verifyProofHidden`, keeping the
-  VK and public inputs private, and prove in-circuit that the VK's
-  `transcript_repr` belongs to a set of accepted VKs.
+  execution against a fixed verifying key.
 - A reference example demonstrates `N` off-chain IVC rounds folded into one
-  on-chain submission, using the `midnight-zk` IVC interface.
+  on-chain submission, using the `midnight-zk` IVC interface. 
 
 ### Implementation Plan
 
 1. Land the `midnight-zk` IVC interface and validate recursive proof
    generation in isolation.
-2. Update `zk-stdlib` to support these instructions.
-3. Add the `verifyProofHidden` and `verifyProofExposed` language primitives and corresponding ZKIR support.
+2. Update `zk-stdlib` to support these instructions. 
+3. Add the `verifyProof` language primitive and corresponding ZKIR support.
 4. Extend the ledger transaction format and verification criteria to carry
    the deferred pairing data.
 5. Validate end-to-end on a devnet using a reference IVC example folding N
@@ -167,14 +151,22 @@ cost.
 
 ## Open Design Questions
 
-**Language design for `verifyProofHidden` and `verifyProofExposed`.** How are
-proof and VK witness types surfaced in Compact's type system? The VK is handled
-via `transcript_repr` and public inputs as field elements, but the precise
-type-level interface and any guarantees the language gives around VK pinning
-carry the most language-design uncertainty in this MIP. On the TypeScript side,
-the exact API by which the developer calls midnight-zk to generate the inner
-proof and threads the result into the Compact witness builder is also
-unsettled.
+**Language design for `verifyProof`.** How are the proof and VK types
+surfaced in Compact's type system? The VK is fixed at compile time and
+public inputs are field elements, but the precise type-level interface and
+any guarantees the language gives around VK pinning carry the most
+language-design uncertainty in this MIP. On the TypeScript side, the exact
+API by which the developer calls midnight-zk to generate the inner proof and
+threads the result into the Compact witness builder is also unsettled.
+
+**VK format specification, versioning, and interop.** The current sketch of
+the in-circuit VK representation (hash of `transcript_repr` together with
+commitments to the fixed columns) is thin. A formal wire-format specification
+is needed, since Compact tooling, wallets, and the node all consume it and a
+byte-for-byte agreement is required if pinning by hash is to remain sound.
+As midnight-zk evolves the format is likely to change; whether we support
+more than one active version at a time, and whether proofs produced against
+one version can be verified by a circuit compiled against another, are open.
 
 **Performance.** Is the performance of in-circuit verification in BLS12-381
 good enough for the intended use cases?
