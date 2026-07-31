@@ -7,7 +7,7 @@ Category: <Core | Libraries and Tooling | Standards | Networking | Governance | 
 Created: DD-MMM-YYYY  
 Requires: [List of other MPS or MIP this MPS depends on, or "none"]  
 Replaces: [List of MPS that this one replaces, or "none"]  
-MIP: [Related MIP reference]
+MIP: [Related MIP reference, can be added later, or "none"]
 ---
 
 <!--
