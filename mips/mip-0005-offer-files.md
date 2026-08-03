@@ -33,8 +33,10 @@ This MIP specifies a standardized format for encoding and sharing Midnight offer
 An offer is a proven, intentionally *imbalanced* transaction:
 it spends some assets and expects others in return,
 and can be merged with one or more complementary offers to produce a balanced, submittable transaction.
-The format uses bech32m encoding with a `swapoffer` human-readable prefix,
-enabling offers to be shared as text strings across any ASCII-compatible medium.
+The canonical form of an offer is the **raw serialized bytes** of that
+transaction; for sharing across ASCII-compatible media, the bytes are encoded
+as a bech32m string with a `swapoffer` human-readable prefix (see *Dual
+representation*).
 
 This format generalizes different valid offers given they are **a proven Midnight `Transaction`**,
 so it covers shielded offers and unshielded (UTXO) offers.
@@ -105,13 +107,47 @@ swapoffer1<bech32m-encoded-data><checksum>
 > which may contain no zswap offer at all (a purely unshielded offer).
 > Implementations MUST NOT assume the presence of a shielded component from the HRP alone.
 
-### bech32m is a display encoding, not the canonical form
+### Dual representation
 
-The canonical, authoritative representation of an offer is the **raw serialized bytes** of the `Transaction`.
-bech32m exists purely to make those bytes safely shareable as ASCII text (messaging, files, clipboards).
-Systems that store or transmit offers as opaque bytes, notably a data-availability layer (see MIP-0006), 
-MUST use the raw bytes, not the bech32m string, to avoid the ~1.6× size expansion that bech32 imposes. 
-The two are losslessly interconvertible: `decode(encode(bytes)) == bytes`.
+An offer has exactly two representations, and every system handling offers MUST
+use the one that matches its context:
+
+1. **Interchange / display — the bech32m string** (`swapoffer1…`).
+   For humans and text-oriented channels: sharing in messages and files,
+   clipboards, rendering in UIs, and string fields in JSON APIs
+   (see MIP-0006's indexer API).
+2. **Storage / machine transport — the raw serialized bytes** of the
+   `Transaction`. This is the canonical, authoritative form: byte-oriented
+   systems — a data-availability layer (see MIP-0006), databases, caches —
+   MUST store these bytes directly, and content addressing (hashing an offer
+   for identity or deduplication) MUST hash these bytes, never the string.
+
+bech32m exists purely to make the bytes safely shareable as ASCII text;
+storing or publishing the string instead of the bytes wastes ~1.6× the space
+for no benefit. The two forms are losslessly interconvertible:
+`decode(encode(bytes)) == bytes`, so no information is gained or lost by
+converting — only the ~1.6× size expansion distinguishes them on the wire.
+
+#### Content address (offer hash)
+
+An offer's canonical identifier is:
+
+```text
+offerId = lowercase hex( SHA-256( raw Transaction bytes ) )
+```
+
+where the raw bytes are the canonical form defined above: the output of the
+ledger's transaction serialization. The hash input is those bytes — never the
+bech32m string, which is an *encoding of* the bytes, not an alternative
+source of them. A holder of only the string first recovers the bytes
+(`decode(offerBech32)`, which by losslessness yields exactly the serialized
+transaction) and hashes the result; a holder of the bytes hashes them
+directly. Both arrive at the same id.
+
+Since the DA layer publishes exactly these bytes (MIP-0006), the offer's id
+is also the hash of its DA blob. Implementations MUST NOT hash the string
+form: its bytes differ from the payload's (bech32m character set, HRP,
+checksum), so doing so produces a different — wrong — identifier.
 
 ### Binary Payload
 
@@ -165,7 +201,11 @@ An encoded offer is a snapshot against ledger state and expires independently of
 - **Intent TTL.** Each intent carries a `ttl` timestamp that must satisfy
   `t_block ≤ ttl ≤ t_block + global_ttl` at apply time,
   where `global_ttl` is a network parameter.
-- **Merkle-root recency.** Each shielded input's proof commits to a Zswap Merkle-tree root,  and the ledger accepts only roots it has seen within its root-recency window,  also a network parameter; older roots are rejected as unknown.
+- **Merkle-root recency.** Each shielded input's proof commits to a Zswap
+  Merkle-tree root, and the ledger accepts only roots inside its recency
+  window; older roots are rejected as unknown. The window's clock runs from
+  the last block at which the root was current, not from offer creation —
+  see MIP-0006's *Offer lifetime* for the precise semantics.
 
 Implementations SHOULD surface the effective expiry to users (see also MIP-0006).
 
@@ -409,6 +449,16 @@ function offerFromBech32(text: string): Transaction<'signature', 'proof', 'bindi
 | Cross-language round-trip (Rust ↔ TypeScript) | Byte-identical serialization |
 | Offer string length for single-input/output shielded swap | Approximately 16,000 characters |
 | Double-click selection in common environments | Entire string selected |
+
+## Future Work: attached messages
+
+A maker-supplied note ("filling instructions", contact hints, human context)
+is needed, but no part of the Transaction can hold this.
+
+See MIP-0006's *Future Work* for the full construction and the open
+questions a specifying MIP must settle (most substantively, message
+attribution under transaction merging). Until such an upgrade lands, offer
+files carry no messages.
 
 ## References
 
