@@ -35,9 +35,10 @@ It leverages Midnight's native transaction merging to enable trustless atomic sw
 without a custom smart contract.
 Makers create partial (imbalanced) transactions offering tokens;
 takers complete and submit them; the ledger handles all settlement logic.
-This standard defines two payloads —
-one published to a shared data-availability (DA) layer (recommended: Celestia, under a common namespace),
-one served by indexers for discovery — and a reference indexer API.
+This standard defines what is published to a shared data-availability (DA)
+layer (recommended: Celestia, under a common namespace) — the raw MIP-0005
+offer bytes, with no envelope — what indexers serve for discovery,
+and a reference indexer API.
 
 Publishing to a shared DA namespace lets dApps share liquidity:
 every UI, indexer, and bot reads the same offers,
@@ -89,46 +90,42 @@ which expresses shielded and unshielded swaps.
 ### Relationship to Offer Files (MIP-0005)
 
 MIP-0005 defines the offer itself:
-a proven, imbalanced `Transaction`, its raw-byte serialization,
-and a bech32m string (`swapoffer1…`) for text sharing.
-This MIP defines what wraps that offer for **publication** and for **discovery**:
+a proven, imbalanced `Transaction`, its dual representation —
+raw canonical bytes for storage, a bech32m string (`swapoffer1…`) for
+interchange and display — and the rule that content addressing hashes the
+bytes. This MIP maps that dual representation onto **publication** and
+**discovery**:
 
-- The **on-chain payload** carries the MIP-0005 offer as **raw bytes** (not the bech32m string)
-  plus a minimal, untrusted wrapper.
-- The **off-chain payload** is what an indexer serves:
-  the offer plus derived discovery metadata (gives/wants, expiry) and indexer-observed fields.
+- **On-chain** (the DA blob) carries the MIP-0005 offer as **raw bytes** —
+  nothing else. No envelope, no version byte, no metadata.
+- **Off-chain** (the indexer API) carries the offer as its **bech32m string**
+  plus derived discovery metadata (gives/wants, expiry) and indexer-observed
+  fields.
 
 > **Bytes, not bech32, on the DA layer.** bech32m is a display encoding (MIP-0005).
 > Publishing the bech32m string to a DA layer wastes ~1.6× the bytes for no benefit,
 > exactly as nobody submits a bech32 *address* on-chain.
 > Publish the raw offer bytes; render bech32m only for humans.
 
-### On-chain Offer Payload (published to the DA layer)
+### On-chain representation (published to the DA layer)
 
-```typescript
-interface OnchainOfferPayload {
-  version: 1;
+The blob content is **exactly the canonical MIP-0005 payload: the raw bytes
+produced by serializing the proven `Transaction`**. There is no wrapper. The
+bech32m `swapoffer1…` string is an *encoding* of these bytes, not their
+source — a publisher holding only the string first decodes it, which by
+MIP-0005's losslessness recovers exactly the serialized transaction, and
+publishes those bytes.
 
-  // MIP-0005 payload: canonical serialized `Transaction` bytes (NOT bech32m).
-  offer: Uint8Array;
-
-  // Optional, UNTRUSTED free-form note. Placeholder until a ZK-authenticated
-  // message bound to the UTXO secret is specified (see Future Work). Consumers
-  // MUST NOT treat this as authenticated.
-  unverifiedMessage?: string;
-}
-```
-
-This is deliberately minimal.
-It carries no `gives`/`wants` (derivable from the offer — see below),
-no timestamps (not knowable from the offer),
-and no public key or signature.
-When serialized to a byte-oriented DA layer, `offer` is the payload's dominant content
-and `unverifiedMessage`, if present, is a short message from the sender.
+With no wrapper, the on-chain form inherits MIP-0005's properties directly:
+the blob is the offer, `decode(blob)` is the transaction, and the offer's
+content address is the hash of the blob itself.
+The blob deliberately carries no `gives`/`wants` (derivable from the offer —
+see below), no timestamps (not knowable from the offer),
+and no public key, signature, or message.
 
 ### Publishing to the data-availability layer
 
-Makers publish the `OnchainOfferPayload` as a blob to a shared **data-availability (DA) layer**.
+Makers publish the raw offer bytes as a blob to a shared **data-availability (DA) layer**.
 Publishing to a common, permissionless location —
 rather than to a single dApp's private backend —
 is what lets **dApps share liquidity**:
@@ -148,7 +145,7 @@ shared by all compliant implementations:
 | --- | --- |
 | DA layer | Celestia (recommended) |
 | Namespace | version 0, 10-byte id suffix `mn-swap-v1` (see below) |
-| Blob contents | serialized `OnchainOfferPayload` (raw MIP-0005 offer bytes, version + optional `unverifiedMessage`) |
+| Blob contents | the raw canonical MIP-0005 `Transaction` bytes — no envelope |
 
 - **Raw bytes, not bech32** — the DA blob carries the MIP-0005 offer as bytes
   (bech32m is a display encoding only; see MIP-0005).
@@ -185,15 +182,19 @@ interface TokenLeg { token: string; amount: string; type: TokenKind; } // hex Ra
 
 interface OffchainOfferPayload {
   version: 1;
-  offerBech32: string;              // MIP-0005 bech32m rendering, for display
-  unverifiedMessage?: string;       // echoed from the on-chain payload; UNTRUSTED
+  // The offer's content address: lowercase hex SHA-256 of the canonical raw
+  // Transaction bytes (see MIP-0005, "Content address"). Stable across every
+  // indexer and equal to the hash of the offer's DA blob.
+  offerId?: string;
+  // MIP-0005 bech32m rendering of the same bytes, for display/interchange.
+  offerBech32?: string;
   computed: {                       // everything the indexer derives / observes
     gives: TokenLeg[];              // DERIVED from the offer's imbalances
     wants: TokenLeg[];              // DERIVED from the offer's imbalances
     expiresAt?: string;             // ISO 8601, from the earliest intent TTL, when present
     inputNullifiers: string[];      // shielded input nullifiers (hex) for liveness
     firstSeenAt: string;            // ISO 8601, when the indexer first saw the offer
-    status: 'live' | 'consumed' | 'expired';
+    status?: 'live' | 'consumed' | 'cancelled' | 'expired';
   };
 }
 ```
@@ -204,7 +205,6 @@ Example:
 {
   "version": 1,
   "offerBech32": "swapoffer1…",
-  "unverifiedMessage": "hello",
   "computed": {
     "gives": [{ "token": "4a8f…", "amount": "100", "type": "SHIELDED" }],
     "wants": [{ "token": "0200…", "amount": "50",  "type": "SHIELDED" }],
@@ -216,11 +216,22 @@ Example:
 }
 ```
 
+**Presence rules for `offerId` / `offerBech32`:** at least one MUST be
+present. In multi-offer (list) responses an indexer SHOULD serve `offerId`
+and MAY omit `offerBech32` — a real offer's bech32m string is 16–25 KB, so a
+100-row page carrying strings is megabytes of redundant payload when each
+offer is individually retrievable. In single-offer responses `offerBech32`
+MUST be present. Anyone holding the string derives the id locally
+(`sha256(decode(offerBech32))`), so omitting one form never loses
+information.
+
 Everything under `computed` is produced by the indexer —
 either derived from the offer bytes (`gives`, `wants`, `expiresAt`, `inputNullifiers`)
 or observed by the indexer (`firstSeenAt`, `status`).
 None of it is trusted from the maker.
-Only `offerBech32` and the untrusted `unverifiedMessage` carry over from what was published.
+Only `offerBech32` carries over from what was published — and it is merely the
+bech32m rendering of the on-chain bytes themselves (MIP-0005 dual
+representation), so the API field and the DA blob can never disagree.
 
 #### Field derivation
 
@@ -231,7 +242,7 @@ Only `offerBech32` and the untrusted `unverifiedMessage` carry over from what wa
 | `computed.expiresAt` | The earliest intent TTL (when the offer carries an intent), or the time the offer's proof roots leave the node's root-recency window |
 | `computed.inputNullifiers` | Nullifiers of the offer's shielded inputs — the keys an indexer watches to mark an offer `consumed` |
 | `computed.firstSeenAt` | The indexer's clock when the offer was first seen on the DA layer |
-| `computed.status` | Indexer bookkeeping: `live` until a backing input is spent (`consumed`) or the offer expires (`expired`; see Offer lifetime) |
+| `computed.status` | OPTIONAL indexer bookkeeping — observed, not consensus data: `live` until a backing input is spent or the offer expires (`expired`; see Offer lifetime). A spend is `consumed`; an indexer MAY refine it to `cancelled` where its evidence supports that (see *Fill vs cancel*) |
 
 ### Deriving gives / wants
 
@@ -255,38 +266,33 @@ Indexers MUST derive these fields; they MUST NOT accept them as trusted input.
 
 ### Offer lifetime
 
-Two independent ledger rules bound how long a published offer stays takeable:
+Two independent ledger rules bound how long a published offer stays takeable.
+They are independent in every sense — different mechanisms, different
+enforcement points, separately configurable — despite both defaulting to one
+hour today:
 
-- **Intent TTL.** Each intent's `ttl` must satisfy `t_block ≤ ttl ≤ t_block + global_ttl` at apply time,
-  where `global_ttl` is a network parameter.
-- **Merkle-root recency.** A shielded input's proof commits to a Zswap Merkle-tree root,
-  and the ledger accepts only roots seen within its root-recency window (a network parameter).
-  A purely shielded offer may carry no intent (and hence no TTL) at all;
-  its effective lifetime is still bounded by this window.
+- **Intent TTL (unshielded).** Each intent's `ttl` must satisfy
+  `t_block ≤ ttl ≤ t_block + global_ttl` at apply time, where `global_ttl` is
+  an on-chain ledger parameter. This is not optional for unshielded value:
+  an `UnshieldedOffer` exists only as a field of an `Intent`, and
+  `Intent.ttl` is non-optional — so an unshielded offer structurally always
+  carries a TTL, and its effective inclusion window is
+  `[ttl − global_ttl, ttl]`.
+- **Merkle-root recency (shielded).** A Zswap offer carries no TTL field at
+  all, and well-formedness never expires it — it dies only at *apply* time,
+  when an input's Merkle root is no longer accepted. That root history is
+  time-filtered: the **current** root is re-inserted every block and entries
+  older than `t_block − window` are evicted. Consequently the clock runs
+  from the last block whose tree state the offer proved against, not from
+  when the offer was created — on a quiet chain segment the same root keeps
+  refreshing and the offer stays takeable. Implementations deriving an
+  expiry MUST use the root's **last-seen** time; deriving it from first-seen
+  expires live offers early. An offer also dies immediately if any input's
+  nullifier lands on-chain first.
 
-Indexers SHOULD mark offers `expired` when the earliest intent TTL passes.
-`firstSeenAt` is an indexer-side lower bound on an offer's age, not a maker claim.
+Indexers SHOULD mark offers `expired` on whichever bound applies to the
+offer's value layers.
 
-### Removed: Authentication (`auth`)
-
-The previous revision defined an optional BIP-340 Schnorr `auth` block over the offer JSON.
-**It has been removed** because it was both unsound and privacy-harming:
-
-1. **Not binding.** The signature was over the wrapper JSON,
-   using a key unrelated to the secret that controls the offer's UTXO.
-   Anyone can strip the wrapper from a published offer,
-   re-wrap it with their own key and signature, and republish.
-   The claim that it "prevents metadata tampering" was therefore false —
-   an attacker simply produces a validly-signed wrapper of their own.
-2. **Privacy leak.** Including the maker's public key in a public discovery record
-   deanonymizes the maker and links their offers,
-   defeating the purpose of a private offer file.
-
-Until a sound primitive exists (see Future Work),
-a maker MAY attach a free-form `unverifiedMessage`.
-It is explicitly untrusted:
-implementations MUST NOT display it as authenticated
-and MUST NOT rely on it for any decision.
 
 ### Offer Validation
 
@@ -344,42 +350,58 @@ Compliant indexers MUST implement the following REST API,
 and SHOULD additionally expose a streaming endpoint
 (e.g. a WebSocket at `/v1/offers/stream`)
 that pushes new and updated offers as they are observed on the DA layer.
-Publication carries the on-chain payload; queries return the `OffchainOfferPayload`.
-The raw offer bytes live on the DA layer.
+
+The API is a text surface, so offers cross it in their **bech32m form**
+(MIP-0005 dual representation): publication accepts the `swapoffer1…` string,
+queries return `offerBech32`. The indexer decodes to the raw bytes, and those
+bytes are what it publishes to — and matches against — the DA layer.
 
 #### POST /v1/offers — publish
 
-The request body carries the **on-chain payload** —
-the same bytes that go to the DA layer, so the two can never disagree:
+The request body carries the offer as its MIP-0005 bech32m string (the
+interchange form — this is a JSON API). The indexer decodes it, recovering
+the canonical transaction bytes, and those bytes are what go on-chain — so
+the string a maker submits and the blob the DA layer stores can never
+disagree:
 
 ```json
-{ "offer": "<base64-encoded OnchainOfferPayload bytes>" }
+{ "offer": "swapoffer1…" }
 ```
 
 Response: `{ "offerId": "string" }`
 
 Validation:
 
-- MUST deserialize the offer and derive `gives`/`wants` itself
-  (there are no maker-asserted terms to trust).
+- MUST decode per MIP-0005 (HRP, checksum) and deserialize the offer, then
+  derive `gives`/`wants` itself (there are no maker-asserted terms to trust).
 - MUST reject malformed payloads, undeserializable offers, and give-only offers.
-- SHOULD reject duplicates.
+- SHOULD reject duplicates (content-addressed: hash of the raw offer bytes).
 
 #### GET /v1/offers — query
 
 Indexers SHOULD support filtering by token type (in either `gives` or `wants`) and pagination.
 Exact query semantics are left to implementations.
 
-Response: `{ "offers": [ { "offerId": "string", "offer": { /* OffchainOfferPayload */ } } ], "total": 0 }`
+Response: `{ "offers": [ /* OffchainOfferPayload, offerBech32 omittable */ ], "nextCursor": "string" | null }`
+
+Pagination is cursor-based: pass the previous response's `nextCursor` back as
+a query parameter to continue; `null` means exhausted. There is deliberately
+no `total` field — an exact count is O(table) on every page and immediately
+stale on a permissionless namespace, inviting implementations to serve wrong
+numbers cheaply or right numbers expensively.
 
 #### GET /v1/health — health check
 
 ### Versioning
 
-Both payloads carry an explicit `version` field (this revision: `1`).
-Incompatible changes to either payload schema increment the version
+The on-chain blob needs no version field of its own: it is the raw offer
+bytes, already versioned by the ledger's tagged transaction serialization
+(see MIP-0005 *Versioning*) — incompatible bytes fail to deserialize rather
+than being silently misread.
+
+The off-chain `OffchainOfferPayload` carries an explicit `version` field
+(this revision: `1`). Incompatible changes to its schema increment the version
 and are specified by a superseding MIP per MIP-0001.
-The embedded offer bytes are versioned independently by the ledger serialization (see MIP-0005).
 
 ## Rationale
 
@@ -388,11 +410,16 @@ The embedded offer bytes are versioned independently by the ledger serialization
 The previous single `OfferPayload` conflated two concerns:
 what is *published* and what is *discovered*.
 Publishing wants only the offer bytes
-(everything else is derivable, unknowable, or privacy-harming).
+(everything else is derivable, unknowable, or privacy-harming) —
+taken to its conclusion in this revision, where the on-chain form IS the
+offer bytes, with no envelope at all: a wrapper would need its own canonical
+byte encoding for implementations to interoperate, and every field it might
+carry is either derivable from the offer or untrustworthy.
 Discovery wants the derived, human-useful fields.
 Separating them keeps the DA payload minimal (cheaper, more private)
 and lets indexers enrich freely.
-This mirrors the address model: bytes on the wire, bech32m for humans.
+This mirrors the address model exactly: bytes on the wire, bech32m for humans
+(MIP-0005 dual representation).
 
 ### Protocol-level settlement
 
@@ -410,6 +437,47 @@ so they cannot disagree with reality.
 `expiresAt` comes from the intent TTL, when present.
 `inputNullifiers` are read from the offer's shielded inputs
 and are what an indexer watches to flip `status` to `consumed`.
+
+### Fill vs cancel (the OPTIONAL `cancelled` status)
+
+A spent backing input ends an offer, but it does not say *how*: the offer may
+have settled (a taker merged and submitted it — a fill), or the maker may
+simply have spent the coins elsewhere (a cancel; there is no on-chain cancel
+operation, walking away is the cancel). The `cancelled` status value lets an
+indexer report the second case. It is **OPTIONAL and explicitly
+best-effort** — the classification is not fully deterministic from the data
+this MIP requires an indexer to hold, so two conforming indexers may disagree
+(`consumed` vs `cancelled`) on the same offer. Consumers MUST treat
+`cancelled` as a refinement of `consumed`, never as a distinct lifecycle
+state to depend on: either way the offer is gone and cannot settle.
+
+What an indexer CAN conclude, and from what evidence:
+
+- **Settlement is atomic.** A fill consumes *all* of an offer's inputs in
+  *one* ledger transaction. Therefore an offer whose inputs were spent
+  across **different** transactions, or only **partially** (some inputs
+  spent, others still live while the rest are gone), was cancelled — with
+  certainty. This requires the indexer to record, per spent input, the hash
+  of the spending transaction.
+- **The converse is a heuristic.** All-inputs-in-one-transaction is
+  necessary for a fill but not sufficient: for a single-input offer any
+  spend trivially satisfies it, and a maker consolidating their own coins
+  spends all inputs in one transaction too. An indexer relying on input
+  grouping alone SHOULD therefore report such offers as `consumed`, not
+  `cancelled`.
+- **Exact classification is possible with output tracking.** The offer's
+  transaction fixes the maker's *output* commitments (the coins paying the
+  maker their `wants`), and transaction merging preserves outputs — so a
+  settling transaction contains, on-chain, exactly the offer's output
+  commitments alongside its input spends, while a cancel contains none of
+  them. An indexer that additionally tracks created commitments per
+  transaction can classify every offer deterministically, including
+  single-input ones. Indexers doing so MAY report `cancelled` with
+  certainty in both directions.
+
+The same reasoning applies to unshielded inputs (UTXO spends grouped by
+spending transaction; unshielded outputs are public, making the output check
+strictly easier there).
 `firstSeenAt` replaces the old `createdAt`:
 an offer's creation time is **not knowable from the offer**,
 and any maker-asserted timestamp would be unverifiable.
@@ -478,7 +546,8 @@ Either both parties receive exactly what was committed, or the transaction fails
 `gives`/`wants` are derived from the transaction,
 so a malicious indexer that misrepresents them is caught by any taker
 that re-derives from the offer (which they SHOULD do before completing).
-`unverifiedMessage` is untrusted by construction.
+There is no maker-supplied metadata at all: everything a taker sees is either
+derived from the proven transaction or explicitly indexer-observed.
 
 ### Stale offers
 
@@ -501,18 +570,10 @@ The valuable primitive the removed `auth` block failed to provide is:
 a proof that a message accompanies an offer
 and was authorized by the same secret that controls the offer's UTXO,
 **without revealing a public key**.
-This is expressible as a zero-knowledge proof
-(prove knowledge of the spending secret for one of the offer's inputs
-and that it signs the message)
-and would let a maker attach a trustworthy note while preserving privacy.
-The concrete goal is to attach an encrypted message (ciphertext) to the payload,
-readable by its intended audience yet bound to the offer's owner.
-No satisfying construction is known yet:
-a plain signature leaks the maker's key material,
-and a proof that simultaneously authenticates and carries a text
-without leaking identity remains an open design problem.
-Specifying it is deferred to a future MIP;
-until then, `unverifiedMessage` is the untrusted placeholder.
+Note first that even an *unauthenticated* message has no home today: the
+ledger `Transaction` provides no field for one, and modifying the serialized
+bytes invalidates the offer's proofs and signatures (MIP-0005, *Future
+Work: attached messages*).
 
 ## Testing
 
@@ -521,8 +582,7 @@ until then, `unverifiedMessage` is the untrusted placeholder.
 | Happy-path swap | Both parties receive tokens |
 | Advertised gives/wants ≠ derived | Indexer rejects / taker detects mismatch |
 | Give-only offer published | Indexer rejects; taker refuses to settle |
-| `unverifiedMessage` present | Surfaced as untrusted; ignored for decisions |
-| On-chain payload round-trip | Raw bytes recreate the exact `Transaction` |
+| On-chain blob round-trip | Blob bytes ARE the offer: `deserialize(blob)` recreates the exact `Transaction`, and `encode(blob)` equals the maker's `swapoffer1…` string |
 | Off-chain payload derivation | gives/wants equal the transaction's net imbalances |
 | Cancelled offer | Take attempt fails gracefully |
 | Expired offer (TTL or root recency) | Take attempt fails; indexer marks `expired` |
