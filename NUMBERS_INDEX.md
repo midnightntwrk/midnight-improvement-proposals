@@ -47,6 +47,9 @@ MPS-0017: governance-observability (in review)
 [MPS-0025: shielded-source-of-funds-evidence](/mps/mps-0025-shielded-source-of-funds.md)  
 [MPS-0026: consensus-censorship](/mps/mps-0026-consensus-censorship.md)  
 [MPS-0027: domain-separation](/mps/mps-0027-domain-separation.md)  
+[MPS-0028: pre-finality-state-visibility](/mps/mps-0028-pre-finality-state-visibility.md)  
+[MPS-0029: caller-identity-access-in-compact](/mps/mps-0029-compact-caller-identity.md)  
+[MPS-0030: consensus-decentralization](/mps/mps-0030-consensus-decentralization)  
 
 # MIPs
 
@@ -61,3 +64,5 @@ MPS-0017: governance-observability (in review)
 [MIP-0009: lazy-contract-state-query-rpc](/mip/mip-0009-query-contract-state-rpc.md)  
 [MIP-0010: aura-to-babe-migration](/mips/mip-0010-aura-to-babe-migration.md)  
 [MIP-0011: native-shielded-token-standard](/mips/mip-0011-native-shielded-token.md)  
+[MIP-0012: contract-asset-custody](/mips/mip-0012-native-asset-custody.md)  
+[MIP-0013: multi-key-account-auth-contract-custody](/mips/mip-0013-account-authorisaction.md)  
