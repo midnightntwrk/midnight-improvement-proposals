@@ -1,43 +1,71 @@
 ---
 MIP: 0006
 Title: Peer-to-Peer Atomic Swaps
-Authors: Andrew Fleming @andrew-fleming
+Authors: Andrew Fleming @andrew-fleming, Edward Alvarado <edward.alvarado@midnight.foundation>
 Status: Proposed
 Category: Standards
 Created: 2026-02-12
+Requires: MIP-0005
+Replaces: none
+License: Apache-2.0
 ---
+
+<!--
+ This file is part of midnight-improvement-proposals.
+ Copyright (C) 2025-2026 Midnight Foundation
+ SPDX-License-Identifier: Apache-2.0
+ Licensed under the Apache License, Version 2.0 (the "License");
+ You may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
 
 ## Abstract
 
-This proposal specifies a scaffolding implementation for peer-to-peer atomic swaps on Midnight,
-similar to [Dexie.space](https://dexie.space) on Chia.
-The architecture leverages Midnight's native Zswap transaction merging to enable trustless atomic swaps without requiring a custom smart contract.
-Makers create partial transactions that offer tokens, takers complete and submit them,
-and the ledger handles all settlement logic.
-This standard defines the offer payload schema and reference indexer API.
+This proposal specifies a scaffolding for peer-to-peer atomic swaps on Midnight,
+inspired by [Dexie.space](https://dexie.space) on Chia.
+It leverages Midnight's native transaction merging to enable trustless atomic swaps
+without a custom smart contract.
+Makers create partial (imbalanced) transactions offering tokens;
+takers complete and submit them; the ledger handles all settlement logic.
+This standard defines what is published to a shared data-availability (DA)
+layer (recommended: Celestia, under a common namespace) — the raw MIP-0005
+offer bytes, with no envelope — what indexers serve for discovery,
+and a reference indexer API.
+
+Publishing to a shared DA namespace lets dApps share liquidity:
+every UI, indexer, and bot reads the same offers,
+so an offer made in one dApp is takeable in any other.
 
 ## Motivation
 
-Midnight currently lacks a standardized mechanism for peer-to-peer token exchanges.
+Midnight lacks a standardized mechanism for peer-to-peer token exchange.
+A native P2P swap standard provides:
 
-A native P2P swap standard provides several benefits:
-
-1. **Trustless exchange**: Atomic swaps guarantee that either both parties receive their tokens or neither does.
-No counterparty risk.
-2. **No smart contract overhead**: By leveraging Zswap's built-in transaction merging,
-swaps execute at the protocol level without custom contract deployment or execution costs.
-3. **Interoperability**: A standardized offer format enables multiple UIs,
-indexers, and tools to participate in the same liquidity pool.
-4. **Privacy preservation**: On-chain activity remains shielded;
-only offer metadata on the discovery layer is public.
+1. **Trustless exchange** — atomic swaps guarantee both parties receive their tokens or neither does.
+   No counterparty risk.
+2. **No smart-contract overhead** — swaps execute at the protocol level via native transaction merging,
+   with no custom contract deployment or execution cost.
+3. **Interoperability** — a standardized offer format lets multiple UIs, indexers,
+   and tools share one liquidity pool.
+4. **Privacy preservation** — on-chain activity stays private for shielded tokens 
+(only revealing the token deltas, and nullifiers), for unshielded tokens the UTXOs are public.
 
 ## Specification
 
 ### Overview
 
-The swap mechanism leverages Zswap's native support for imbalanced transactions.
-Makers create partial transactions containing their spend authorization and their expected payment outputs.
-Takers complete these by adding their own input and output, then merging the transactions.
+The swap mechanism leverages Midnight's native support for imbalanced transactions.
+A maker creates a partial transaction containing their spend authorization
+and their expected payment outputs.
+A taker completes it by adding their own input and output, then merges the transactions.
 
 ```text
 MAKER'S PARTIAL TX (imbalanced):
@@ -53,361 +81,518 @@ MERGED TX (balanced):
   Outputs: 50 NIGHT to maker, 100 TokenA to taker
 ```
 
-> This example illustrates a simple 1:1 token swap.
-> The specification supports multi-asset swaps where `gives` and `wants` contain multiple token types.
-
-The merged transaction balances because the maker's input (100 TokenA) funds the taker's output,
-and the taker's input (50 NIGHT) funds the maker's output.
-Both parties' expected receipts are committed to in their respective partial transactions,
-ensuring neither can be shortchanged.
+The merged transaction balances because each party's input funds the other's output.
+Both parties' expected receipts are committed inside their own partial transactions,
+so neither can be shortchanged.
+The offer is carried by the single `Transaction` payload defined in MIP-0005,
+which expresses shielded and unshielded swaps.
 
 ### Relationship to Offer Files (MIP-0005)
 
-This MIP builds upon the Offer Files MIP,
-which specifies the bech32 encoding for serializing the underlying `zswap::Offer` type.
-The Offer Files MIP defines:
+MIP-0005 defines the offer itself:
+a proven, imbalanced `Transaction`, its dual representation —
+raw canonical bytes for storage, a bech32m string (`swapoffer1…`) for
+interchange and display — and the rule that content addressing hashes the
+bytes. This MIP maps that dual representation onto **publication** and
+**discovery**:
 
-- Binary serialization of the core offer (proven partial transaction)
-- Bech32 encoding with `zswapoffer` HRP for text-based sharing
+- **On-chain** (the DA blob) carries the MIP-0005 offer as **raw bytes** —
+  nothing else. No envelope, no version byte, no metadata.
+- **Off-chain** (the indexer API) carries the offer as its **bech32m string**
+  plus derived discovery metadata (gives/wants, expiry) and indexer-observed
+  fields.
 
-This MIP extends that foundation by specifying:
+> **Bytes, not bech32, on the DA layer.** bech32m is a display encoding (MIP-0005).
+> Publishing the bech32m string to a DA layer wastes ~1.6× the bytes for no benefit,
+> exactly as nobody submits a bech32 *address* on-chain.
+> Publish the raw offer bytes; render bech32m only for humans.
 
-- An application-layer payload wrapping the serialized offer
-- Metadata (pricing, timestamps)
-- Discovery protocol (indexer API)
+### On-chain representation (published to the DA layer)
 
-The `transaction` field in this MIP's payload contains the bech32-encoded offer as specified in the Offer Files MIP.
+The blob content is **exactly the canonical MIP-0005 payload: the raw bytes
+produced by serializing the proven `Transaction`**. There is no wrapper. The
+bech32m `swapoffer1…` string is an *encoding* of these bytes, not their
+source — a publisher holding only the string first decodes it, which by
+MIP-0005's losslessness recovers exactly the serialized transaction, and
+publishes those bytes.
 
-### Offer Payload Schema
+With no wrapper, the on-chain form inherits MIP-0005's properties directly:
+the blob is the offer, `decode(blob)` is the transaction, and the offer's
+content address is the hash of the blob itself.
+The blob deliberately carries no `gives`/`wants` (derivable from the offer —
+see below), no timestamps (not knowable from the offer),
+and no public key, signature, or message.
 
-All compliant implementations MUST use the following offer payload structure:
+### Publishing to the data-availability layer
+
+Makers publish the raw offer bytes as a blob to a shared **data-availability (DA) layer**.
+Publishing to a common, permissionless location —
+rather than to a single dApp's private backend —
+is what lets **dApps share liquidity**:
+any UI, indexer, or bot reads the same stream of offers,
+so no one service owns the order flow
+and an offer created in one dApp is takeable in another.
+
+This standard is **DA-agnostic**:
+any blob store with a shared, readable keyspace qualifies,
+and reimplementations MAY choose another.
+In practice, implementations are converging on **[Celestia](https://celestia.org)**
+to keep liquidity unified, and this document recommends it.
+Offers are posted as Celestia blobs under a single well-known **namespace**
+shared by all compliant implementations:
+
+| Parameter | Value |
+| --- | --- |
+| DA layer | Celestia (recommended) |
+| Namespace | version 0, 10-byte id suffix `mn-swap-v1` (see below) |
+| Blob contents | the raw canonical MIP-0005 `Transaction` bytes — no envelope |
+
+- **Raw bytes, not bech32** — the DA blob carries the MIP-0005 offer as bytes
+  (bech32m is a display encoding only; see MIP-0005).
+- **One shared namespace = one shared liquidity pool.**
+  All participants MUST agree on the namespace;
+  per-dApp namespaces would re-silo liquidity, defeating the purpose.
+  Celestia namespaces are 29 bytes — a version byte plus a 28-byte id —
+  and for version-0 (user) namespaces the first 18 id bytes MUST be zero,
+  leaving 10 freely chosen bytes.
+  The shared namespace is version `0x00` with the 10-byte id suffix
+  `0x6d6e2d737761702d7631` (ASCII `mn-swap-v1`);
+  the full 29-byte namespace is `0x00`, followed by 18 zero bytes,
+  followed by `6d6e2d737761702d7631`.
+- **Permissionless read/write** — any maker posts;
+  any indexer subscribes to the namespace, validates each offer
+  (deserialize, derive `gives`/`wants`, enforce the two-sided rule, check liveness),
+  and serves the `OffchainOfferPayload` for discovery (see Reference Indexer API).
+  Celestia is recommended for its neutrality, low cost, and permissionless access.
+- **Publication cost** — posting a blob is paid by the poster (the maker) by default;
+  a dApp MAY subsidize or relay publication on the maker's behalf.
+  Keeping offers minimal (MIP-0005) keeps this cost proportionally low.
+- **Minimal coordination** — the namespace is the only value that must be standardized;
+  everything else is implementation choice.
+
+The DA layer is a *transport and broadcast* medium, not a settlement or ordering authority:
+it makes offers discoverable, but settlement still happens on Midnight (see Overview)
+and offer validity is always re-checked against Midnight state.
+
+### Off-chain Offer Payload (served by indexers)
 
 ```typescript
-interface OfferPayload {
+type TokenKind = 'SHIELDED' | 'UNSHIELDED';
+interface TokenLeg { token: string; amount: string; type: TokenKind; } // hex RawTokenType, stringified bigint
+
+interface OffchainOfferPayload {
   version: 1;
-
-  // Serialized proven transaction (bech32 encoded per Offer Files MIP)
-  transaction: string;
-
-  // What the maker wants in return
-  wants: Array<{
-    token: string;     // Token type identifier
-    amount: string;    // Stringified bigint
-  }>
-
-  // What the maker is giving
-  gives: Array<{
-    token: string;
-    amount: string;
-  }>
-
-  // Optional metadata
-  metadata?: {
-    createdAt?: string;  // ISO 8601 timestamp
-    expiresAt?: string;  // ISO 8601 timestamp, SHOULD match transaction TTL
-    makerNote?: string;  // Arbitrary message
-  };
-
-  // Optional authentication
-  auth?: {
-    signerPublicKey: string;  // 32-byte x-only pubkey (hex)
-    signature: string;        // 64-byte Schnorr signature (hex)
-    scheme: 'schnorr-bip340';
+  // The offer's content address: lowercase hex SHA-256 of the canonical raw
+  // Transaction bytes (see MIP-0005, "Content address"). Stable across every
+  // indexer and equal to the hash of the offer's DA blob.
+  offerId?: string;
+  // MIP-0005 bech32m rendering of the same bytes, for display/interchange.
+  offerBech32?: string;
+  computed: {                       // everything the indexer derives / observes
+    gives: TokenLeg[];              // DERIVED from the offer's imbalances
+    wants: TokenLeg[];              // DERIVED from the offer's imbalances
+    expiresAt?: string;             // ISO 8601, from the earliest intent TTL, when present
+    inputNullifiers: string[];      // shielded input nullifiers (hex) for liveness
+    firstSeenAt: string;            // ISO 8601, when the indexer first saw the offer
+    status?: 'live' | 'consumed' | 'cancelled' | 'expired';
   };
 }
 ```
 
-### Field Requirements
+Example:
 
-| Field | Required | Description |
-| ------- | ---------- | ------------- |
-| `version` | Yes | Must be `1` for this specification |
-| `transaction` | Yes | Bech32-encoded offer per Offer Files MIP |
-| `wants` | Yes | Array of tokens the maker wants in return |
-| `wants[].token` | Yes | Hex-encoded `RawTokenType` |
-| `wants[].amount` | Yes | Amount as stringified bigint |
-| `gives` | Yes | Array of tokens the maker is offering |
-| `gives[].token` | Yes | Hex-encoded `RawTokenType` |
-| `gives[].amount` | Yes | Amount as stringified bigint |
-| `metadata.createdAt` | No | ISO 8601 timestamp of offer creation |
-| `metadata.expiresAt` | No | ISO 8601 timestamp, SHOULD match transaction TTL |
-| `metadata.makerNote` | No | Arbitrary message from maker |
-| `auth.signerPublicKey` | No | Public key used for signature verification |
-| `auth.signature` | No | BIP-340 Schnorr signature over offer |
-| `auth.scheme` | No | Must be `schnorr-bip340` if auth is present |
+```json
+{
+  "version": 1,
+  "offerBech32": "swapoffer1…",
+  "computed": {
+    "gives": [{ "token": "4a8f…", "amount": "100", "type": "SHIELDED" }],
+    "wants": [{ "token": "0200…", "amount": "50",  "type": "SHIELDED" }],
+    "expiresAt": "2026-06-30T12:00:00Z",
+    "inputNullifiers": ["7c1d9b…"],
+    "firstSeenAt": "2026-06-16T09:30:00Z",
+    "status": "live"
+  }
+}
+```
+
+**Presence rules for `offerId` / `offerBech32`:** at least one MUST be
+present. In multi-offer (list) responses an indexer SHOULD serve `offerId`
+and MAY omit `offerBech32` — a real offer's bech32m string is 16–25 KB, so a
+100-row page carrying strings is megabytes of redundant payload when each
+offer is individually retrievable. In single-offer responses `offerBech32`
+MUST be present. Anyone holding the string derives the id locally
+(`sha256(decode(offerBech32))`), so omitting one form never loses
+information.
+
+Everything under `computed` is produced by the indexer —
+either derived from the offer bytes (`gives`, `wants`, `expiresAt`, `inputNullifiers`)
+or observed by the indexer (`firstSeenAt`, `status`).
+None of it is trusted from the maker.
+Only `offerBech32` carries over from what was published — and it is merely the
+bech32m rendering of the on-chain bytes themselves (MIP-0005 dual
+representation), so the API field and the DA blob can never disagree.
+
+#### Field derivation
+
+| Field | Source |
+| --- | --- |
+| `offerBech32` | MIP-0005 bech32m encoding of the published offer bytes |
+| `computed.gives` / `computed.wants` | Net imbalances of the offer, tagged `SHIELDED`/`UNSHIELDED` (authoritative) |
+| `computed.expiresAt` | The earliest intent TTL (when the offer carries an intent), or the time the offer's proof roots leave the node's root-recency window |
+| `computed.inputNullifiers` | Nullifiers of the offer's shielded inputs — the keys an indexer watches to mark an offer `consumed` |
+| `computed.firstSeenAt` | The indexer's clock when the offer was first seen on the DA layer |
+| `computed.status` | OPTIONAL indexer bookkeeping — observed, not consensus data: `live` until a backing input is spent or the offer expires (`expired`; see Offer lifetime). A spend is `consumed`; an indexer MAY refine it to `cancelled` where its evidence supports that (see *Fill vs cancel*) |
+
+### Deriving gives / wants
+
+`gives` and `wants` are computed from the offer, not supplied by the maker.
+For each token type, compute the net imbalance `delta = (inputs) − (outputs)`:
+
+- Shielded: use `ZswapOffer.deltas` (which is already `inputs − outputs` per token),
+  summed across guaranteed and fallible offers.
+- Unshielded: sum `UtxoSpend.value` (inputs) minus `UtxoOutput.value` (outputs) per token,
+  across all intents' guaranteed and fallible unshielded offers.
+
+Then `delta > 0` ⇒ the maker is a net spender ⇒ the token belongs in `gives`;
+`delta < 0` ⇒ net receiver ⇒ `wants` (with amount `−delta`).
+Each leg is tagged with its value layer:
+`SHIELDED` for deltas that come from a zswap offer,
+`UNSHIELDED` for deltas summed from an intent's unshielded inputs/outputs.
+
+Because the terms are derived from the proven transaction, they are authoritative:
+there is no separate maker-asserted `gives`/`wants` that could disagree with the offer.
+Indexers MUST derive these fields; they MUST NOT accept them as trusted input.
+
+### Offer lifetime
+
+Two independent ledger rules bound how long a published offer stays takeable.
+They are independent in every sense — different mechanisms, different
+enforcement points, separately configurable — despite both defaulting to one
+hour today:
+
+- **Intent TTL (unshielded).** Each intent's `ttl` must satisfy
+  `t_block ≤ ttl ≤ t_block + global_ttl` at apply time, where `global_ttl` is
+  an on-chain ledger parameter. This is not optional for unshielded value:
+  an `UnshieldedOffer` exists only as a field of an `Intent`, and
+  `Intent.ttl` is non-optional — so an unshielded offer structurally always
+  carries a TTL, and its effective inclusion window is
+  `[ttl − global_ttl, ttl]`.
+- **Merkle-root recency (shielded).** A Zswap offer carries no TTL field at
+  all, and well-formedness never expires it — it dies only at *apply* time,
+  when an input's Merkle root is no longer accepted. That root history is
+  time-filtered: the **current** root is re-inserted every block and entries
+  older than `t_block − window` are evicted. Consequently the clock runs
+  from the last block whose tree state the offer proved against, not from
+  when the offer was created — on a quiet chain segment the same root keeps
+  refreshing and the offer stays takeable. Implementations deriving an
+  expiry MUST use the root's **last-seen** time; deriving it from first-seen
+  expires live offers early. An offer also dies immediately if any input's
+  nullifier lands on-chain first.
+
+Indexers SHOULD mark offers `expired` on whichever bound applies to the
+offer's value layers.
+
 
 ### Offer Validation
 
-Takers SHOULD verify that the `gives` and `wants` fields accurately reflect the transaction's actual imbalances before completing a swap.
-The proven transaction is authoritative.
-Metadata fields exist for discoverability but could be inaccurate or maliciously misrepresented.
+Takers SHOULD verify that an indexer's advertised `gives`/`wants`
+match the transaction's actual imbalances before completing a swap —
+the proven transaction is authoritative.
+To validate:
 
-To validate an offer:
+1. Deserialize the offer (`Transaction`) from the offer bytes / bech32m string.
+2. Compute the net imbalances (see Deriving gives / wants).
+3. Verify they match the advertised `gives`/`wants`.
 
-1. Deserialize the proven transaction from the `transaction` field
-2. Compute the transaction's imbalances (from the `deltas` property of the deserialized `ZswapOffer<Proof>`)
-3. Verify that the imbalances match the advertised `gives` and `wants` values
+Indexers MUST perform this derivation themselves
+and SHOULD reject or flag any offer whose imbalances cannot be computed.
 
-Indexers MAY perform this validation on publish and reject offers with mismatched metadata.
+#### An offer MUST be two-sided
 
-### Optional Authentication
+A valid swap offer's net imbalance MUST contain **both**
+at least one give (a token with positive net delta)
+**and** at least one want (a token with negative net delta).
+An offer whose imbalance has a give but **no want** is a *give-only* offer:
+completing it forfeits the maker's tokens with no counterparty return —
+it is a giveaway, not a swap.
+Indexers MUST reject give-only offers, and takers MUST NOT settle one.
 
-Offers MAY be signed using BIP-340 Schnorr signatures.
-The signature covers the entire offer payload (excluding the auth field itself),
-preventing metadata tampering.
+### Segment placement (informative)
 
-Note that authentication is not required for security.
-The core swap terms (what each party gives and receives)
-are cryptographically committed in the proven transaction itself.
-The taker cannot modify the maker's expected payment, it is enforced by the ledger.
+Compliant P2P swap offers carry all value in the **guaranteed section**,
+so both legs are applied atomically in the guaranteed execution phase
+(all-or-nothing; no value-level partial success).
+Concretely, wallet-built swap offers place the shielded leg in `guaranteed_coins` (segment 0)
+and the unshielded leg in an intent's `guaranteed_unshielded_offer`.
+The `fallible_coins` / `fallible_unshielded_offer` slots are not used for P2P swaps;
+they exist for value legs bound to contingent contract execution, which is out of scope here.
 
-Authentication provides defense in depth by ensuring metadata fields
-(`gives`, `wants`, `metadata`) have not been tampered with.
-This can help prevent misleading UI displays.
+### Cancellation (informative)
 
-#### Signing Payload Construction
-
-When authentication is used, the signing payload MUST be constructed as follows:
-
-1. Create a copy of the offer without the `auth` field
-2. Serialize to canonical JSON per [RFC8785](https://www.rfc-editor.org/rfc/rfc8785)
-3. Compute SHA-256 hash of the serialized bytes
-4. Sign the 32-byte hash using BIP-340 Schnorr
-
-```typescript
-function createSigningPayload(offer: Omit<OfferPayload, 'auth'>): Uint8Array {
-  const canonical = canonicalize(offer); // RFC 8785
-  return sha256(new TextEncoder().encode(canonical));
-}
-```
-
-#### Verification Recommendations
-
-Indexers and takers SHOULD verify signatures when present:
-
-- **Indexers**: SHOULD reject offers with invalid signatures on publish
-- **Takers**: SHOULD verify signatures before completing swaps
-
-### Cancellation
-
-To cancel an offer, makers spend the backing UTXO to themselves.
-This consumes the nullifier, making the original offer invalid.
-No special protocol support is required.
+There is no explicit cancellation method:
+once published, an offer stays takeable until it is consumed or expires.
+A maker can only invalidate it indirectly,
+by spending a backing input (or completing the swap themselves).
+This is not handled in this MIP.
 
 ### Fee Handling
 
-The submitter (taker) pays transaction fees.
-Fee-splitting patterns are out of scope for this specification.
+Either the platform or the taker pays transaction fees.
+The maker cannot know in advance how much gas the transaction will need,
+nor when it will happen,
+and pre-paying would require locking a DUST UTXO into the swap.
+Fee-splitting is out of scope.
 
 ### Reference Indexer API
 
-Compliant indexers SHOULD implement the following REST API.
+Compliant indexers MUST implement the following REST API,
+and SHOULD additionally expose a streaming endpoint
+(e.g. a WebSocket at `/v1/offers/stream`)
+that pushes new and updated offers as they are observed on the DA layer.
 
-#### POST /v1/offers
+The API is a text surface, so offers cross it in their **bech32m form**
+(MIP-0005 dual representation): publication accepts the `swapoffer1…` string,
+queries return `offerBech32`. The indexer decodes to the raw bytes, and those
+bytes are what it publishes to — and matches against — the DA layer.
 
-Publish a new offer.
+#### POST /v1/offers — publish
 
-**Request:**
-
-```json
-{
-  "offer": { /* OfferPayload */ }
-}
-```
-
-**Response:**
-
-```json
-{
-  "offerId": "string"
-}
-```
-
-**Validation:**
-
-- SHOULD verify signature if present before accepting
-- MUST reject malformed payloads
-- SHOULD reject duplicate offers
-
-#### GET /v1/offers
-
-**Query available offers.**
-
-Indexers SHOULD support filtering by token type and amount.
-The exact query parameters and filtering semantics are left to implementations,
-as offers may contain multiple tokens in `gives` and `wants` arrays.
-At minimum, implementations SHOULD support:
-
-- Filtering by token type (in either gives or wants)
-- Pagination
-
-**Response:**
+The request body carries the offer as its MIP-0005 bech32m string (the
+interchange form — this is a JSON API). The indexer decodes it, recovering
+the canonical transaction bytes, and those bytes are what go on-chain — so
+the string a maker submits and the blob the DA layer stores can never
+disagree:
 
 ```json
-{
-  "offers": [
-    {
-      "offerId": "string",
-      "offer": { /* OfferPayload */ }
-    }
-  ],
-  "total": 0
-}
+{ "offer": "swapoffer1…" }
 ```
 
-#### GET /v1/health
+Response: `{ "offerId": "string" }`
 
-Health check endpoint.
+Validation:
+
+- MUST decode per MIP-0005 (HRP, checksum) and deserialize the offer, then
+  derive `gives`/`wants` itself (there are no maker-asserted terms to trust).
+- MUST reject malformed payloads, undeserializable offers, and give-only offers.
+- SHOULD reject duplicates (content-addressed: hash of the raw offer bytes).
+
+#### GET /v1/offers — query
+
+Indexers SHOULD support filtering by token type (in either `gives` or `wants`) and pagination.
+Exact query semantics are left to implementations.
+
+Response: `{ "offers": [ /* OffchainOfferPayload, offerBech32 omittable */ ], "nextCursor": "string" | null }`
+
+Pagination is cursor-based: pass the previous response's `nextCursor` back as
+a query parameter to continue; `null` means exhausted. There is deliberately
+no `total` field — an exact count is O(table) on every page and immediately
+stale on a permissionless namespace, inviting implementations to serve wrong
+numbers cheaply or right numbers expensively.
+
+#### GET /v1/health — health check
+
+### Versioning
+
+The on-chain blob needs no version field of its own: it is the raw offer
+bytes, already versioned by the ledger's tagged transaction serialization
+(see MIP-0005 *Versioning*) — incompatible bytes fail to deserialize rather
+than being silently misread.
+
+The off-chain `OffchainOfferPayload` carries an explicit `version` field
+(this revision: `1`). Incompatible changes to its schema increment the version
+and are specified by a superseding MIP per MIP-0001.
 
 ## Rationale
 
-### Protocol-Level Settlement
+### On-chain / off-chain split
 
-Midnight's Zswap protocol natively supports transaction merging with homomorphic commitment balance checks.
-The ledger already verifies that all inputs have valid ZK proofs,
-that input commitments equal output commitments per token type, and that no double-spends occur.
-This provides atomic swap semantics without custom logic.
-A smart contract would add deployment complexity, execution costs,
-and potential blockers without meaningful benefit.
-By operating at the protocol level, swaps inherit the full security guarantees of the base layer.
+The previous single `OfferPayload` conflated two concerns:
+what is *published* and what is *discovered*.
+Publishing wants only the offer bytes
+(everything else is derivable, unknowable, or privacy-harming) —
+taken to its conclusion in this revision, where the on-chain form IS the
+offer bytes, with no envelope at all: a wrapper would need its own canonical
+byte encoding for implementations to interoperate, and every field it might
+carry is either derivable from the offer or untrustworthy.
+Discovery wants the derived, human-useful fields.
+Separating them keeps the DA payload minimal (cheaper, more private)
+and lets indexers enrich freely.
+This mirrors the address model exactly: bytes on the wire, bech32m for humans
+(MIP-0005 dual representation).
 
-### Imbalanced Transactions
+### Protocol-level settlement
 
-The maker creates a transaction containing their spend authorizations and their expected payment outputs.
-This transaction is imbalanced because it outputs token types (the payments) that it doesn't input.
-The taker creates a complementary imbalanced transaction with their inputs and their expected receipts.
-When merged, the two transactions balance.
-Critically, because the maker's expected payments are included as outputs in their proven transaction,
-the taker cannot modify the payment terms.
-The maker's proof commits to receiving specific amounts of specific tokens.
-This provides on-chain enforcement of both sides of the swap terms.
+Midnight natively supports transaction merging with homomorphic commitment balance checks.
+The ledger already verifies that inputs carry valid proofs/signatures,
+that commitments balance per token type, and that no double-spends occur.
+This provides atomic-swap semantics with no custom logic.
+A smart contract would add deployment complexity and cost without benefit.
 
-### Optional Authentication
+### Metadata is derived or observed, never trusted
 
-BIP-340 Schnorr signatures are specified as an optional authentication mechanism.
-They provide defense in depth by preventing tampering with offer metadata,
-ensuring the `gives` and `wants` fields accurately reflect the underlying proven transaction.
+`gives`/`wants` are computed from the proven transaction
+and **tagged with their value layer** (`SHIELDED`/`UNSHIELDED`),
+so they cannot disagree with reality.
+`expiresAt` comes from the intent TTL, when present.
+`inputNullifiers` are read from the offer's shielded inputs
+and are what an indexer watches to flip `status` to `consumed`.
 
-Authentication is not required for security because the core swap terms
-are cryptographically committed in the proven transaction.
-The maker's expected payments (token types, amounts, and recipient)
-are committed in the outputs of their partial transaction and enforced by the ledger.
-No amount of metadata tampering can change what the maker actually receives.
+### Fill vs cancel (the OPTIONAL `cancelled` status)
 
-Making authentication optional simplifies implementations while preserving
-the option for enhanced metadata integrity when desired.
+A spent backing input ends an offer, but it does not say *how*: the offer may
+have settled (a taker merged and submitted it — a fill), or the maker may
+simply have spent the coins elsewhere (a cancel; there is no on-chain cancel
+operation, walking away is the cancel). The `cancelled` status value lets an
+indexer report the second case. It is **OPTIONAL and explicitly
+best-effort** — the classification is not fully deterministic from the data
+this MIP requires an indexer to hold, so two conforming indexers may disagree
+(`consumed` vs `cancelled`) on the same offer. Consumers MUST treat
+`cancelled` as a refinement of `consumed`, never as a distinct lifecycle
+state to depend on: either way the offer is gone and cannot settle.
 
-*Alternatives considered: Mandatory authentication (unnecessary given cryptographic guarantees), no authentication support (loses defense-in-depth benefits).*
+What an indexer CAN conclude, and from what evidence:
 
-### Metadata in Application Layer
+- **Settlement is atomic.** A fill consumes *all* of an offer's inputs in
+  *one* ledger transaction. Therefore an offer whose inputs were spent
+  across **different** transactions, or only **partially** (some inputs
+  spent, others still live while the rest are gone), was cancelled — with
+  certainty. This requires the indexer to record, per spent input, the hash
+  of the spending transaction.
+- **The converse is a heuristic.** All-inputs-in-one-transaction is
+  necessary for a fill but not sufficient: for a single-input offer any
+  spend trivially satisfies it, and a maker consolidating their own coins
+  spends all inputs in one transaction too. An indexer relying on input
+  grouping alone SHOULD therefore report such offers as `consumed`, not
+  `cancelled`.
+- **Exact classification is possible with output tracking.** The offer's
+  transaction fixes the maker's *output* commitments (the coins paying the
+  maker their `wants`), and transaction merging preserves outputs — so a
+  settling transaction contains, on-chain, exactly the offer's output
+  commitments alongside its input spends, while a cancel contains none of
+  them. An indexer that additionally tracks created commitments per
+  transaction can classify every offer deterministically, including
+  single-input ones. Indexers doing so MAY report `cancelled` with
+  certainty in both directions.
 
-The underlying `zswap::Offer` (as defined in the Offer Files MIP) contains the proven partial transaction,
-which includes the maker's inputs and their expected payment outputs.
-Each output commits to its recipient, value, and token type.
-These are bound inside the output's coin commitment and encrypted ciphertext.
+The same reasoning applies to unshielded inputs (UTXO spends grouped by
+spending transaction; unshielded outputs are public, making the output check
+strictly easier there).
+`firstSeenAt` replaces the old `createdAt`:
+an offer's creation time is **not knowable from the offer**,
+and any maker-asserted timestamp would be unverifiable.
+The only meaningful, verifiable time is when an indexer first observed the offer.
 
-This MIP adds application-layer metadata for discovery.
-This separation allows the base offer format to remain focused on the cryptographic commitment while enabling rich marketplace functionality.
+### Indexer as discovery layer
 
-The `gives` and `wants` fields mirror what is already committed to in the proven transaction.
-They exist for discoverability (filtering, indexing) and human readability,
-but the actual swap terms are enforced by the transaction structure itself.
+The **shared DA namespace is the source of truth** for which offers exist;
+an indexer is just a convenience query layer over it.
+Anyone can run one by subscribing to the namespace,
+so the order flow is not owned by any single party —
+that is what makes liquidity shared rather than siloed.
+A given indexer offering REST discovery is a privacy leak
+(it can observe IPs and browsing patterns) but does not affect security:
+the cryptographic guarantees hold regardless of indexer behavior,
+and a user can read the DA namespace directly, run their own indexer, or use Tor.
+There is intentionally no DELETE endpoint —
+cancellation is spending the backing input;
+indexers MAY monitor nullifiers/UTXOs to retire stale offers.
 
-### Indexer as Discovery Layer
+## Path to Active
 
-A centralized indexer provides simple, familiar REST semantics for offer discovery.
-While this introduces a privacy leak (the indexer operator can observe IP addresses and browsing patterns),
-it does not affect security.
-The cryptographic guarantees remain intact regardless of indexer behavior.
-Users requiring stronger privacy can run their own indexer instance or access via Tor.
+### Acceptance Criteria
 
-The indexer API intentionally omits a DELETE endpoint.
-The canonical method to cancel an offer is for the maker to spend the backing UTXO,
-which invalidates the offer at the protocol level.
-Indexers MAY monitor nullifiers to detect and remove stale offers automatically.
+- The shared DA namespace value is finalized and recorded in this document.
+- A reference indexer implementation subscribes to the namespace,
+  derives `gives`/`wants`, enforces the two-sided rule,
+  and tracks liveness via nullifiers/UTXO references.
+- At least two independent client implementations (UI, bot, or wallet integration)
+  create and take offers through the shared namespace on a test network.
+- The wallet SDK can build compliant swap offers.
 
-*Alternatives considered: On-chain offer registry (expensive, reduces privacy), DHT-based discovery (complexity, availability concerns), pure peer-to-peer (poor discoverability).*
+### Implementation Plan
+
+1. **Core library** — build offer payloads, derive `gives`/`wants`,
+   complete and merge swaps, cancel by spending backing inputs.
+2. **Reference indexer** — REST API serving `OffchainOfferPayload`,
+   with gives/wants derivation and nullifier/UTXO monitoring.
+3. **Reference UI** — browse, create, and complete swaps.
+
+**Dependencies**: MIP-0005 codec, ledger transaction primitives, wallet API.
 
 ## Backwards Compatibility Assessment
 
-This proposal introduces a new standard and does not modify existing Midnight protocols.
-There are no backwards compatibility concerns.
-
-Implementations adopting this standard will interoperate with each other but not with non-compliant swap implementations.
+This proposal introduces a new standard and modifies no existing protocol.
+Relative to the previous revision it changes the payload shape
+(split into on-chain/off-chain, `auth` removed,
+derived fields nested under `computed` with type-tagged legs and `inputNullifiers`,
+`createdAt` → `firstSeenAt`).
+Since neither revision was deployed, there is no persisted data to migrate.
+Implementations adopting this standard interoperate with each other
+but not with the earlier draft.
 
 ## Security Considerations
 
-### Transaction-Level Guarantees
+### Transaction-level guarantees
 
-The core security of atomic swaps derives from the proven transaction structure,
-not from application-layer authentication.
-The maker's partial transaction cryptographically commits to:
-
-- The inputs being spent (what the maker gives)
-- The expected outputs (what the maker receives, including token types, amounts, and recipient)
-
-The taker cannot modify these terms.
-When the merged transaction is submitted, the ledger enforces that commitments balance.
+Swap security derives from the proven transaction, not from any wrapper.
+The maker's partial transaction cryptographically commits to the inputs spent
+and the outputs received (token types, amounts, recipient).
+The taker cannot modify these; the ledger enforces balance on merge.
 Either both parties receive exactly what was committed, or the transaction fails.
 
-### Metadata Integrity
+### Metadata integrity
 
-The `gives` and `wants` fields exist for discoverability and UI display.
-If these fields do not accurately reflect the transaction's imbalances,
-takers who fail to validate could be misled about the swap terms.
+`gives`/`wants` are derived from the transaction,
+so a malicious indexer that misrepresents them is caught by any taker
+that re-derives from the offer (which they SHOULD do before completing).
+There is no maker-supplied metadata at all: everything a taker sees is either
+derived from the proven transaction or explicitly indexer-observed.
 
-Takers SHOULD verify that metadata matches transaction imbalances before completing swaps (see Offer Validation).
-Implementations SHOULD also verify signatures when present to ensure metadata has not been tampered with post-signing.
+### Stale offers
 
-### Stale Offers
+Offers become invalid when a backing input is spent elsewhere,
+when an intent TTL passes,
+or when the shielded proofs' Merkle roots age out of the ledger's recency window
+(see Offer lifetime).
+Takers discovering stale offers fail at submission;
+indexers MAY monitor nullifiers/UTXOs and expiry bounds to retire them proactively.
 
-Offers become invalid when makers spend the backing UTXO elsewhere.
-Takers discovering stale offers will fail at submission.
-Indexers MAY monitor nullifiers to proactively remove stale offers.
+### Denial of service
 
-### Privacy Leakage
+Indexers MAY enforce a minimum offer value;
+the natural reference floor is the cost of publishing the blob to the DA layer —
+an offer worth less than its own publication cost is presumptively spam.
 
-While on-chain activity is shielded, the indexer is a privacy leak:
+## Future Work: Authenticated messages without key leakage
 
-| Data | Visibility |
-| ------ | ------------ |
-| Token types and amounts | Public on indexer |
-| IP addresses | Visible to indexer operator |
-| On-chain transaction details | Shielded |
-
-Users requiring stronger privacy should access indexers via Tor or run their own instance.
-
-### Denial of Service
-
-Malicious actors could flood indexers with invalid offers.
-Indexers SHOULD implement:
-
-- Rate limiting
-- Proof-of-work requirements
-- Reputation systems
-
-## Implementation
-
-Implementation will require the following components:
-
-1. **Core Library**: Functions to build offer payloads (optionally signed),
-validate and complete swaps, and cancel offers by spending backing UTXOs.
-
-2. **Reference Indexer**: REST API implementation with optional signature verification and nullifier monitoring.
-
-3. **Reference UI**: Interface for browsing, creating, and completing swaps.
-
-**Dependencies**: Zswap transaction primitives, wallet API, and optionally BIP-340 signature libraries.
+The valuable primitive the removed `auth` block failed to provide is:
+a proof that a message accompanies an offer
+and was authorized by the same secret that controls the offer's UTXO,
+**without revealing a public key**.
+Note first that even an *unauthenticated* message has no home today: the
+ledger `Transaction` provides no field for one, and modifying the serialized
+bytes invalidates the offer's proofs and signatures (MIP-0005, *Future
+Work: attached messages*).
 
 ## Testing
 
 | Scenario | Expected Outcome |
-| ---------- | ------------------ |
-| Happy path swap | Both parties receive tokens |
-| Mismatched metadata (no auth) | Validation detects mismatch; swap executes per transaction terms if completed |
-| Mismatched metadata (with auth) | Signature verification fails |
+| --- | --- |
+| Happy-path swap | Both parties receive tokens |
+| Advertised gives/wants ≠ derived | Indexer rejects / taker detects mismatch |
+| Give-only offer published | Indexer rejects; taker refuses to settle |
+| On-chain blob round-trip | Blob bytes ARE the offer: `deserialize(blob)` recreates the exact `Transaction`, and `encode(blob)` equals the maker's `swapoffer1…` string |
+| Off-chain payload derivation | gives/wants equal the transaction's net imbalances |
 | Cancelled offer | Take attempt fails gracefully |
+| Expired offer (TTL or root recency) | Take attempt fails; indexer marks `expired` |
 | Network failure during take | Transaction not submitted, tokens safe |
+
+## References
+
+- [Dexie.space](https://dexie.space) — offer-based P2P trading on Chia
+- [Celestia](https://celestia.org) — recommended data-availability layer
+- [Chia offer files](https://docs.chia.net/wallets/offers)
 
 ## Copyright Waiver
 
