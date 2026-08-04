@@ -50,6 +50,7 @@ MPS-0017: governance-observability (in review)
 [MPS-0028: pre-finality-state-visibility](/mps/mps-0028-pre-finality-state-visibility.md)  
 [MPS-0029: caller-identity-access-in-compact](/mps/mps-0029-compact-caller-identity.md)  
 [MPS-0030: consensus-decentralization](/mps/mps-0030-consensus-decentralization)  
+[MPS-0031: dust-grant-dao](/mps/mps-0031-dust-grant-dao.md)  
 
 # MIPs
 
