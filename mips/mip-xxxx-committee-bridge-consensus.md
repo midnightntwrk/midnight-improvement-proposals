@@ -60,10 +60,14 @@ the new root as a BEEFY consensus digest in the block header. Digests are
 consensus-enforced: every importing node re-executes the block and rejects
 it if the computed digest does not match the header. The root therefore
 commits to every prior block and, through the leaf contents below, to the
-committee and its successor. The BEEFY signatures live in off-chain
-justifications: votes are gossiped between nodes, and each node stores the
-aggregated justification alongside the finalized block in its database and
-serves it over RPC. A relay carries justifications to Cardano.
+committee and its successor. Committee selection itself is validated the
+same way: every node recomputes Ariadne from its own Cardano observations
+and rejects a block carrying a wrong committee, so a signed commitment
+always names a committee every honest node agreed was correctly selected.
+The BEEFY signatures live in off-chain justifications: votes are gossiped
+between nodes, and each node stores the aggregated justification alongside
+the finalized block in its database and serves it over RPC. A relay
+carries justifications to Cardano.
 
 ### MMR leaf
 
@@ -77,7 +81,10 @@ the extension point if Cardano ever needs extra per-block data.
 
 Midnight committees are selected by Ariadne, the Partner Chains selection
 algorithm, with repetition: one member can hold multiple seats, and seats
-are the stake weight (see Rationale). Rather than one Merkle leaf per seat
+are the stake weight (see Rationale). Membership and seat counts are
+already public, since Ariadne selection is deterministic over public
+Cardano data; the commitment reveals nothing new, and slot-level
+production schedules are not involved. Rather than one Merkle leaf per seat
 (the upstream default), the commitment deduplicates keys to fit Cardano
 transaction limits:
 
@@ -111,6 +118,13 @@ strictly increasing key order, which prevents double-counting, and the
 root is accepted when the valid signers' seat counts sum to at least
 `len − (len−1)/3`.
 
+**Transaction size.** A signer entry is 106 bytes (33-byte key, 8-byte
+seat count, 65-byte signature), and membership is proven with a single
+Merkle multiproof over the whole signer set. At 100 distinct keys and a
+67-key quorum the submission is roughly 10 KB against Cardano's
+16,384-byte limit, so on the order of 100 unique signers fit in one
+transaction.
+
 **Handover.** Every leaf of session N carries the commitment of set N+1.
 The contract must extract set N+1 from a leaf proven against a root signed
 by set N *before* it accepts any signature from set N+1; a session's own
@@ -129,8 +143,14 @@ Individual non-participation is handled by monitoring and the ban lever
 
 ### Keys
 
-Each block producer registers a BEEFY session key: either a dedicated key
-(`beef`) or, by default, the candidate's registered cross-chain ECDSA key.
+Each block producer registers a dedicated BEEFY session key (`beef`) in
+the existing Cardano-side candidate registration (the candidate-keys
+datum). There is no fallback to the candidate's cross-chain ECDSA key:
+BEEFY signing requires the key in the node's hot keystore, and the
+cross-chain key is the candidate's registration identity, which must not
+live there. Registrations without a BEEFY key are excluded from
+candidacy once BEEFY voting activates. Permissioned members supply keys
+through governance configuration rather than the SPO registration flow.
 Misbehavior attribution maps the BEEFY key to the candidate through the
 registered candidate keys.
 
@@ -155,6 +175,14 @@ registered candidate keys.
   block with zero new validity rules. The inherent would have added a hard
   fork and a novel stall mode, and it still could not carry the
   signatures, which are the only part that cannot be chain content.
+- **Succinct (ZK) quorum verification (deferred, not rejected).** A ZK
+  proof of the quorum check would attest exactly the signature checks the
+  script performs, so it changes nothing the contract trusts, but it adds
+  proof-system assumptions (setup ceremony, soundness, circuit fidelity).
+  A quorum of roughly 100 distinct signers fits one transaction today, so
+  the saving does not yet justify those assumptions. If committee growth
+  outruns the transaction budget, succinct verification can replace
+  direct checking without changing the trust model.
 - **BEEFY vs GRANDPA.** BEEFY exists for exactly this use: secp256k1 ECDSA
   signatures that are cheap to verify on foreign chains, an MMR payload
   built for inclusion proofs, and a committee commitment built for
@@ -177,8 +205,8 @@ There is no slashing, since stake is Cardano delegation. Instead:
 
 - **Cardano-side submitter.** Carrying justifications to Cardano is
   permissionless, but the incentive and fee source are unspecified. The
-  rewards batcher, which already needs each session's commitment landed,
-  is the natural candidate.
+  rewards batcher (see the Block Production Rewards MIP), which already
+  needs each session's commitment landed, is the natural candidate.
 - **Contract handover encoding.** The ordering above is fixed; concrete
   redeemer and datum encoding belongs to the contract implementation.
 - **On-chain misbehavior response.** Whether the light client should
@@ -189,25 +217,24 @@ There is no slashing, since stake is Cardano delegation. Instead:
 
 ## Path to Active
 
-### Acceptance Criteria
-
-Multiple committee rotations, including a membership change, verified
-end-to-end on a public testnet by the light client, with adversarial
-submissions (insufficient seats, stale set, non-successor set, replayed
-signer) rejected on-chain.
-
-### Implementation Plan
-
-1. Node: enable BEEFY voting (session keys, candidate keys, storage
+1. Registration: extend the Cardano-side candidate registration and its
+   tooling with the `beef` key, require it in candidate filtering, and
+   re-register existing SPOs before BEEFY voting activates.
+2. Node: enable BEEFY voting (session keys, candidate keys, storage
    migration), the deduplicated committee commitment, and the
    MMR-root-only payload.
-2. Equivocation reporting extrinsic and ban-list filtering.
-3. The Cardano light-client contracts: seat-sum quorum, handover state
+3. Equivocation reporting extrinsic and ban-list filtering.
+4. The Cardano light-client contracts: seat-sum quorum, handover state
    machine, Keccak MMR proofs.
-4. Relay rework to submit the justifications.
-5. Testnet rotation soak across many sessions, and an audit.
+5. Relay rework to submit the justifications.
+6. Testnet rotation soak across many sessions, and an audit.
 
-## Backwards Compatibility Assessment
+Acceptance: multiple committee rotations, including a membership change,
+verified end-to-end on a public testnet by the light client, with
+adversarial submissions (insufficient seats, stale set, non-successor set,
+replayed signer) rejected on-chain.
+
+## Backwards Compatibility
 
 Midnight-side changes ship as a standard runtime upgrade (a session-key
 addition with a storage migration); there is no block-format fork. The
@@ -221,11 +248,23 @@ contracts reworked.
   client verifies signatures, not chain validity. This is inherent to any
   committee-signature bridge, but corrupting two-thirds of seats also
   breaks GRANDPA itself, so the bridge adds no trust beyond the chain.
+  The consequence scales with the value the bridge gates: anything that
+  releases tokens against bridge-verified facts must cap its exposure, as
+  the Block Production Rewards MIP does with its flow-limited reserve
+  release. Any future transfer mechanism needs an equivalent cap.
 - **Equivocation**, signing a divergent root while following the canonical
   chain, is provable and attributable (see Accountability). A
   self-consistent full fork is chain takeover and out of scope here.
 - **Liveness.** More than a third of seats withholding votes freezes the
-  bridge and rewards until participation resumes. A stall, never a theft.
+  bridge and rewards until participation resumes. A stall, never a theft,
+  and it self-heals: BEEFY never skips a mandatory round, so the round
+  stays open and late votes under the same `validator_set_id` complete it
+  whenever enough of that session's set returns. The unrecoverable case
+  is a session set that permanently lost more than a third of its seats,
+  or an off-protocol authority reset (`note_stalled`). Recovery there is
+  a governed re-registration of the committee commitment on Cardano,
+  under the Council and Technical Committee's existing contract-update
+  authority.
 
 ## References
 
