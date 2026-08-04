@@ -25,3 +25,5 @@ This index holds the rolling agenda for MIP working sessions. It's purpose is to
 - 21 July 2026 -- Aura to BABE, MIP-0007
 - 28 July 2026 -- special guest (specific MIP review)
 - 4 August 2026 -- template reference changes, PR cleanup, assign specific MIP review session
+- 11 August 2026 -- maintenance session
+- 12 August 2026 -- MIP-0014: Native Unshielded Token Standard (Jay Albert) (wallet-wg) 
