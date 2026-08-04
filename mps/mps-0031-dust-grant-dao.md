@@ -1,12 +1,13 @@
 ---
-MPS: <Number> # assigned by editors  
+MPS: "0031"
 Title: Community-Governed DUST Grant DAO 
 Authors: Alejandro Castillo <castill0-alex>
-Status: Proposed # All new MPS should be assigned Proposed  
+Status: Proposed  
 Category: Ecosystem  
 Created: 16-07-2026  
 Requires: None  
 Replaces: None  
+MIP: None
 
 ---
 
