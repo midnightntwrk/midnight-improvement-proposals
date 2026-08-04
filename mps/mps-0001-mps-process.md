@@ -7,6 +7,7 @@ Category: Governance
 Created: 18-JUN-2026
 Requires: none
 Replaces: none
+MIP: MIP-0001
 ---
 
 <!--
