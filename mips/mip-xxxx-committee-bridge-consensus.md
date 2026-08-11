@@ -8,8 +8,8 @@ Status: Draft
 Category: Core
 Created: 2026-07-31
 Requires: none
-Replaces: none
 License: Apache-2.0
+Replaces: none
 ---
 
 <!--
@@ -131,6 +131,36 @@ by set N *before* it accepts any signature from set N+1; a session's own
 mandatory justification can never bootstrap its own set. The genesis
 committee is installed at deployment. Handovers are consumed in order.
 
+### Light-client state and consumption
+
+The light client is a single UTxO, identified by an NFT, whose datum is
+the entire bridge state:
+
+- `latest_mmr_root` is the most recent quorum-verified MMR root. Because
+  the payload is the MMR root itself, this is exactly what the committee
+  signed.
+- `latest_height` is the Midnight block number the root was signed at.
+  Submissions must be strictly newer, which orders updates and rejects
+  replays.
+- `beefy_activation_block` is the first Midnight block at which BEEFY
+  voting is active; proofs cannot reach behind it.
+- `current_committee` is the 44-byte commitment of the set authorized to
+  sign now.
+- `next_committee` is the 44-byte commitment of its successor, taken from
+  a proven leaf per the handover rules above.
+
+Seat counts need no state of their own: `len` inside each commitment is
+the quorum denominator, so the datum carries no separate stake or weight
+totals. Accepting a signed commitment replaces `latest_mmr_root` and
+`latest_height` in one step and, when the proven leaf names a new
+successor set, advances the committee pair.
+
+Consumers never spend the light client. A downstream contract, such as
+the rewards contract, reads the datum as a reference input and verifies
+a Keccak-256 MMR inclusion proof against `latest_mmr_root` itself. Since
+every root commits to all prior blocks, the latest root proves any past
+Midnight block, and root updates never contend with consumption.
+
 ### Rewards coupling
 
 Block-production rewards are paid in NIGHT on Cardano and unlock strictly
@@ -225,7 +255,8 @@ There is no slashing, since stake is Cardano delegation. Instead:
    MMR-root-only payload.
 3. Equivocation reporting extrinsic and ban-list filtering.
 4. The Cardano light-client contracts: seat-sum quorum, handover state
-   machine, Keccak MMR proofs.
+   machine, Keccak MMR proofs, and the single-UTxO reference-input
+   state.
 5. Relay rework to submit the justifications.
 6. Testnet rotation soak across many sessions, and an audit.
 
