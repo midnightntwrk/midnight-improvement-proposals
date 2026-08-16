@@ -8,6 +8,7 @@ Category: Standards
 Created: 2026-04-07 
 Requires: none  
 Replaces: none  
+MIP: MIP-0008  
 ---
 
 <!--

@@ -8,6 +8,7 @@ Category: Core
 Created: 2026-05-15
 Requires: none
 Replaces: none
+MPS: MPS-0005
 License: Apache-2.0
 ---
 
