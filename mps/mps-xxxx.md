@@ -169,7 +169,7 @@ The protocol should support bounded public statements and authorized verificatio
 
 ## Acknowledgements
 
-To be filled in when reviewers and co-authors are confirmed.
+Authored by Jiawen Li from CertiK.
 
 ## Copyright
 
