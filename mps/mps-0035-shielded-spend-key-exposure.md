@@ -1,5 +1,5 @@
 ---
-MPS: <Number> # assigned by editors
+MPS: "0035"
 Title: Shielded Spend Authorization Requires Exposing the Spend Key
 Authors: Ricardo Rius <riusricardo>
 Status: Proposed
