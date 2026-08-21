@@ -1,5 +1,5 @@
 ---
-MPS: <Number> # assigned by editors
+MPS: "0034"
 Title: Native NIGHT Staking on the Midnight Network
 Authors: Karmel E <karmoola>
 Status: Proposed
