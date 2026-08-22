@@ -42,13 +42,9 @@ DUST is untouched. Committing NIGHT never costs a holder the ability to transact
 
 ## Problem
 
-### The gap
-
 There is no way to stake NIGHT on Midnight. NIGHT is held, and holding generates DUST. It is never bonded, locked, delegated, or committed to any network role, and no mechanism pays a holder for holding it.
 
-The only route into block production and its rewards is the Cardano SPO path. An SPO registers through a Cardano contract, is selected in proportion to delegated ADA, produces blocks, and is paid in NIGHT. MPS-0019 covers the registration, forecasting, monitoring, and withdrawal tooling for that flow.
-
-That path is a payout mechanism for operators. It is not a way for a holder to participate with the asset they hold.
+The only route into block production and its rewards is the Cardano SPO path. MPS-0019 covers the registration, forecasting, monitoring, and withdrawal tooling for that flow. That path is a payout mechanism for operators. It is not a way for a holder to participate with the asset they hold.
 
 ### Affected actors
 
@@ -58,17 +54,15 @@ That path is a payout mechanism for operators. It is not a way for a holder to p
 
 **Block producers.** SPOs who may want to attract Midnight-side backing, signal alignment, or differentiate from operators who registered opportunistically. They have nothing to accept backing into.
 
-**Contract-held NIGHT.** NIGHT held by a contract has no defined answer for who designates the DUST recipient, who generation is attributed to, or who any staking reward accrues to. This is unresolved before any staking contract can exist.
-
 ### Considerations
 
 **DUST generation for staked balances.** DUST accrues to a designated address up to a cap proportional to the NIGHT balance. Severing the designation causes linear decay to zero, and transferring NIGHT zeroes the DUST at the origin.
 
-**cNIGHT versus mNIGHT.** NIGHT exists as Cardano-native cNIGHT, which is what exchanges list and DEX liquidity trades, and Midnight-native mNIGHT, which is canonical on Midnight and the only form that generates DUST.
+**cNIGHT versus mNIGHT.** NIGHT exists as Cardano-native cNIGHT, which is what exchanges list and DEX liquidity trades, and Midnight-native NIGHT, which is canonical on Midnight is not listed (yet).
 
 **Withdrawal expectations.** Claiming and withdrawing should follow the conventions already established for block production rewards, close to what operators and holders use on Cardano, through a documented CLI and SDK path.
 
-**Consensus scope.** Block production is Aura with GRANDPA finality, with committee selection intended to weight registered SPO candidates by delegated ADA. The solution must state whether native NIGHT staking affects producer eligibility or selection weight, or is a rewards and participation mechanism only.
+**Consensus scope.** The solution must state whether native NIGHT staking affects producer eligibility or selection weight, or is a rewards and participation mechanism only.
 
 ## Use Cases
 
