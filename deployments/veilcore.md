@@ -142,7 +142,7 @@ SHA-256 of compiled artefacts (`contract/src/managed/veilcore/`):
 Reviewers can reproduce these by running the build command above and comparing
 fingerprints.
 
-## Revision — 24 August 2026
+## Revision — 24–25 August 2026
 
 **This document has been corrected after approval, and the subject has grown since
 then.** It is recorded here rather than amended silently, because a deployment record
@@ -151,25 +151,31 @@ that no longer describes the contract it authorises is worth less than one that 
 At approval the contract exposed eight circuits. It now exposes twelve. Added since:
 `anchorBatch` (batch root anchoring, so one transaction timestamps many records and no
 holder needs a wallet), and `proposeTransfer` / `approveTransfer` / `withdrawTransfer`
-(permissioned licence transfer — a licence is not a bearer instrument, so the holder
-proposes and the issuer approves).
+(licence assignment — a licence is not a bearer instrument, so the holder proposes and
+the issuer consents to a named party. See the second correction below: the mechanism as
+first written did not achieve this).
 
 **Four authorisation defects were found in the licensing circuits and fixed.** Max Weber
 (ODATANO / NIGHTGATE) compiled the contract, deployed it to preprod, ran every circuit
 and replayed them as an attacker, reporting each finding with a transaction hash:
 [issue #22](https://github.com/hunterincoming/veilcore-midnight-testnet/issues/22).
 
-- `countersignLicense`, `withdrawTransfer` and `proposeTransfer` took the licence
-  commitment as a public argument. That commitment is disclosed by `issueLicense` and is
-  a key in a public map, so any observer could activate, cancel or propose against any
-  licence. All three now take the secret as a private argument and derive the
-  commitment, which is what `proveLicense` already did.
-- `approveTransfer` read whichever proposal was pending at execution time. A proposal
-  the issuer had seen could be replaced before approval, moving the licence to a party
-  the issuer never agreed to. It now names the expected recipient, and `proposeTransfer`
-  refuses to overwrite a standing proposal.
-- `revokeLicense` left the pending transfer entry behind, contradicting the
-  bounded-state claim made above.
+1. `countersignLicense` took the licence commitment as a public argument. That
+   commitment is disclosed by `issueLicense` and is a key in a public map, so any
+   observer could activate any pending licence — which removes the bilateral property
+   rather than weakening it.
+2. `proposeTransfer` was unauthenticated and its write overwrote, so a stranger could
+   replace a pending proposal; `approveTransfer` then read whichever proposal was
+   pending at execution time, so a proposal the issuer had seen could be swapped before
+   approval. Demonstrated in three preprod transactions.
+3. `withdrawTransfer` authenticated nobody, so any observer could cancel any pending
+   proposal and block an assignment indefinitely.
+4. `revokeLicense` left the pending transfer entry behind, contradicting the
+   bounded-state claim made above.
+
+The first three now take the licence secret as a private argument and derive the
+commitment, which is what `proveLicense` already did. `approveTransfer` names the party
+it is approving, and `proposeTransfer` refuses to overwrite a standing proposal.
 
 The four attacks are retained as regression tests in `contract/test-contract.mjs`: each
 passed against the contract as reviewed and each must fail against it now.
@@ -178,7 +184,7 @@ passed against the contract as reviewed and each must fail against it now.
 carry the same artefact fingerprints as at approval, marked in the table above. Every
 changed fingerprint is licensing.
 
-**A second correction, the same day.** Reading the whole contract after the four
+**A second correction, the following morning.** Reading the whole contract after the four
 fixes turned up a fifth problem, in the transfer mechanism itself rather than in
 its authorisation.
 
