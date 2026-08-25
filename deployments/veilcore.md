@@ -20,7 +20,7 @@ and no plaintext of any kind — only 32-byte commitments.
 |---|---|---|---|
 | Privacy-at-risk | 2 | Disclosed values are domain-separated hashes with no recoverable preimage and no identity linkage. A chain observer can see that an address anchored *a* commitment and when, and can correlate repeat activity by that address — timing and counterparty-shaped metadata rather than identity-level data. High-THC cannabis is a stigmatised market, so we do not claim Tier 1. No genetics, no cultivar name, no breeder identity and no licence terms are ever disclosed. | Commitments are `persistentHash` of a private witness with a domain separator; preimages stay client-side. Holders may use a fresh address per record where correlation is a concern. |
 | Value-at-risk | 1 | The contract holds no funds. No tokens are deposited, escrowed, pooled or transferred by any circuit. An exploit could produce an incorrect commitment or licence state, not a loss of principal. | N/A |
-| State-space-at-risk | 2 | Anchoring is bounded by design and writes **no per-record state**: `anchor`, `proveOwnership` and `pairDna` disclose into the transaction and touch only fixed single-slot fields. One million records add nothing beyond three slots. Licensing retains state only for **live** agreements — `revokeLicense` removes all four map entries, including any open transfer proposal, so growth is bounded by open business rather than cumulative usage, with clearing initiated by the party who created the entry. | See *Known limitation* below, disclosed rather than omitted. |
+| State-space-at-risk | 2 | Anchoring is bounded by design and writes **no per-record state**: `anchor`, `proveOwnership` and `pairDna` disclose into the transaction and touch only fixed single-slot fields. One million records add nothing beyond three slots. Licensing retains state only for **live** agreements — `revokeLicense` removes all three map entries, including any open assignment proposal, so growth is bounded by open business rather than cumulative usage, with clearing initiated by the party who created the entry. An approved assignment is net neutral: one licence is removed and one inserted. | See *Known limitation* below, disclosed rather than omitted. |
 
 ---
 
@@ -34,14 +34,18 @@ export ledger batchSeq: Counter;                               // fixed
 export ledger lastBatchRoot: Bytes<32>;                        // fixed
 export ledger transferSeq: Counter;                            // fixed
 export ledger pendingTransferOf: Map<Bytes<32>, Bytes<32>>;    // open proposals only
-export ledger licenseHolderOf: Map<Bytes<32>, Bytes<32>>;      // live licences only
 export ledger licenseStatusOf: Map<Bytes<32>, LicenseState>;   // live licences only
 export ledger licenseRecordOf: Map<Bytes<32>, Bytes<32>>;      // live licences only
 ```
 
-Six fixed slots and four maps cleared by the circuits that filled them. A licence
-holds at most one open transfer proposal at a time, and `revokeLicense` clears the
-proposal along with the licence.
+Six fixed slots and three maps cleared by the circuits that filled them. A licence
+holds at most one open assignment proposal at a time; `revokeLicense` clears the
+proposal along with the licence, and an approved assignment removes the old
+licence entirely.
+
+**The map key is the holder.** Only a party who knows the secret behind a licence
+commitment can act on that licence, so there is no separate holder field and none
+can drift out of step with who actually controls it.
 
 ## Why anchoring writes no state
 
@@ -118,22 +122,22 @@ SHA-256 of compiled artefacts (`contract/src/managed/veilcore/`):
 | `keys/proveOwnership.verifier` | `f4546dce72170047e0205d2350ad60e1b8d47ce39c021b35c48468823b83d424` |  <!-- unchanged since approval -->
 | `keys/pairDna.prover` | `75fdab3affffb26d895743f3944bb61e5af8b8905ab9c075ad815654bf9f7739` |  <!-- unchanged since approval -->
 | `keys/pairDna.verifier` | `82239caa00d04357d67aee25d7c961542f4ac4f9e1ae7876ad0e35732649c5fa` |  <!-- unchanged since approval -->
-| `keys/issueLicense.prover` | `3b86e79ca846a4d2499f5c495f6b4d6155471c646ef04253b0599b3fcf7e5082` |
-| `keys/issueLicense.verifier` | `97a546ab71b2925c8794e366b6712e12002b80f4c05a2e9fbf0ceb5ac063d9e4` |
-| `keys/countersignLicense.prover` | `d7901d8ad34e53cf88d9098b55537aef545d673751a28a6ff7ee86c4433b74fc` |
-| `keys/countersignLicense.verifier` | `dae83066ccf2781725d41a2edd292f12c178c782f701fb79244fb91f3701506a` |
-| `keys/proposeTransfer.prover` | `083a73217d359e4870fd8caf37e9501e0ec8f6837abcc02261cff83958084cc8` |
-| `keys/proposeTransfer.verifier` | `c759c60f0fbd0062de980efd559819b5a7f0aebb1123b4ca39f3fd01bb6e8c7a` |
-| `keys/approveTransfer.prover` | `40554b1b99996729a3575c8a0e34b0189b518262930b792a65bf270da9ebfe7d` |
-| `keys/approveTransfer.verifier` | `761b019e6c355dddb20605488f2392bd087a66a28ddada3488428ec48111758b` |
+| `keys/issueLicense.prover` | `bb6327ed4ac98797f069c42c4f7418238536d5c3a92a7b5a97cb45aec1e613fb` |
+| `keys/issueLicense.verifier` | `94e9563f2684222d21fb50727a0e8f0d4a622a061be9d23b50f75166c7b61b6f` |
+| `keys/countersignLicense.prover` | `e538299298e05b9920ed6fbcb52a6c3159c0d0ea0a45d4ba3018b8e31d011868` |
+| `keys/countersignLicense.verifier` | `fe8ff9309a1c88ec2c24ae0809368690c531dc467053a770b0f6a1aa321d1874` |
+| `keys/proposeTransfer.prover` | `0ac26d7531fe20ab3becc2256f88efff7a3369606623bd70ccea22539b02af7e` |
+| `keys/proposeTransfer.verifier` | `36f4dd7bbfc70690438af9c7fd604ab20368fc7f140cc485892e376d07d0ee56` |
+| `keys/approveTransfer.prover` | `dca1f920cea6197938c9c0b42557af33de3c8755036276b752d04ae50bba83ba` |
+| `keys/approveTransfer.verifier` | `5dd49df2634278757e665873917042bc5b279c1376d79b92320ac07fbe715f95` |
 | `keys/withdrawTransfer.prover` | `760e2a98d06afa47f51be04270d5e2bdd7d86b461dedda50aff27923931a4ed9` |
 | `keys/withdrawTransfer.verifier` | `2cc689a5b9b14dc3ec6738aca655b3dd177b495f0770429d6b5f13cbec6e8207` |
-| `keys/revokeLicense.prover` | `088c0bf340fd3eb1871a4ba11c4698738d870a51c780697d5c8efe9826293759` |
-| `keys/revokeLicense.verifier` | `c8723a5229e869d15164587738f4acd08e26eee523a7ba62b8b74fce82cad983` |
-| `keys/proveLicense.prover` | `b8ef539e8c04bf11310c1217e870e9c9cde14dc50bcdea94372f10542a95e832` |
-| `keys/proveLicense.verifier` | `24776b152dbc4b37a2092eb77131b35dc7f3fe81bee805f23d75f415d807bdb0` |
-| `keys/licenseStatus.prover` | `3642dc89f199b94de9899d9bdb53bb2335aca67d8438a99a4c24b57f0827552b` |
-| `keys/licenseStatus.verifier` | `26e6485f52de2868ac087a395553537efbdd496189896e3b6a5a9cd0a5d849e8` |
+| `keys/revokeLicense.prover` | `21b5e18c10da1b703950fef3e31e6958a044aa5c430d80695dca2077979ce651` |
+| `keys/revokeLicense.verifier` | `9133c4ddca10fa4e7930cf5d31a939380e5b525735a832bfa4c4121c9431242c` |
+| `keys/proveLicense.prover` | `ee6884c857cbf1403465ef2e41d547977b73cf625c072182bea91ec495db8b16` |
+| `keys/proveLicense.verifier` | `8b58154cd6b08e3d865eaa8a1cd76076a61c956e324fa54176ce36923545e805` |
+| `keys/licenseStatus.prover` | `314fb3f69e370608db2a2503db31f0c0b553c33bce2f43b7336bcd7d464b2c32` |
+| `keys/licenseStatus.verifier` | `21c9dfc7a6e9d17db8d14c1555ac306be9d4d4ab10a1a98188add2bef92aa0a6` |
 
 Reviewers can reproduce these by running the build command above and comparing
 fingerprints.
@@ -173,6 +177,33 @@ passed against the contract as reviewed and each must fail against it now.
 **The provenance circuits are unchanged.** `anchor`, `proveOwnership` and `pairDna`
 carry the same artefact fingerprints as at approval, marked in the table above. Every
 changed fingerprint is licensing.
+
+**A second correction, the same day.** Reading the whole contract after the four
+fixes turned up a fifth problem, in the transfer mechanism itself rather than in
+its authorisation.
+
+A licence's identity is the secret behind its commitment, and a secret cannot be
+un-known. `approveTransfer` reassigned a holder field, which moved nothing: the
+outgoing party still knew the secret, so they could still prove the licence and
+still propose further transfers, while the incoming party could do nothing unless
+the secret was handed over — after which both held it permanently.
+
+The USDA plant variety licence template settles the model. Assignment requires the
+licensor's prior written consent, and *the identity of the parties is material to
+the formation of this Agreement* with obligations that are *non-delegable*. So the
+old licence now ends and a new one begins: the incoming party generates their own
+secret and hands over only its commitment, the issuer consents to that specific
+commitment, and on approval the old entry is removed and a new one inserted
+against the same record. The outgoing party's rights end because the key they hold
+is no longer in the map.
+
+`licenseHolderOf` is gone with it. Four regression tests cover the property that
+replaced it: the old licence no longer exists, the outgoing party can neither
+prove it nor propose another assignment, and the incoming party can prove it.
+
+Also stated rather than enforced: **the licensee generates the licence secret** and
+gives the issuer only its commitment. An issuer who generates the secret can also
+countersign, which is a licence issued to nobody. The contract cannot check this.
 
 **Nothing has been deployed to mainnet.** The key has not been requested. We would
 rather this document, the review, and the deployed bytes agree before it is.
