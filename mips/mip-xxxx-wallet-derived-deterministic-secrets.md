@@ -1,10 +1,10 @@
 ---
-MIP: xxxx
+MIP: "0015"
 Title: Wallet-derived deterministic secrets
 Authors:
   - Guido De Vita (dvgui)
   - Arturo López (Arturo-Lopez)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-08-18
 Requires: none
