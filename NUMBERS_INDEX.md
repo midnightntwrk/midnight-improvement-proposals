@@ -52,6 +52,9 @@ MPS-0017: governance-observability (in review)
 [MPS-0030: consensus-decentralization](/mps/mps-0030-consensus-decentralization.md)  
 [MPS-0031: dust-grant-dao](/mps/mps-0031-dust-grant-dao.md)  
 [MPS-0032: storage-growth](/mps/mps-0032-storage-management.md)  
+[MPS-0033: committee-bridge-m-to-c](/mps/mps-0033-committee-bridge.md)  
+[MPS-0034: night-staking](/mps/mps-0034-night-staking.md)  
+[MPS-0035: shielded-spend-key-exposure](/mps/mps-0035-shielded-spend-key-exposure.md)  
 
 # MIPs
 
