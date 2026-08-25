@@ -55,6 +55,8 @@ MPS-0017: governance-observability (in review)
 [MPS-0033: committee-bridge-m-to-c](/mps/mps-0033-committee-bridge.md)  
 [MPS-0034: night-staking](/mps/mps-0034-night-staking.md)  
 [MPS-0035: shielded-spend-key-exposure](/mps/mps-0035-shielded-spend-key-exposure.md)  
+[MPS-0036: security-evidence-for-compact](/mps/mps-0036-security-evidence-for-compact.md)  
+[MPS-0037: heritable-rights](/mps/mps-0037-heritable-rights.md)  
 
 # MIPs
 
@@ -72,3 +74,4 @@ MPS-0017: governance-observability (in review)
 [MIP-0012: contract-asset-custody](/mips/mip-0012-native-asset-custody.md)  
 [MIP-0013: multi-key-account-auth-contract-custody](/mips/mip-0013-account-authorisation.md)  
 [MIP-0014: native-unshielded-token-standard](/mips/mip-0014-native-unshielded-token.md)  
+[MIP-0015: wallet-derived-deterministic-secrets](/mips/mip-0015-wallet-derived-deterministic-secrets.md)  
