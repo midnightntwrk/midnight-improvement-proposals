@@ -1,8 +1,8 @@
 ---
-MPS: xxxx
+MPS: "0036"
 Title: Security-Review Evidence for Compact Contract Releases
 Authors: Jiawen Li @Tracyli025
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 19-AUG-2026
 Requires: none
