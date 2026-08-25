@@ -1,5 +1,5 @@
 ---
-MPS: "00XX"  
+MPS: "0037"  
 Title: Heritable Rights for Self-Replicating Off-Chain Assets  
 Authors: Hunter Roberts (hunterincoming)
 Status: Proposed  
