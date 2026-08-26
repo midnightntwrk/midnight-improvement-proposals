@@ -150,7 +150,7 @@ The absence of a standard means:
 ### Appendix A: Token Color Derivation
 
 ```
-color = blake2b_256(domainSeparator ‖ contractAddress)
+color = sha_256(domainSeparator ‖ contractAddress)
 
 Where:
   domainSeparator: Bytes<32>  -- chosen by contract developer
