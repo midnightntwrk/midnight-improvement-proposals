@@ -29,7 +29,7 @@ MIP: none
 ## Abstract
 
 Midnight can convey contract activity publicly (MIP-0002), letting dApps observe it by reading logs.
-MPS-0005 deferred the private case.
+MPS-0005 deferred the privacy preserving case.
 This MPS states that problem.
 
 The need is to convey information tied to on-chain activity to a specific party without revealing key elements of it: what kind it is, who it is for, when, whether it happened at all, and its contents.
@@ -45,7 +45,7 @@ One way to satisfy this is to never place ciphertext on a permanent public mediu
 
 ## Vision
 
-A contract author expresses the intent to convey information to a party privately as easily as MIP-0002 makes public information available, choosing per case what stays confidential (type, recipient, the fact that anything was conveyed, or contents).
+A contract author expresses the intent to convey information to a party privately as easily as MIP-0002 makes public information available, with type, recipient, timing, the fact that anything was conveyed, and contents confidential by default, and choosing per case what is deliberately revealed beyond that.
 
 The intended party, a wallet, a dApp backend, an agent, is informed promptly and obtains the information, while everyone else, including any node, indexer, or relay involved in carrying it, learns nothing they shouldn't.
 A recipient's work tracks what is addressed to them rather than total chain activity.
@@ -82,13 +82,14 @@ Whatever the medium, the same challenges recur. They are also coupled: cheapenin
 
 **Confidentiality.**
 The novel requirement is hiding what a public event cannot: the event's type, its recipient, its timing, and the fact that anything was conveyed.
-It also requires unlinkability: an observer must not learn that two items share a recipient, nor which party any item is for.
+It also requires unlinkability: an observer must not learn that two items share a recipient, nor which party any item is for, and this must survive aggregation, since correlation across many observations can reveal what no single pair does.
 Payload secrecy, by contrast, is the easy part and needs no new mechanism.
 What must stay hidden versus what may remain visible (e.g. for indexing or routing) is itself a design tension.
 
 **Private discovery cost.**
 The intended party must learn of and obtain the information without costly per-item work across all activity, whether they scan a ledger or receive a message: the naive fallback of trial-decrypting everything imposes exactly that, and eventually defeats any client, not just light or mobile ones.
 Cheap per-item filtering removes that cost but not all of it, since a recipient who must observe everything still takes in data volume that grows with the chain.
+Moving that cost off the recipient does not remove it either: chain-scale work shifted to shared infrastructure becomes a question of what that infrastructure learns and how much trust it demands.
 
 **Metadata leakage.**
 Any intermediary that routes or filters, a node, an indexer, a relay, a messaging server, must not learn which information, or which parties, are involved, including at the network layer.
@@ -133,13 +134,18 @@ No primitive carries a guarantee on that horizon, so today the issuer must choos
 ## Goals
 
 1. **Confidentiality.**
-Hide what a public event cannot: the type, the recipient, the timing, and the fact that anything was conveyed. Keep a recipient's separate items unlinkable.
+A solution must make it possible for a contract to convey information to a specific party such that no observer without a disclosure capability for it can determine the notification's type, its recipient, its timing, whether a notification accompanied a given activity at all, or that two notifications share a recipient.
+Unlinkability must hold in aggregate: observing any number of notifications over any period must not reveal, even statistically, that some of them share a recipient.
+This must hold against an observer reading the chain, one operating an intermediary that carries, routes, or indexes the information, and one watching the network, including combinations of these.
+The intended party must still learn that a notification exists and be able to read it.
 Payload confidentiality is a baseline.
-Authors control what beyond it stays hidden versus visible.
+Where a design falls short on any of these properties, the shortfall is an author's explicit, named choice, stated and bounded rather than incidental.
 
 2. **Efficient delivery.**
-The intended party learns of and obtains what concerns them with per-item work that scales with what is addressed to them, not with total chain size.
-Observation cost may grow with the chain, provided it stays within the reach of a consumer device such as a mobile wallet.
+The intended party learns of and obtains what concerns them with work that tracks what is addressed to them, not total chain activity: per-item work scales with their own items, and the data they must observe does not grow with the chain.
+The chain-scale work this removes from the recipient need not disappear; it may move to the dedicated shared infrastructure Goal 6 permits, which then operates under the metadata bounds Goal 3 sets.
+Where a design falls short of this, the shortfall is an explicit, stated trade: more work for servers, more trust in an intermediary, or residual work for the recipient that is bounded and stays within the reach of a consumer device such as a mobile wallet.
+Discovery is itself a leakage surface: what the mechanism reveals about who is interested in what falls under the same explicit, bounded standard Goal 3 sets for delivery.
 
 3. **Minimal metadata leakage.**
 Delivery must not reveal to any intermediary (node, indexer, relay, or messaging server) which information or which parties are involved.
@@ -151,9 +157,12 @@ It must not rest solely on assumptions expected to fall to quantum attack.
 
 5. **Selective disclosure.**
 Support granting read access to a designated party who is not the sender or recipient (an auditor or regulator) without exposing the information to anyone else, and where the use case requires, after the fact.
+A grant must be scoped: access to one item must not extend to the granting party's other items, and making a grant must not require handing over a long-term key.
 
 6. **Developer ergonomics.**
-Authors convey and consumers receive private information through familiar Compact and tooling, without hand-rolling cryptography or running bespoke delivery and scanning infrastructure.
+Authors express confidential notification in Compact, and consumers receive it through a corresponding SDK and wallet path, without hand-rolling cryptography.
+A solution may rely on dedicated off-chain infrastructure for private signalling; what matters is that it is shared and standard, part of the solution itself, not something each author or dApp builds and operates for themselves.
+The measure of success is end to end: a contract emits a confidential notification and a recipient wallet discovers and reads it, using the solution's published tooling and infrastructure and nothing bespoke.
 
 7. **Bounded cost.**
 Per-item and aggregate overhead must stay within the budgets of whatever medium carries the information, including the larger key material post-quantum schemes require.
@@ -165,11 +174,11 @@ Allow public verification of facts derived from private items (e.g. a vote tally
 
 - **New application classes become native.** Private payments with receipts, compliant transfers, and auditor-visible records can be built on a first-class Midnight mechanism rather than ad-hoc workarounds or state polling.
 
-- **Private dApps stay usable at scale.** Recipients (including wallets on phones) keep pace with a growing chain, because their per-item work is bounded by what is addressed to them and the cost that does scale stays within a consumer device's reach.
+- **Private dApps stay usable at scale.** Recipients (including wallets on phones) keep pace with a growing chain, because their work is bounded by what is addressed to them, with any residual cost an explicit trade that stays within a consumer device's reach.
 
 - **Confidentiality that ages well.** Every payload has a stated confidentiality horizon, matched against how long the information must stay secret, with the medium chosen to fit that requirement rather than assumed.
 
-- **Approachable, not hand-rolled.** Conveying information privately becomes a first-class, well-defined capability instead of a per-app workaround, lowering the barrier to adopting privacy and reducing the chance of misuse.
+- **Approachable, not hand-rolled.** Conveying information privately becomes a first-class, well-defined capability instead of a per-app workaround, demonstrable end to end from contract emission to wallet receipt through the solution's own tooling and delivery infrastructure, lowering the barrier to adopting privacy and reducing the chance of misuse.
 
 - **Compliance without a transparency tradeoff.** Regulated participants can meet obligations like the Travel Rule while keeping counterparty data private, widening who can build and transact on Midnight.
 
@@ -182,9 +191,11 @@ Whether the information should be carried on-chain, off-chain, or as a hybrid ne
 
 - **Reaching the right party.**
 How the intended party learns of and obtains what concerns them needs to be addressed, including how much work per item is acceptable, how much data they must observe, and the tradeoff between reducing either and the metadata it may expose.
+Where a design moves chain-scale work off the recipient, what the shared infrastructure carrying it must do, what it may learn, and who bears its cost need to be addressed as well.
 
 - **Acceptable metadata visibility.**
 What may remain visible (for example, to support indexing or routing) versus what must be hidden (type, recipient, timing, and existence) needs to be addressed, including leakage to nodes, indexers, relays, and network observers.
+Where a design conceals existence by making a notification indistinguishable from other activity, the composition and minimum size of the set it hides within needs to be stated and measured rather than assumed.
 
 - **Confidentiality horizon.**
 How confidentiality is kept durable against an adversary who captures protected data now and attacks later needs to be addressed, including whether to avoid placing ciphertext on a permanent public medium, whether an unconditionally hiding on-chain representation removes the question by leaving no secret to recover, and the impact the chosen approach has on size and cost.
@@ -194,10 +205,12 @@ Whether information must be deliverable to a recipient not known to the sender i
 
 - **Selective disclosure.**
 How read access is granted to a designated party who is neither sender nor recipient (including after the fact) needs to be addressed.
+This includes the granularity of a grant (a single item, a contract's activity, a period) and what the granting party must reveal to make one, since a grant that exposes unrelated items or costs a long-term key defeats the purpose.
 
 - **Authoring surface.**
 Compact today expresses only public event emission.
 How contract authors express *private* information flow (what stays confidential, to whom, and how it is delivered) needs to be addressed at the language level, so that authors are not left to assemble confidentiality from low-level primitives.
+The consuming side needs the same treatment: how a wallet or SDK surfaces discovery and reading of what is addressed to a party, and what dedicated delivery infrastructure sits between emission and receipt, so the receive path is as first-class as the emit path.
 
 - **Relationship to existing shielded functionality.**
 Whether this should extend Midnight's existing shielded mechanisms or stand as a separate facility needs to be addressed, including whether post-quantum confidentiality should be pursued here alone or as part of a broader shielded-layer effort.
