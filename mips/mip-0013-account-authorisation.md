@@ -26,6 +26,7 @@ Created: 2026-07-10
 License: Apache-2.0
 Requires: MIP-0012: Contract Custody of Midnight-Native Assets
 Replaces: none
+MPS: MPS-0018
 ---
 
 ## Abstract

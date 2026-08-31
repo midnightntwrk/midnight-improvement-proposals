@@ -5,9 +5,7 @@ Authors: Andrew Fleming @andrew-fleming, Edward Alvarado <edward.alvarado@midnig
 Status: Proposed
 Category: Standards
 Created: 2026-02-12
-Requires: MIP-0005
-Replaces: none
-License: Apache-2.0
+MPS: none
 ---
 
 <!--
