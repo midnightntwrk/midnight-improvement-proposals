@@ -7,6 +7,7 @@ Category: Core
 Created: 02-06-2026  
 Requires: [none]  
 Replaces: [none]  
+MIP: none  
 
 ---
 # MPS: Proof Verification in Compact

@@ -7,7 +7,7 @@ Category: Standards
 Created: 2026-02-25
 Requires: none
 Replaces: none
-License: Apache-2.0
+MPS: none
 ---
 
 <!--

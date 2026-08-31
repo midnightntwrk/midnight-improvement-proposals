@@ -20,7 +20,12 @@ This index holds the rolling agenda for MIP working sessions. It's purpose is to
 
 ## Agenda
 
-- 7 July 2026 -- MIP-0007 Midnight Name Service (Facu, Nicolas Di Prima)
-- 14 July 2026 -- Agenda doc, MIP-0007, PR cleanup
-- 21 July 2026 -- Aura to BABE, MIP-0007
-- 28 July 2026 -- special guest (specific MIP review)
+- 7 July 2026 -- MIP-0007 Midnight Name Service (Facu, Nicolas Di Prima)  
+- 14 July 2026 -- Agenda doc, MIP-0007, PR cleanup  
+- 21 July 2026 -- Aura to BABE, MIP-0007  
+- 28 July 2026 -- special guest (specific MIP review)  
+- 4 August 2026 -- template reference changes, PR cleanup, assign specific MIP review session  
+- 11 August 2026 -- maintenance session  
+- 12 August 2026 -- MIP-0014: Native Unshielded Token Standard (Jay Albert) (wallet-wg)  
+- 25 August 2026 -- PR maintenance, MIP-0014 updates, MIP-0011 date assignment  
+- 7 September 2026 -- Shielded Token Standard (OpenZeppelin) (wallet-wg)  
