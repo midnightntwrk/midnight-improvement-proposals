@@ -279,7 +279,7 @@ Native unshielded tokens are public by design: balances, transfers, and ownershi
 2. In-memory simulators and unit tests exercising the circuits.
 3. No protocol or language changes are required; the standard is a convention over primitives already in the Compact Standard Library.
 
-A reference implementation exists and compiles against the current toolchain (Compact 0.31.x): `<repository URL to be added>`.
+A reference implementation exists and compiles against the current toolchain (Compact 0.31.x): <https://github.com/JAlbertCode/example-mip-0014>.
 
 ### Dependencies
 
