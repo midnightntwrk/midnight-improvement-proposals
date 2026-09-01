@@ -1,13 +1,14 @@
 ---
-MIP: xxxx
+MIP: "0016"
 Title: NIGHT Staking
 Authors:
   - Karmel E (karmoola)
 Status: Draft
 Category: Core
 Created: 01-Sep-2026
-Requires: MPS on Native NIGHT Staking, MPS-0019
+Requires: none
 Replaces: none
+MPS: MPS-0019
 ---
 
 <!--
@@ -28,7 +29,7 @@ Replaces: none
 
 ## Abstract
 
-**An mNIGHT holder delegates to a stake pool run by a block producer and earns a share of that pool's block production rewards. Stake is liquid, nothing is locked or at risk, and stake carries no consensus weight.**
+An mNIGHT holder delegates to a stake pool run by a block producer and earns a share of that pool's block production rewards. Stake is liquid, nothing is locked or at risk, and stake carries no consensus weight.
 
 V1 is intentionally simple. It lets token holders earn rewards without new emission and without changing existing network mechanics. The mNIGHT stays in the holder's wallet and stays spendable, so DUST is untouched. Rewards are paid from the Reserve, the same budget that already funds block production, and flow through the producing pool. Pools declare a commission that can only be lowered.
 
@@ -42,7 +43,7 @@ Midnight has no native way for holders to stake NIGHT and share in network rewar
 
 A stake address and delegation certificate for mNIGHT holders. Stake pools operated by registered block producers. A per-epoch staking reward paid from the Reserve through the producing pool.
 
-*Producer performance scoring and SPO bonding are both separable and both belong in their own MIPs. (Currently pending Block Rewards MIP to confirm phases and sequencing)*
+*Producer performance scoring and SPO bonding are both separable and both belong in their own MIP. (Currently pending Block Rewards MIP to confirm phases and sequencing)*
 
 ### 2. Staking is non-custodial and transfer-free
 
@@ -70,7 +71,7 @@ A pool is registered by a block producer that is registered and eligible to prod
 
 **Commission ratchet.** A pool MAY lower its commission at any time, effective the next epoch. A pool MUST NOT raise it, and any attempt is rejected. A delegator therefore knows the rate they see is the worst they will ever pay. (Consider if we were to open this: allowed, but only with an extremely lengthend timeline compared to lowering the fee. (~10 epochs) -- this would give stakers ample time to react to the higher fee.. Maybe this can be considered for phase 2)
 
-**Distribution, per pool per epoch.** The pool's reward is the block production reward it earned. The operator retains commission, being that reward multiplied by the commission rate. The remainder is distributed to the pool's stakers in proportion to their reward weight within the pool. automated and not the responsibility of the pool to distribute. This needs to be automated likely via a dedicated claim portal or ideally an airdrop with an option to re-stake rewards on top of existing stake An operator delegating to its own pool earns its delegator share in addition to commission.
+**Distribution, per pool per epoch.** The pool's reward is the block production reward it earned. The operator retains commission, being that reward multiplied by the commission rate. The remainder is distributed to the pool's stakers in proportion to their reward weight within the pool. automated and not the responsibility of the pool to distribute. This needs to be automated likely via a dedicated claim portal or ideally an airdrop with an option to re-stake rewards on top of existing stake. An operator delegating to its own pool earns its delegator share in addition to commission.
 
 Rewards are kept at the pool level. Routing all the way to individual delegators on the Cardano side is deliberately avoided in V1; native NIGHT stakers are paid on Midnight. The exact distribution path is being finalized in the block rewards MIP.
 
@@ -98,13 +99,19 @@ The per-block reward is the outstanding Reserve balance multiplied by a fixed ba
 
 The staker reward is a share of the block production reward, routed through the producing pool as in section 4, and is therefore funded from the same Reserve budget that already funds block production. It is not new emission and not a separate Reserve draw.
 
-Open items: **Delegator routing:** how the pool's reward reaches individual stakers is being finalized **Reserve replenishment:** what happens once the Reserve is drawn down
+Open items:   
+**Delegator routing:** how the pool's reward reaches individual stakers is being finalized
+**Reserve replenishment:** what happens once the Reserve is drawn down
 
 ### 7. Claim and interfaces
 
-Rewards are computed at the epoch boundary and credited at the start of the next epoch. Balances accrue without expiry, count toward the staker's snapshot balance so they compound, generate DUST, and become spendable through an explicit withdrawal that MUST use the same CLI and SDK surface as block production reward withdrawal under MPS-0019.
+Rewards are computed at the epoch boundary and credited at the start of the next epoch. Balances accrue without expiry, count toward the staker's snapshot balance so they compound, generate DUST, and become spendable through an explicit withdrawal that MUST use the same CLI and SDK surface as block production reward withdrawal under [MPS-0019](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0019-block-production-rewards-night.md).
 
-Four batch-capable interfaces are required: **forecast** expected reward for a candidate amount and pool; **position** for a stake address; **pool lookup** returning operator, commission and its history, delegated weight, and the stake reward against commission split, satisfying MPS-0019's delegator requirement; and **epoch accounting** sufficient to reproduce every payout.
+Four batch-capable interfaces are required: 
+1. **forecast** expected reward for a candidate amount and pool
+2. **position** for a stake address
+3. **pool lookup** returning operator, commission and its history, delegated weight, and the stake reward against commission split, satisfying MPS-0019's delegator requirement
+4. **epoch accounting** sufficient to reproduce every payout.
 
 ### 8. Parameters
 
