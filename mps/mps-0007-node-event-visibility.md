@@ -1,5 +1,5 @@
 ---
-MPS: 0007  
+MPS: "0007"
 Title: Node-Side Visibility of Ledger Events  
 Authors: Giles Cope <giles.cope@shielded.io>  
 Status: Proposed  
