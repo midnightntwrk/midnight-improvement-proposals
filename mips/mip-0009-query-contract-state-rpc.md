@@ -1,5 +1,5 @@
 ---
-MIP: 0009
+MIP: "0009"
 Title: Lazy Contract State Query RPC
 Authors: Rodrigo Quelhas @RomarQ
 Status: Proposed

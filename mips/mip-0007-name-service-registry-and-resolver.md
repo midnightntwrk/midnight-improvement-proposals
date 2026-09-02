@@ -1,5 +1,5 @@
 ---
-MIP: 0007
+MIP: "0007"
 Title: Midnight Name Service — Canonical Registry and Resolver Standard
 Authors:
   - Midnames (midnames)

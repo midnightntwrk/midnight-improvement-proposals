@@ -5,7 +5,7 @@ Authors:
 - Hector Bulgarini (hbulgarini)
 - Nicolas Di Prima (NicolasDP)
 Status: Proposed
-Category: Libraries and Tooling | Standards
+Category: Libraries and Tooling
 Created: 23-Jun-2026
 Requires: none
 Replaces: none

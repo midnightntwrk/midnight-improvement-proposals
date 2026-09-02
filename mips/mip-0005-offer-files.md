@@ -1,5 +1,5 @@
 ---
-MIP: 0005
+MIP: "0005"
 Title: Offer Files
 Authors: Andrew Fleming @andrew-fleming, Edward Alvarado <edward.alvarado@midnight.foundation>
 Status: Proposed
