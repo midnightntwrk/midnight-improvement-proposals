@@ -1,5 +1,5 @@
 ---
-MIP: 0006
+MIP: "0006"
 Title: Peer-to-Peer Atomic Swaps
 Authors: Andrew Fleming @andrew-fleming, Edward Alvarado <edward.alvarado@midnight.foundation>
 Status: Proposed
