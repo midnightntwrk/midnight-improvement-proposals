@@ -57,6 +57,7 @@ MPS-0017: governance-observability (in review)
 [MPS-0035: shielded-spend-key-exposure](/mps/mps-0035-shielded-spend-key-exposure.md)  
 [MPS-0036: security-evidence-for-compact](/mps/mps-0036-security-evidence-for-compact.md)  
 [MPS-0037: heritable-rights](/mps/mps-0037-heritable-rights.md)  
+[MPS-0038: cardano-observation-cost](/mps/mps-0038-cardano-observation-cost.md)  
 
 # MIPs
 

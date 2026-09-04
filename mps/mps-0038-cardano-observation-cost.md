@@ -1,5 +1,5 @@
 ---
-MPS: xxxx  
+MPS: "0038"  
 Title: Operational Cost of Cardano Observation  
 Authors: Santiago Carmuega @scarmuega  
 Status: Draft  
