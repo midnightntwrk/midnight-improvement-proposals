@@ -1,5 +1,5 @@
 ---
-MIP: 1
+MIP: "0001"
 Title: Midnight Improvement Proposal Process
 Authors:
   - Bob Blessing-Hartley (bobblessinghartley)
@@ -9,6 +9,7 @@ Category: Governance
 Created: 29-APR-2025
 Requires: none
 Replaces: none
+MPS: MPS-0001
 ---
 
 <!--

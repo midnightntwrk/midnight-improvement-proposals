@@ -7,6 +7,7 @@ Category: Core
 Created: 29-05-2026  
 Requires: [none]  
 Replaces: [none]  
+MIP: none  
 
 ---
 # MPS: business logic for zswap tokens

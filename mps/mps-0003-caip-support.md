@@ -1,5 +1,5 @@
 ---
-MPS: 0003  
+MPS: "0003"
 Title: CAIP-2 Compliant Network Identifiers for Wallet Ecosystem Integration   
 Authors:
   - Bob Blessing-Hartley <bob@shielded.io>
@@ -8,6 +8,7 @@ Category: Standards
 Created: 2026-04-07 
 Requires: none  
 Replaces: none  
+MIP: MIP-0008  
 ---
 
 <!--

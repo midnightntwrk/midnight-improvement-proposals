@@ -9,6 +9,7 @@ Category: {see MIP Categories in MIP-1}
 Created: {creation date}
 Requires: {MIPs that this one depends on which are not yet accepted}
 Replaces: {MIPs that this one will supersede when accepted}
+MPS: {related MPS reference, can be added later, or "none"}
 ---
 
 <!--

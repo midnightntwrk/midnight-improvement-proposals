@@ -1,5 +1,5 @@
 ---
-MIP: 0002
+MIP: "0002"
 Title: Public Contract Log Emission for Compact Smart Contracts
 Authors:
   - Dominik Zajkowski (@dzajkowski)
@@ -8,6 +8,7 @@ Category: Core
 Created: 2026-05-15
 Requires: none
 Replaces: none
+MPS: MPS-0005
 License: Apache-2.0
 ---
 
