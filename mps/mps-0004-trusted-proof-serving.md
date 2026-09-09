@@ -1,5 +1,5 @@
 ---
-MPS: 0004
+MPS: "0004"
 Title: Trustworthy Delegated Proof Generation for Privacy-Preserving Transactions
 Category: Ledger
 Status: Proposed

@@ -1,3 +1,15 @@
+---
+MPS: "0032"
+Title: History Management for Midnight
+Authors: Dominik Zajkowski @dzajkowski
+Status: Proposed
+Category: Core
+Created: 14-MAY-2026
+Requires: none
+Replaces: none
+MIP: none
+---
+
 <!--
  Copyright 2026 Midnight Foundation
  
@@ -14,18 +26,6 @@
  limitations under the License.
 -->
 
----
-MPS: "0032"  
-Title: History Management for Midnight  
-Authors: Dominik Zajkowski @dzajkowski  
-Status: Proposed  
-Category: Core  
-Created: 14-MAY-2026  
-Requires: none  
-Replaces: none  
-MIP: none
-
----
 
 ## Abstract
 
