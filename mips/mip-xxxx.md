@@ -14,6 +14,22 @@ Related-MIP: MIP-0005, MIP-0006
 License: Apache-2.0
 ---
 
+<!--
+ Copyright Midnight Foundation
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     https://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
 ## Abstract
 
 Midnight's current shielded spending circuit receives the coin spending key as a private
@@ -36,7 +52,7 @@ proven offers remain mergeable.
 required. This document defines the expected behavior and its rationale; it leaves byte layouts,
 circuit organization, and software interfaces to the implementation design.
 
-**Supporting specification:** The [Shielded Note V2 specification](attachments/MIP-xxx/specification.md)
+**Supporting specification:** The [Shielded Note V2 specification](mip-xxxx/specification.md)
 contains the detailed reference construction: cryptographic formulas, encodings, payment scopes,
 circuit constraints, and validator rules. It distinguishes verified existing behavior from v2
 requirements and unresolved protocol choices. This MIP defines the required properties and design
@@ -115,8 +131,10 @@ its recipient-key representation. The circuit must link that commitment to the s
 
 The hash-to-curve relation MUST admit exactly one valid non-identity subgroup point for each
 input. A deterministic host implementation is not enough if the circuit accepts alternative
-points. The key holder derives or independently checks this base before using its secret;
-arbitrary host-selected points are not acceptable.
+points: each accepted alternative is another base on which the key holder can honestly evaluate
+the VRF, and therefore another nullifier for the same coin. The key holder derives or
+independently checks this base before using its secret; arbitrary host-selected points are not
+acceptable.
 
 A simple hash-to-scalar multiplied by the generator is not a substitute for a secure
 hash-to-curve map: its known discrete logarithm would let anyone with the public spending key
@@ -157,8 +175,8 @@ Changing proof bytes must not disguise a duplicated input or nullifier.
 This document uses **payment scope** to mean that protected contribution, not a required wire
 type. Developers can choose its representation and the way references are resolved, provided
 the validator can establish coverage unambiguously. Payment binding excludes final proof bytes
-to avoid circular dependencies. One shared scope for a wallet's contribution is the normal case;
-there is no need to make every input a separate approval workflow.
+to avoid circular dependencies. One shared scope for a wallet's contribution in each execution
+segment is the normal case; there is no need to make every input a separate approval workflow.
 
 Scope completeness remains the wallet's responsibility. The ledger can check referenced records
 and require every v2 input to be authorized, but it cannot infer which outputs the user intended
@@ -337,6 +355,14 @@ Indexers may keep the existing ciphertext relevance filter, but must understand 
 ledger formats and outcomes. A new receiving address must be distinguished from v1 so senders
 choose the correct output relation.
 
+Contracts cannot yet pay v2 recipients. The Compact standard library and its runtime express a
+user recipient only as a v1 coin public key, so a coin that a contract mints or sends to a user
+is a v1 note, and a v2 recipient encoded into that field would make the coin unspendable.
+Extending that toolchain is a separate change against which deployed contracts must be
+redeployed; this MIP fixes only the v2 output relation it must produce. Until then a user who
+receives from contracts keeps a v1 receiving address, and those coins reach v2 only by a later
+transfer.
+
 ## Security Considerations
 
 **Captured proving requests.** Someone obtaining the complete v2 payload may reproduce or submit
@@ -380,7 +406,7 @@ that a compiled circuit or complete transaction is valid.
 
 The protocol properties above are fixed; the low-level recipe is not. Developers can choose the
 simplest construction that preserves them. The
-[supporting specification](attachments/MIP-xxx/specification.md) records the detailed reference
+[supporting specification](mip-xxxx/specification.md) records the detailed reference
 design and identifies the remaining interoperable choices:
 
 | Area | Property to preserve | Detail left to implementation design |
@@ -408,7 +434,7 @@ total custody compromise, hide witnesses from a remote prover, or guarantee serv
 
 ## References
 
-- [Shielded Note V2: Supporting Specification](attachments/MIP-xxx/specification.md), the detailed
+- [Shielded Note V2: Supporting Specification](mip-xxxx/specification.md), the detailed
   reference construction, code baseline, and unresolved protocol choices supporting this MIP.
 - [MPS-0035: Shielded Spend Authorization Requires Exposing the Spend Key](../mps/mps-0035-shielded-spend-key-exposure.md).
 - [MPS-0024: Custodian-Safe Native Shielded Asset Transfer](../mps/mps-0024-custodian-safe-shielded-spends.md)
@@ -431,6 +457,9 @@ total custody compromise, hide witnesses from a remote prover, or guarantee serv
   describe transcripts and private payments; Section 4.2 and Appendix I discuss composition
   and trust-model limits.
 
-## Copyright
+## Copyright Waiver
 
-Licensed under Apache-2.0, per the Midnight Foundation Contributor License Agreement.
+All contributions (code and text) submitted in this MIP must be licensed under the Apache License,
+Version 2.0.
+Submission requires agreement to the Midnight Foundation Contributor License Agreement,
+which includes the assignment of copyright for your contributions to the Foundation.
