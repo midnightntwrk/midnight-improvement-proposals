@@ -141,7 +141,7 @@ The toolkit's design anticipates alternatives: "For the sake of modularity and i
 
 **UC5: A new Cardano-side observation feature**
 
-* **Scenario:** The follower is extended to observe governed-contract events (MPS-0017), native staking (MPS-0034) or the committee bridge (MPS-0033).
+* **Scenario:** The follower is extended to observe governed-contract events (MPS-0017), native staking (MPS-0034) or the token bridge (MPS-0033).
 * **Limitations:** Each feature is written against db-sync's schema, which fixes the observer for every node and grows the set of tables an operator must maintain.
 * **Desired Outcome:** New observation features are specified against the data-source contract, so they are implementable on any conforming observer and do not by themselves raise the operating envelope.
 
