@@ -1,5 +1,5 @@
 ---
-MPS: "XXXX"
+MPS: "0039"
 Title: Calling a Contract Requires Its Full Compiled Artifacts
 Authors: Hector Bulgarini @hbulgarini, Nicolas Di Prima (NicolasDP)
 Status: Proposed
