@@ -1,6 +1,14 @@
 ---
-This is a legacy MPS that pre-dates the defined process, the components within may not conform to the MPS template.
+MPS: "0011"
+Title: Native Cryptographic Primitives for Prime Stablecoin Integration
+Status: Proposed
+Category: Libraries and Tooling
+Requires: none
+Replaces: none
+MIP: none
 ---
+
+> **Note:** This is a legacy MPS that pre-dates the defined process; the components within may not conform to the MPS template.
 
 # Native Cryptographic Primitives for Prime Stablecoin Integration
 

@@ -1,5 +1,5 @@
 ---
-MIP: 1
+MIP: "0001"
 Title: Midnight Improvement Proposal Process
 Authors:
   - Bob Blessing-Hartley (bobblessinghartley)

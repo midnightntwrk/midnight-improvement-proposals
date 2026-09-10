@@ -28,4 +28,5 @@ This index holds the rolling agenda for MIP working sessions. It's purpose is to
 - 11 August 2026 -- maintenance session  
 - 12 August 2026 -- MIP-0014: Native Unshielded Token Standard (Jay Albert) (wallet-wg)  
 - 25 August 2026 -- PR maintenance, MIP-0014 updates, MIP-0011 date assignment  
-- 7 September 2026 -- Shielded Token Standard (OpenZeppelin) (wallet-wg)  
+- 1 September 2026 -- MIP-0014 update, agenda/scheduling, preprod sync times, NIGHT staking, MIP-0013
+- 16 September 2026 -- MIP-0011: Shielded Token Standard (OpenZeppelin) (wallet-wg)  
