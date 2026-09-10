@@ -36,6 +36,13 @@ proven offers remain mergeable.
 required. This document defines the expected behavior and its rationale; it leaves byte layouts,
 circuit organization, and software interfaces to the implementation design.
 
+**Supporting specification:** The [Shielded Note V2 specification](attachments/MIP-xxx/specification.md)
+contains the detailed reference construction: cryptographic formulas, encodings, payment scopes,
+circuit constraints, and validator rules. It distinguishes verified existing behavior from v2
+requirements and unresolved protocol choices. This MIP defines the required properties and design
+rationale; the attachment develops one realization without overriding the implementation latitude
+described below.
+
 ## Motivation
 
 A zero-knowledge proof hides its witness from the verifier, not from the machine generating
@@ -372,7 +379,9 @@ that a compiled circuit or complete transaction is valid.
 ## Implementation Latitude
 
 The protocol properties above are fixed; the low-level recipe is not. Developers can choose the
-simplest construction that preserves them and document the interoperable choices separately:
+simplest construction that preserves them. The
+[supporting specification](attachments/MIP-xxx/specification.md) records the detailed reference
+design and identifies the remaining interoperable choices:
 
 | Area | Property to preserve | Detail left to implementation design |
 | --- | --- | --- |
@@ -399,6 +408,8 @@ total custody compromise, hide witnesses from a remote prover, or guarantee serv
 
 ## References
 
+- [Shielded Note V2: Supporting Specification](attachments/MIP-xxx/specification.md), the detailed
+  reference construction, code baseline, and unresolved protocol choices supporting this MIP.
 - [MPS-0035: Shielded Spend Authorization Requires Exposing the Spend Key](../mps/mps-0035-shielded-spend-key-exposure.md).
 - [MPS-0024: Custodian-Safe Native Shielded Asset Transfer](../mps/mps-0024-custodian-safe-shielded-spends.md)
   and [MPS-0016: Custodian-Compatible Shielded Wallet Generation](../mps/mps-0016-custodian-shielded-wallet-generation.md),
