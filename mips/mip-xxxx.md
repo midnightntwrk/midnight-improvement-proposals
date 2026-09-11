@@ -1,9 +1,9 @@
 ---
-MIP: X
+MIP: "0017"
 Title: Signature-Authorized Shielded Spends with VRF Nullifiers
 Authors:
   - Ricardo Rius (riusricardo)
-Status: Draft
+Status: Proposed
 Category: Core
 Created: 2026-08-28
 Requires: none
