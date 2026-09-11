@@ -18,7 +18,7 @@
 
 ## 1. Scope and Authority
 
-This document supports [mips/mip-xxxx.md](../mip-xxxx.md) and specifies the v2 reference
+This document supports [mips/mip-0017-shielded-spend-auth-vrf.md](../mip-0017-shielded-spend-auth-vrf.md) and specifies the v2 reference
 construction, cryptographic relations, and validation behavior. It is self-contained at the
 relation level; it does not describe deployed v2 functionality.
 VRF-derived nullifiers, payment binding, and isolation of the spending key are required.
