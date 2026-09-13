@@ -287,6 +287,38 @@ stranger's rotation cannot land on another holder's record, a holder's rotation
 returns the identity it replaces, and a rotation to the commitment already held is
 refused. Eight adversarial cases now pass in `contract/test-contract.mjs`.
 
+### The updatability decision
+
+The mainnet readiness checklist asks for this to be settled before the contract
+holds value, so it is recorded here rather than made at the console.
+
+The preprod deployment has a maintenance authority nobody chose. `deployContract`
+installs a single-signature authority when none is supplied, sampling a key and
+storing it in the private state provider, and that is what happened. The store was
+encrypted with a password inherited from the example this repository was forked
+from — published, therefore not a password. Both are now fixed in the source: the
+deploy path requires an explicit signing key or an explicit null, and the password
+is read from the environment with no fallback.
+
+For mainnet the authority will be named at deploy time and held jointly, not by
+one person and not in a file on a laptop.
+
+It will not be relinquished at deployment. Circuits are bound to the proof system
+that compiled them, and an un-upgradable contract cannot be repaired when that
+changes — only replaced, leaving every record naming its address pointing at a
+contract that can no longer be called. Relinquishing later, once the proving stack
+has settled, remains open and is the intended end state: a registry able to
+rewrite its own rules is not the neutral thing this format claims to be, and the
+transaction that gives up that power is worth more as a public act than the power
+is worth holding.
+
+The reason this is a choice rather than a risk is that anchoring is optional by
+design. Verification is SHA-256 over a canonical serialisation and requires
+nothing from any chain; §3.2 of the specification carries `contractAddress` per
+record, so a record names its own deployment and an unanchored record verifies
+while stating plainly that its date rests on whoever holds it. A contract that
+becomes uncallable degrades new anchoring. It does not invalidate evidence.
+
 **Nothing is deployed to mainnet, and the deploy key issued on 8 September has not
 been used.** The preprod deployment at
 `fb9c55944908c466dcea7b9807f00ea727b37cebec13870080016ddc5a9d721d` predates every
