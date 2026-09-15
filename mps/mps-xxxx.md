@@ -32,7 +32,7 @@ Midnight can convey contract activity publicly (MIP-0002), letting dApps observe
 MPS-0005 deferred the privacy preserving case.
 This MPS states that problem.
 
-The need is to convey information tied to on-chain activity to a specific party without revealing key elements of it: what kind it is, who it is for, when, whether it happened at all, and its contents.
+The need is to convey information tied to on-chain activity to a specific party without revealing key elements of it: what kind it is, who it is from, who it is for, when, whether it happened at all, and its contents.
 This is a problem about information flow, not about any particular mechanism.
 The information might be passed on-chain, off-chain, or as a hybrid.
 
@@ -45,7 +45,7 @@ One way to satisfy this is to never place ciphertext on a permanent public mediu
 
 ## Vision
 
-A contract author expresses the intent to convey information to a party privately as easily as MIP-0002 makes public information available, with type, recipient, timing, the fact that anything was conveyed, and contents confidential by default, and choosing per case what is deliberately revealed beyond that.
+A contract author expresses the intent to convey information to a party privately as easily as MIP-0002 makes public information available, with type, origin, recipient, timing, the fact that anything was conveyed, and contents confidential by default, and choosing per case what is deliberately revealed beyond that.
 
 The intended party, a wallet, a dApp backend, an agent, is informed promptly and obtains the information, while everyone else, including any node, indexer, or relay involved in carrying it, learns nothing they shouldn't.
 A recipient's work tracks what is addressed to them rather than total chain activity.
@@ -63,7 +63,7 @@ An author whose horizon does not fit is not offered the trade, and the chain car
 
 Midnight has no first-class way to tell a party about contract activity that concerns them while keeping the sensitive parts of that information from everyone else.
 
-The need is **conveying information tied to on-chain activity to a specific party without revealing key elements of it**: what kind it is, who it is for, when, whether it happened at all, and its contents.
+The need is **conveying information tied to on-chain activity to a specific party without revealing key elements of it**: what kind it is, who it is from, who it is for, when, whether it happened at all, and its contents.
 MIP-0002 conveys such information publicly; MPS-0005 deferred the private case.
 Today a dApp with this need has no first-class mechanism, and falls back on polling state or overloading primitives not meant for it, obfuscated public events, state cells used as a message bus, or hand-rolled off-chain side channels.
 
@@ -72,7 +72,7 @@ These trade off differently, and choosing among them is part of the problem, not
 
 Encrypting a payload is not the hard part, and needs only some work: a public event can already carry ciphertext.
 What that does not provide is everything around the payload: 
-- Hiding the event's type, existence, timing, and recipient.
+- Hiding the event's type, origin, existence, timing, and recipient.
 - Letting the intended party find their information without trial-decrypting everything. 
 - Keeping a recipient's separate items unlinkable.
 - Keeping ciphertext durable on a permanent public medium.
@@ -81,7 +81,7 @@ The problem is these properties, not payload secrecy alone.
 Whatever the medium, the same challenges recur. They are also coupled: cheapening discovery tends to leak metadata, and hiding metadata tends to make discovery expensive, so they cannot be satisfied independently.
 
 **Confidentiality.**
-The novel requirement is hiding what a public event cannot: the event's type, its recipient, its timing, and the fact that anything was conveyed.
+The novel requirement is hiding what a public event cannot: the event's type, its origin, its recipient, its timing, and the fact that anything was conveyed.
 It also requires unlinkability: an observer must not learn that two items share a recipient, nor which party any item is for, and this must survive aggregation, since correlation across many observations can reveal what no single pair does.
 Payload secrecy, by contrast, is the easy part and needs no new mechanism.
 What must stay hidden versus what may remain visible (e.g. for indexing or routing) is itself a design tension.
@@ -131,10 +131,21 @@ This is a different key model from recipient-addressed information: the reader i
 An issuer notifies a specific holder of a corporate action (dividend, redemption, lockup) that must remain confidential for the life of the asset, potentially years or decades.
 No primitive carries a guarantee on that horizon, so today the issuer must choose between accepting eventual exposure and keeping the notification off chain, in which case the chain can attest that something happened but not what.
 
+**Private voting with public tally.**
+Votes are cast as confidential notifications.
+Individual votes stay hidden, and no observer learns who voted or how, while the aggregate result is publicly verifiable.
+Without a private mechanism, either the ballot is public or the tally is unauditable.
+
+**Partial completion of transactions.**
+Execution of a Midnight transaction occurs in phases, first a guaranteed phase and then a fallible one.
+Any local execution engine needs to be able to track the outcome of each phase, in order to maintain its model, including its own private state.
+Execution events may not need to be private, but the observer's identity should remain hidden.
+
 ## Goals
 
 1. **Confidentiality.**
-A solution must make it possible for a contract to convey information to a specific party such that no observer without a disclosure capability for it can determine the notification's type, its recipient, its timing, whether a notification accompanied a given activity at all, or that two notifications share a recipient.
+A solution must make it possible for a contract to convey information to a specific party such that no observer without a disclosure capability for it can determine the notification's type, its origin (the sending party or the emitting contract), its recipient, its timing, whether a notification accompanied a given activity at all, or that two notifications share a recipient.
+Origin confidentiality is relative: where the underlying activity is itself public, the mechanism cannot conceal it, but a notification must reveal nothing about where it came from beyond what that activity already makes public on its own.
 Unlinkability must hold in aggregate: observing any number of notifications over any period must not reveal, even statistically, that some of them share a recipient.
 This must hold against an observer reading the chain, one operating an intermediary that carries, routes, or indexes the information, and one watching the network, including combinations of these.
 The intended party must still learn that a notification exists and be able to read it.
@@ -168,11 +179,16 @@ The measure of success is end to end: a contract emits a confidential notificati
 Per-item and aggregate overhead must stay within the budgets of whatever medium carries the information, including the larger key material post-quantum schemes require.
 
 8. **Verifiable aggregation.**
-Allow public verification of facts derived from private items (e.g. a vote tally) without revealing the underlying data.
+Allow public verification of facts derived from private items (e.g. a private ballot's tally) without revealing the underlying data.
+
+9. **Dependable delivery.**
+Conveyed information must not be silently lost.
+Whatever the medium, its delivery guarantee is explicit: the sender knows what assurance they have that the intended party can obtain the information, and the recipient can establish they have missed nothing addressed to them.
+Any acknowledgement or receipt flow that provides this is itself subject to the confidentiality and metadata goals.
 
 ## Expected Outcomes
 
-- **New application classes become native.** Private payments with receipts, compliant transfers, and auditor-visible records can be built on a first-class Midnight mechanism rather than ad-hoc workarounds or state polling.
+- **New application classes become native.** Private payments with receipts, compliant transfers, auditor-visible records, and private ballots with auditable tallies can be built on a first-class Midnight mechanism rather than ad-hoc workarounds or state polling.
 
 - **Private dApps stay usable at scale.** Recipients (including wallets on phones) keep pace with a growing chain, because their work is bounded by what is addressed to them, with any residual cost an explicit trade that stays within a consumer device's reach.
 
@@ -194,7 +210,7 @@ How the intended party learns of and obtains what concerns them needs to be addr
 Where a design moves chain-scale work off the recipient, what the shared infrastructure carrying it must do, what it may learn, and who bears its cost need to be addressed as well.
 
 - **Acceptable metadata visibility.**
-What may remain visible (for example, to support indexing or routing) versus what must be hidden (type, recipient, timing, and existence) needs to be addressed, including leakage to nodes, indexers, relays, and network observers.
+What may remain visible (for example, to support indexing or routing) versus what must be hidden (type, origin, recipient, timing, and existence) needs to be addressed, including leakage to nodes, indexers, relays, and network observers.
 Where a design conceals existence by making a notification indistinguishable from other activity, the composition and minimum size of the set it hides within needs to be stated and measured rather than assumed.
 
 - **Confidentiality horizon.**
@@ -202,6 +218,13 @@ How confidentiality is kept durable against an adversary who captures protected 
 
 - **Delivery to unknown parties.**
 Whether information must be deliverable to a recipient not known to the sender in advance needs to be addressed, as some approaches cannot support this.
+
+- **Delivery to unknown parties.**
+Whether it must be possible to send to a party the sender has never dealt with before needs to be addressed, as some approaches cannot support this.
+Does unknown mean anonymous?
+Or does the sender know who they are sending to, through some published identity?
+In the case of unknown but identifiable, the focus is on the lack of prior setup with that party, no shared secret, no exchanged keys.
+Some approaches need that setup before anything can be sent and some work from the published identity alone, so the answer decides which approaches stay viable.
 
 - **Selective disclosure.**
 How read access is granted to a designated party who is neither sender nor recipient (including after the fact) needs to be addressed.
@@ -223,7 +246,7 @@ How facts derived from private items can be made publicly verifiable without rev
 
 ## Recommended MIPs
 
-_To be determined._
+- Part of the 'private state' work covers private state change notifications.
 
 ## References
 
@@ -247,6 +270,7 @@ Prior art in privacy-preserving on-chain information flow and notification:
 ## Acknowledgements
 
 - Inigo Querejeta Azurmendi (@iquerejeta)
+- Jonathan Sobel (@jonathan-sobel)
 
 ## Copyright
 
