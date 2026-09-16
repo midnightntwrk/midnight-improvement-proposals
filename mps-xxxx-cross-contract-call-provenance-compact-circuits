@@ -1,8 +1,8 @@
 ---
-MPS: xxxx # assigned by editors
+MPS: "0040"
 Title: Cross-Contract Call Provenance in Compact Circuits
 Authors: Hector Bulgarini (hbulgarini), Nicolas Di Prima (NicolasDP)
-Status: Draft
+Status: Proposed
 Category: Core
 Created: 15-Sep-2026
 Requires: none
