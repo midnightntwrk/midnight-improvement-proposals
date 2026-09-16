@@ -1,5 +1,5 @@
 ---
-MPS: xxxx
+MPS: "0041"
 Title: Custodian-Compatible Compact Contract Proof Generation
 Authors:
   - Jalal Hannan <Jalal-1>
