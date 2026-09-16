@@ -237,6 +237,10 @@ visible only when it crosses a public boundary, through a ledger write, a return
 from an exported circuit, or a contract-to-contract call. The commitment did none
 of those.
 
+> **Corrected 16 September 2026.** A return from an exported circuit is *not* a
+> public boundary. See *Correction — 16 September 2026* at the end of this
+> document.
+
 The public transcript of a `proveOwnership` call was, in full:
 
 ```
@@ -257,12 +261,20 @@ position. The API and CLI surface it with the transaction hash and block height,
 so a verifier receives something to compare against the earlier anchor rather
 than a transaction hash and a claim.
 
+> **Corrected 16 September 2026.** This paragraph is wrong and the revision it
+> describes did not fix the defect it reported closed. See *Correction — 16
+> September 2026*.
+
 **What was added.** `rotateRecordSecret`, in response to the checklist item that a
 role must not be permanently lockable by a single lost secret. A witness secret
 cannot be recovered from the chain, and a holder who lost theirs previously lost
 every record keyed to it with no remedy. The holder proves control of the current
 secret and publishes a new commitment; the old one is returned, so the rotation is
 a checkable link between two identities rather than an unexplained new anchor.
+
+> **Corrected 16 September 2026.** Returning it published nothing, so under the
+> build recorded here a rotation is an unexplained new anchor. See *Correction —
+> 16 September 2026*.
 
 Licences issued against the old record are deliberately not re-keyed by this
 circuit. Rewriting every agreement attached to a record would move other parties'
@@ -286,6 +298,11 @@ never against that slot. Both are now stated in the source.
 stranger's rotation cannot land on another holder's record, a holder's rotation
 returns the identity it replaces, and a rotation to the commitment already held is
 refused. Eight adversarial cases now pass in `contract/test-contract.mjs`.
+
+> **Corrected 16 September 2026.** The second of those asserted on the return
+> value and passed against a circuit that published nothing — the test carried the
+> same defect as this document. Nine adversarial cases pass as of the correction.
+> See *Correction — 16 September 2026*.
 
 ### The updatability decision
 
@@ -323,3 +340,74 @@ becomes uncallable degrades new anchoring. It does not invalidate evidence.
 been used.** The preprod deployment at
 `fb9c55944908c466dcea7b9807f00ea727b37cebec13870080016ddc5a9d721d` predates every
 change in this revision.
+
+---
+
+## Correction — 16 September 2026
+
+The third revision reported a defect and reported it fixed. The defect was real.
+**The fix was not a fix, and this document asserted the reasoning that made it look
+like one.** Recorded here rather than edited into the section above, on the same
+principle that section was written under: a deployment record that no longer
+describes what it authorises is worth less than one that says so.
+
+**What this document got wrong.** It listed "a return from an exported circuit" as
+one of the boundaries across which a disclosed value becomes public. It is not. A
+return travels in the call's communication commitment, which is blinded with
+randomness: it reaches the caller's own DApp and nobody reading the ledger. The
+third revision then applied that rule — it made `proveOwnership` and `pairDna`
+return their commitments and recorded the defect as closed.
+
+Max Weber (ODATANO / NIGHTGATE) compiled the artefact recorded above and searched
+each call's `proofData.publicTranscript` — what a `ContractCall` actually carries —
+against its `input`/`output`, which only the communication commitment covers:
+
+| Call | Value | Public transcript | Input/output only |
+|---|---|---|---|
+| `anchor(rec)` | rec | yes | |
+| `proveOwnership()` | rec | **no** | yes |
+| `pairDna(rec, dna)` | rec | **no** | yes |
+| `pairDna(rec, dna)` | dna | yes | |
+| `rotateRecordSecret(new)` | old | **no** | yes |
+| `rotateRecordSecret(new)` | new | yes | |
+
+So of the build whose fingerprints are recorded above:
+
+- a prior-possession proof is **not** checkable by a third party — the chain shows
+  `proofSeq + 1` and nothing else;
+- a DNA pairing publishes the fingerprint and **not** the record it binds;
+- a rotation publishes the new commitment and **nothing** linking it to the old.
+
+Those are the three properties the third revision reported as restored. The API and
+CLI did surface the returned values, which is what made it look right in testing —
+but the API and CLI *are* the caller's DApp, and that is the one place a return is
+visible.
+
+**The actual fix** is a ledger write per value a verifier needs: four cells,
+`lastOwnershipProof`, `lastPairedRecord`, `lastRotatedFrom` and `lastRotatedTo`, in
+separate slots rather than reusing `lastAnchor` — because `anchor` proves the
+preimage of what it writes there and these circuits do not, so a reader treating one
+cell's history as dated possession would collect claims nobody established.
+
+**Status, plainly.** The fix exists in the implementation repository at commit
+`63a178e` and is **not** in the fingerprints recorded above. Nor was that build
+ever deployed: the preprod deployment named in this document predates every change
+in the third revision, nothing is on mainnet, and the deploy key issued on 8
+September remains unused. **No deployed contract is affected by this correction.
+What is affected is this document.**
+
+**A fourth revision will follow**, carrying new fingerprints for `proveOwnership`,
+`pairDna` and `rotateRecordSecret`, and it will be filed before the deploy key is
+used and before any mainnet deployment is requested. We would rather file a
+correction that says a fix is pending than leave an approved record asserting an
+evidentiary property nothing has.
+
+**The rule that catches this class**, and that this document should have applied:
+assert the value appears in `out.proofData.publicTranscript`, not in `out.result`.
+Applying it found the same defect in our own test suite — the regression case named
+*"the rotation names the identity it replaces"* asserted on the return value and
+passed against a circuit that published nothing. It now asserts on the ledger cell,
+with a separate case recording that the return agrees with it and is not the proof
+of it. **Nine adversarial cases** pass in `contract/test-contract.mjs` as of this
+correction, up from eight.
+
