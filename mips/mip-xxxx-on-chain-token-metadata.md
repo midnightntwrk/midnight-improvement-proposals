@@ -584,11 +584,11 @@ A contract that describes its balance book but not its UTXOs (the "Ledger Liar" 
 `emit` is a disclosure site and the compiler enforces that emitted values are disclosed.
 No new leakage path is introduced; an issuer that emits a value has chosen to make it public.
 
-### Proving cost as a footgun
+### Proving cost
 
-Emitting runtime-built payloads is expensive (Appendix B).
-This is not a security issue for the network, since the emitter pays, but an issuer who packs many runtime-built events into one circuit may find it slow or impractical to prove on ordinary hardware.
-It is called out so that the fixed-width layout is not mistaken for a claim that emission is cheap.
+Runtime-built payloads cost more to prove than literal ones, and the cost grows with the number of events in one circuit (Appendix B).
+This is not a security issue for the network, since the emitter pays, and the measured sizes are in the same range as ordinary token circuits.
+It is noted so that an issuer choosing between literal and runtime metadata does so knowingly.
 
 ## Implementation Example
 
@@ -669,13 +669,23 @@ Any key not in this table is a **trait**: stored verbatim against `(contractAddr
 
 ## Appendix B: Circuit cost (informative)
 
-> **Note.** Proving-cost figures for emitting `TokenMetadata` events (constraint rows, circuit size `k`, proving-key size) are still being worked on and are not included in this draft. They will be added, together with the emission strategy the reference contracts settle on, once the numbers are final.
+The standard fixes the bytes on the wire, not how a contract assembles them, and the assembly strategy is what decides the proving cost.
+The figures below were measured on the payload layout of [2] (`val-type`, `val-len`, `Bytes<189>` value), each row being one circuit compiled from the reference contracts; `k` is the circuit size parameter (rows fit in `2^k`) and circuit rows is the constraint count.
+The toolchain and exact measurement procedure are recorded in the reference repository alongside the contracts, so the figures can be reproduced as the toolchain evolves.
 
-What is already established qualitatively:
+| What the circuit emits | Events | `k` | Circuit rows |
+|---|---|---|---|
+| `publishMetadata()`, every payload a compile-time literal (`name`, `symbol`, `decimals`) | 3 | 7 | 120 |
+| `publishMetadata()`, payloads assembled from ledger fields at runtime | 3 | 12 | 3 715 |
+| `emitTokenMetadata(...)`, the generic setter with a fully runtime `Bytes<189>` value | 1 | 11 | 1 914 |
+| Two independent runtime-built events in one circuit | 2 | 12 | 3 789 |
+| Three independent runtime-built events in one circuit | 3 | 13 | 5 672 |
 
-- The standard fixes the bytes on the wire, not how a contract assembles them, and the assembly strategy dominates the proving cost. A payload built entirely from compile-time literals is cheap; a payload assembled from runtime values (ledger fields or circuit arguments) is not.
-- Cost grows with the number of runtime-built events in one circuit.
-- Issuers whose metadata is fixed at deployment (most tokens) SHOULD prefer literal payloads; the reference repository's `contracts/generated/` templates show the shape and emit exactly the same bytes as the parameterised templates.
+What follows for issuers:
+
+- **Literals are roughly thirty times cheaper than runtime values** for the same three events (120 rows against 3 715). Issuers whose metadata is fixed at deployment, which is most tokens, SHOULD prefer literal payloads; the reference repository's `contracts/generated/` templates show the shape and emit exactly the same bytes as the parameterised templates.
+- **Runtime cost grows linearly with the number of events**, at roughly 1 900 rows per runtime-built event, so each doubling of events costs one step of `k`. Three runtime events fit in one `k = 13` circuit; splitting a publication across circuits is a choice, not a necessity.
+- **Emission is not a dominant cost.** A single runtime `emitTokenMetadata` call is a `k = 11` circuit, in the same range as ordinary token circuits, so adding a `setMetadata` circuit to a contract does not materially change what the contract's users pay to prove.
 
 ## Appendix C: Mapping to EIP-7496 and the Token Registry MPS (informative)
 
