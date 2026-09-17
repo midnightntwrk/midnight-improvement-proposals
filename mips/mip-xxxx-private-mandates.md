@@ -7,71 +7,123 @@ Category: Standards
 Created: 2026-07-08
 Requires: MIP-0001
 Replaces: None
-Discussions: https://github.com/midnightntwrk/midnight-improvement-proposals/pull/226
+MPS: MPS-0015
+Discussions: https://github.com/midnightntwrk/midnight-improvement-proposals/pull/251
 ---
+
+<!--
+ Copyright Midnight Foundation
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     https://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
 
 ## Abstract
 
-A pair of standardized Compact smart contract interfaces — **Nexus** (private mandate
-registry) and **zPay** (agentic payment vault) — that enable a sovereign identity
-to delegate programmable, privacy-preserving authority to AI agents using
-zero-knowledge proofs on the Midnight Network.
+This MIP defines a standard for **Private Mandate Tokens** — a privacy-preserving
+delegation primitive for autonomous agents on the Midnight Network. It enables a
+sovereign identity (the **Issuer**) to delegate scoped, revocable authority to an
+AI agent (the **Agent**) using zero-knowledge proofs, without revealing the
+delegation graph, agent identity, or authority bounds to the public ledger.
 
-The Nexus contract issues non-transferable, revocable **Private Mandates** where
-the content (agent, budget, expiry) is proven via ZK witnesses without revealing
-the underlying values to the ledger. The zPay contract implements a vault-based
-payment gateway that authorizes agents to spend from mandate-linked vaults.
+The standard defines a single normative Compact contract — **Nexus** — that
+issues non-transferable, revocable **Private Mandates**. Each mandate is an
+off-chain data structure committed on-chain as an opaque `persistentHash`.
+The Agent proves authority via a zk-SNARK (`prove_active_mandate`); the Issuer
+revokes via an opaque hash (`revoke_mandate`), preserving privacy of the
+revocation target.
 
-Together, they form a privacy-preserving delegation and payment layer for
-autonomous agents — conceptually similar to Stellar SEP-XXXX (Hierarchical
-Mandate Tokens) but with full ZK privacy.
+The MIP also describes a **reference application** — **zPay** — that demonstrates
+how a payment contract composes with Nexus. zPay is **not** part of the normative
+standard; it shows the integration pattern for any contract that wants to gate
+spending by mandate authority.
 
 ## Motivation
 
-The emergence of agentic AI systems creates a fundamental trust problem: how can
-a human grant an autonomous agent the ability to act on their behalf without
-surrendering their privacy?
+The emergence of autonomous AI agents creates a fundamental trust problem: how
+can a human grant a software agent the ability to act on their behalf without
+surrendering privacy or requiring continuous supervision?
 
-Existing approaches fall short:
+Existing delegation mechanisms fall short:
 
 - **Public delegation** (as in Stellar SEP-XXXX) reveals who delegates what to
   whom — creating a permanent, transparent graph of authority relationships.
-- **Key sharing** is dangerous — a compromised agent gains unlimited authority.
-- **Off-chain permission systems** cannot be verified by smart contracts in a
-  trustless manner.
+- **Key sharing** is catastrophic — a compromised hot key grants unlimited
+  authority, with no cryptographic circuit-breaker.
+- **Off-chain permission files** (JWTs, OAuth scopes) cannot be verified by
+  smart contracts in a trustless manner.
 
-Midnight's Kachina protocol, with its public + private state model and
-zero-knowledge proofs, enables a new primitive: **Private Mandates** where the
-existence, scope, and budget of a delegation can be selectively disclosed.
+Midnight's architecture — client-side proving, the Kachina protocol's hybrid
+public/private state model, and the Compact language's zero-knowledge constraint
+system — enables a fundamentally different approach. The Agent becomes the
+**Prover**: it holds an off-chain mandate, generates a zk-SNARK proving the
+requested action falls within scope, and submits only the proof. The verifier
+learns **nothing** beyond the boolean result of the authorization check.
 
-This MIP defines a standard that any Midnight Compact contract can integrate to
-verify whether an agent is authorized to act — within what bounds — without
-revealing the delegation graph, identities, or budget details.
+This MIP positions delegation of **authority** as the standard primitive. It
+composes with the [Midnight Agent Identity Standard (MAIS, #110)] and its
+problem statement ([MPS-0015]) for the identity layer — who an agent is. This
+MIP defines what an agent is **allowed to do**. The two compose: MAIS proves
+_identity_; Private Mandate Tokens prove _authorized capability_.
 
 ## Specification
+
+The normative language for this MIP follows [RFC-2119]: **MUST**, **SHOULD**,
+and **MAY** are to be interpreted as described therein.
 
 ### Terminology
 
 | Term                | Definition                                                                          |
 | ------------------- | ----------------------------------------------------------------------------------- |
-| **Issuer**          | The `Bytes<32>` public key that creates and revokes mandates.                       |
-| **Agent**           | The `Bytes<32>` public key authorized to act under a mandate.                       |
-| **Private Mandate** | Non-transferable authority record with shielded details, proven via ZK circuit.     |
+| **Issuer**          | The `Bytes<32>` coin public key authorized to create and revoke mandates.           |
+| **Agent (Prover)**  | The `Bytes<32>` coin public key authorized to act under a mandate.                  |
+| **Private Mandate** | Off-chain authority record, committed on-chain as an opaque hash.                   |
 | **mandate_hash**    | `persistentHash([domain_separator, mandate_id, agent, valid_until, caps, max_val])` |
-| **Nexus**           | Compact contract for mandate issuance and verification.                             |
-| **zPay**            | Compact contract for vault balances and payments.                                   |
+| **Nexus**           | The normative Compact contract for mandate issuance, verification, and revocation.  |
+| **zPay**            | A reference application demonstrating mandate-gated payments (non-normative).       |
 
-### Nexus Contract
+### Nexus Contract (normative)
+
+Nexus is the only contract normative to this MIP. It stores **no mandate
+content** — only opaque hash commitments and a revocation map. This preserves
+privacy: the delegation graph, agent identity, and authority bounds never touch
+the ledger.
 
 #### Ledger State
 
 ```compact
-export ledger domain_separator: Bytes<32>;
-export ledger issuer: Bytes<32>;
+export sealed ledger domain_separator: Bytes<32>;
+export sealed ledger issuer: Bytes<32>;
 export ledger mandate_commitments: Map<Bytes<32>, Boolean>;
 export ledger revoked_mandates: Map<Bytes<32>, Boolean>;
 export ledger query_counter: Counter;
 ```
+
+- **`domain_separator`** — set once in the constructor as
+  `persistentHash([issuer_address])`. Binds mandate hashes to this contract
+  instance, preventing cross-contract replay. Write-once (`sealed`).
+- **`issuer`** — the coin public key authorized to emit and revoke mandates.
+  Write-once (`sealed`).
+- **`mandate_commitments`** — `mandate_hash → true` for every emitted mandate.
+- **`revoked_mandates`** — `mandate_hash → true` for every revoked mandate
+  (kill switch). Append-only.
+- **`query_counter`** — a `Counter` incremented by each transaction to satisfy
+  the Kachina state model's cell requirement. Its value carries no business
+  meaning. Note: it is a _runtime requirement_, not a protocol field — see
+  [Backwards Compatibility Assessment].
+
+**INV-1 (write-once):** `domain_separator` and `issuer` are set exclusively by
+the constructor and cannot be modified by any circuit (`sealed`). Re-initializing
+the contract is impossible by construction — there is no `initialize` circuit.
 
 #### Witnesses
 
@@ -83,157 +135,298 @@ witness mandate_capabilities(id: Bytes<32>): Uint<64>;
 witness mandate_max_value_per_tx(id: Bytes<32>): Uint<64>;
 ```
 
-#### Circuits (8 total)
+Witnesses are private inputs provided by the Agent's local runtime. The
+contract treats them as untrusted input; correctness is enforced by the
+commitment check in `prove_active_mandate` (the recomputed hash must match an
+emitted commitment).
 
-`initialize(issuer_address)` — one-time setup. Computes domain_separator.
-
-`emit_mandate(mandate_id, agent, valid_until, capabilities, max_value)` — issuer-only.
-Computes `mandate_hash = persistentHash([domain_separator, mandate_id, agent, valid_until_bytes, capabilities_bytes, max_value_bytes])` and stores in `mandate_commitments`.
-
-`prove_active_mandate(mandate_id, action, value): Boolean` — verifies 7 conditions:
-
-1. Caller is the authorized agent (witness check)
-2. Mandate not expired (`blockTimeGte`)
-3. Action index within capability range
-4. Value within per-transaction limit
-5. Computed hash matches an emitted commitment
-6. Hash is in `mandate_commitments`
-7. Hash not in `revoked_mandates`
-
-`revoke_mandate(mandate_hash)` — issuer-only. Adds hash to `revoked_mandates`.
-
-Query circuits: `is_revoked`, `get_issuer`, `get_domain_separator`, `get_query_count`.
-
-### zPay Contract
-
-#### Ledger State
+#### Constructor
 
 ```compact
-export ledger admin: Bytes<32>;
-export ledger vault_balances: Map<Bytes<32>, Uint<64>>;
-export ledger tx_counter: Counter;
+constructor(issuer_address: Bytes<32>) {
+  domain_separator = disclose(persistentHash<Vector<1, Bytes<32>>>([
+    disclose(issuer_address),
+  ]));
+  issuer = disclose(issuer_address);
+  query_counter.increment(1);
+}
 ```
 
-#### Circuits (4 total)
+The constructor is invoked once at deployment. There is **no** re-callable
+`initialize` circuit — this closes the front-running re-initialization vector
+by construction.
 
-`initialize(admin_address)` — sets admin. `tx_counter++`
+#### Circuits
 
-`deposit(mandate_hash, amount)` — admin-only. Sets `vault_balances[hash] = amount`. Overwrites on re-deposit.
+**`emit_mandate(mandate_hash: Bytes<32>)`** — registers a mandate commitment.
+The Issuer MUST compute the `mandate_hash` off-chain via
+`compute_mandate_hash` (or an equivalent serialization) and pass only the hash.
+No mandate field (id, agent, expiry, capabilities, limit) is revealed on-chain.
 
-`pay(mandate_hash, amount, recipient)` — anyone with the hash. Deducts from `vault_balances[hash]`. Requires sufficient balance.
+**INV-2 (emission privacy):** `emit_mandate` reveals only the opaque
+`mandate_hash`; no pre-image is stored or disclosed on-chain.
 
-`get_vault_balance(mandate_hash): Uint<64>` — returns vault balance.
+```compact
+export circuit emit_mandate(mandate_hash: Bytes<32>): [] {
+  assert(disclose(msgSender()) == disclose(issuer), "Nexus: not issuer");
+  const d_hash: Bytes<32> = disclose(mandate_hash);
+  assert(!disclose(mandate_commitments.member(d_hash)), "Nexus: already emitted");
+  mandate_commitments.insert(d_hash, disclose(true));
+  query_counter.increment(1);
+}
+```
+
+The Issuer MUST validate `valid_until > 0` and `capabilities <= 64` off-chain
+**before** computing the hash (the contract cannot validate fields it never
+sees). The SDK MUST enforce this.
+
+**`prove_active_mandate(mandate_id, action, value): Boolean`** — the core
+authorization circuit. The Agent proves it holds an active mandate by
+recomputing the hash from witnesses and checking the on-chain commitment and
+revocation maps:
+
+1. **Identity**: `msgSender() == mandate_agent_pubkey(id)`.
+2. **Freshness**: not expired (`blockTimeGte(valid_until)` is false).
+3. **Capability**: `action < capabilities`.
+4. **Value limit**: `value <= max_value_per_tx`.
+5. **Emission**: the recomputed hash is in `mandate_commitments`.
+6. **Non-revocation**: the recomputed hash is not in `revoked_mandates`.
+
+Returns `true` only if all six hold.
+
+**`revoke_mandate(mandate_hash)`** — the kill switch. The Issuer submits the
+mandate's opaque hash to `revoked_mandates`. Observers learn only that _some_
+mandate was revoked — not which one, by whom, or for what scope.
+
+**Query circuits**: `is_revoked(mandate_hash): Boolean`, `get_issuer(): Bytes<32>`,
+`get_domain_separator(): Bytes<32>`, `get_query_count(): Uint<64>`.
+
+**Pure circuits** (run off-chain, no transaction): `compute_mandate_hash(...)`
+and `compute_domain_separator(issuer)` — both use the ledger's exact
+`persistentHash` serialization, so SDKs MUST use them instead of `sha256` to
+avoid hash mismatch.
 
 ### Mandate Hash
 
 ```text
 mandate_hash = persistentHash([
-  domain_separator,
-  mandate_id,        // Bytes<32>, unique nonce
-  agent,             // Bytes<32>, authorized agent
-  valid_until,       // Uint<64>, Unix timestamp
-  capabilities,      // Uint<64>, action count
-  max_value_per_tx   // Uint<64>, per-tx limit
+  domain_separator,       // Bytes<32>, binds to this contract
+  mandate_id,             // Bytes<32>, unique nonce
+  agent,                  // Bytes<32>, authorized agent
+  valid_until,            // Uint<64>, Unix timestamp
+  capabilities,           // Uint<64>, action count
+  max_value_per_tx        // Uint<64>, per-tx limit
 ])
 ```
 
-### Integration Flow
+`persistentHash` is the ledger's typed, aligned hash — **not** raw `sha256`.
+SDKs MUST compute the hash via the `compute_mandate_hash` pure circuit.
 
-```
-Issuer (admin):
-  1. initialize → deploy contracts
-  2. emit_mandate(id, agent, caps, limit)
-  3. deposit(hash, amount) → fund vault
+### Reference Application: zPay (non-normative)
 
-Agent (MCP/AI):
-  4. prove_active_mandate(id, action, value) → ZK proof
-  5. pay(hash, amount, recipient) → authorize spend
-  6. wallet.transferTransaction() → real NIGHT movement
-```
+zPay demonstrates how a payment contract composes with Nexus. It is **not**
+part of the standard — any contract may implement its own mandate-gated logic.
+
+Since Compact does not support cross-contract calls, zPay cannot query Nexus
+on-chain. It follows the **ZKCD integration pattern**:
+
+1. **Domain alignment**: zPay computes `domain_separator = persistentHash([admin])`
+   in its constructor. When `admin == issuer` (same deployer), this equals the
+   Nexus domain separator, so mandate hashes recompute identically.
+2. **Mirrored state**: zPay keeps `known_mandates` (commitments registered at
+   deposit) and `revoked_vaults` (mirror of revocation, written by
+   `revoke_vault` — called by the SDK when Nexus revokes).
+3. **Mandate-gated pay**: `pay(mandate_id, amount)` recomputes the hash from
+   the same witnesses and requires: known (A3), not revoked (A1), not expired
+   (A1), `amount <= max_value` (cap), and `msgSender == agent` (authorization).
+
+zPay's `pay` demonstrates the security invariants any mandate-gated application
+SHOULD enforce.
 
 ## Rationale
 
-**Separation of concerns**: Nexus handles only authority verification (never value). zPay handles only vault balances (never authority). This follows least-privilege design.
+**Authority is the primitive, not payments.** The MIP's title and the ecosystem
+gap justify standardizing delegated _authority_ — the "what an agent is allowed
+to do" — as a composable primitive. Payments, governance, DeFi, and identity
+applications can all gate on mandate authority without inheriting a vault.
 
-**Hash-based commitments**: storing `persistentHash(...)` instead of mandate content keeps all details private. The agent proves possession via ZK witnesses.
+**Off-chain mandate + on-chain commitment.** Storing only the hash keeps mandate
+content private (front-running resistance, cross-identity privacy) while the
+commitment prevents forgery: an Agent cannot invent a mandate whose hash is not
+in `mandate_commitments`.
 
-**`Bytes<32>` addressing**: Compact has no native `Address` type. All identities are Zswap coin public keys (`Bytes<32>`).
+**Hash-only emission.** Passing the pre-computed hash (instead of disclosing
+all fields) makes emission privacy real: observers see an opaque 32-byte value,
+computationally indistinguishable from random, with no recoverable pre-image.
 
-**Deposit overwrite**: a design trade-off to avoid Kachina cell creation costs. The admin manages total allocation off-chain. A future version may add accumulation.
+**`sealed` constructor, not `initialize`.** A re-callable `initialize` circuit
+creates a front-running window where an attacker re-initializes the contract
+with their own key. `sealed ledger` + constructor makes write-once a
+compile-time guarantee.
 
-**Composition with identity standards**: this MIP defines the _authority_ layer — what an agent is allowed to do. It composes with the Midnight Agent Identity Standard (MAIS, #110) and its problem statement (MPS-0015) for the _identity_ layer — who an agent is, including reputation and validation. Both standards share Midnight's three-tier disclosure model (public, selective, shielded); the Disclosure Tier Registry is a natural shared primitive, and this MIP aligns its disclosure modes with it as informative context, without creating a normative dependency.
+**`Map.member`, not `Map.lookup`, for existence.** In Compact, `lookup` of an
+absent key returns `null`; `disclose(null)` fails. Existence checks MUST use
+`member()`. (This was found empirically during validation — see
+[Testing].)
+
+**`query_counter` is a runtime cell anchor, not a protocol nonce.** Midnight's
+Kachina model requires each transaction to consume or produce an on-chain cell.
+`query_counter` exists solely to satisfy this; it is not a business-meaningful
+nonce. (The `tx_counter` used in earlier drafts was a misnomer — the protocol
+equivalent is the account nonce, managed by the wallet.)
+
+**Composition with identity standards.** This MIP defines the _authority_ layer
+— what an agent is allowed to do. It composes with the Midnight Agent Identity
+Standard (MAIS, #110) and its problem statement (MPS-0015) for the _identity_
+layer — who an agent is, including reputation and validation. Both standards
+share Midnight's three-tier disclosure model (public, selective, shielded); the
+Disclosure Tier Registry is a natural shared primitive, and this MIP aligns its
+disclosure modes with it as informative context, without creating a normative
+dependency.
 
 ## Path to Active
 
 ### Acceptance Criteria
 
-1. Reference implementation compiles with `compactc` and passes E2E tests on devnet.
-2. At least one third-party contract integrates `prove_active_mandate`.
-3. TypeScript SDK and MCP server documentation exists.
-4. DUST sponsorship pattern documented for multi-wallet scenarios.
+1. The reference implementation compiles with `compactc` (v0.31.1) and passes
+   simulator tests on the devnet (21/21, covering C1/C2/A1/A3/A4/INV-1..5).
+2. At least one third-party contract integrates mandate authority (the zPay
+   reference application demonstrates the pattern).
+3. A TypeScript SDK provides `NexusClient` with `pureCircuits.compute_mandate_hash`
+   and `compute_domain_separator`, plus agent-side mandate storage.
+4. A reference deployment exists on a public network (preprod), with contract
+   addresses and transaction examples.
 
 ### Implementation Plan
 
-- **Phase 1** (complete): Reference implementation — contracts compiled, deployed, tested.
-- **Phase 2**: TypeScript SDK (NexusClient, ZPayClient).
-- **Phase 3** (complete): MCP server for AI agents — 5 tools.
-- **Phase 4**: Mainnet deployment and third-party integrations.
+- **Phase 1** (complete): Reference implementation — contracts compiled,
+  deployed on devnet, simulator-tested (21/21).
+- **Phase 2**: TypeScript SDK (`NexusClient`) with pure-circuit hash helpers.
+- **Phase 3** (complete): zPay reference application + MCP server for AI agents.
+- **Phase 4**: Preprod deployment and third-party integrations.
 
 ## Backwards Compatibility Assessment
 
-This defines a new standard — no existing deployments. All contracts use `Bytes<32>` for identities (standard for Midnight Compact). The `mandate_hash` pre-image is part of the standard and changing it would invalidate all commitments.
+This defines a new standard — there are no existing deployments. All identities
+use `Bytes<32>` (standard for Compact). The `mandate_hash` pre-image is part of
+the standard; changing it invalidates all commitments.
+
+The `query_counter` field is present to satisfy the Kachina cell requirement.
+It is deliberately **not** a protocol-level nonce — Midnight manages transaction
+nonces at the wallet/account level. Contracts that integrate Nexus MUST NOT
+assume `query_counter` has business semantics.
 
 ## Security Considerations
 
 ### Witness Integrity
 
-The security model rests on witness correctness. The Nexus enforces that computed `mandate_hash` matches a stored commitment — binding witness values to an on-chain anchor.
+The security model rests on witness correctness. `prove_active_mandate` enforces
+that the recomputed `mandate_hash` matches an on-chain commitment — binding
+witness values to a trusted anchor. A witness that lies about agent/expiry/
+limits cannot produce a hash matching a commitment the Issuer registered.
 
-### Hash Preimage Resistance
+### Emission Privacy (INV-2)
 
-`persistentHash` (Poseidon-based) provides ZK-friendly collision resistance. Without all pre-images, observers cannot determine mandate content.
+`emit_mandate` reveals only the opaque hash. `persistentHash` is
+collision-resistant and, for the mandate pre-image (which includes a
+256-bit random `mandate_id`), computationally hides all fields. An observer
+cannot recover agent identity, expiry, capabilities, or limits from the ledger.
 
 ### Replay Protection
 
-`prove_active_mandate` uses `blockTimeGte`. Proofs are bound to the current block and cannot be replayed.
+`prove_active_mandate` uses `blockTimeGte` to bind proofs to the block context.
+A proof for block N is valid only while the mandate has not expired. For
+stronger within-block replay protection, a monotonic per-agent nonce via
+witness is a future MAY (see below).
 
 ### Revocation Privacy
 
-`revoke_mandate` adds an opaque hash to a public map. Observers see only that SOME mandate was revoked, not which one.
+`revoke_mandate` adds an opaque hash to a public map. Observers see only that
+_some_ mandate was revoked. Because the hash is a collision-resistant commitment
+with a high-entropy pre-image, the revocation target stays private.
+
+### Vault Authorization (reference application)
+
+zPay's `pay` requires `msgSender == agent` where `agent` is bound to the mandate
+via the recomputed hash. This means possession of the `mandate_hash` alone is
+**not** sufficient to spend — the caller must be the agent the Issuer
+authorized. Since only the Issuer (admin) can register commitments, a revoked
+or spoofed mandate cannot drain a funded vault.
+
+### Authorisation Model and Future Direction
+
+The current standard authenticates the caller via the `msgSender` witness,
+which the Midnight wallet supplies from the transaction signer. This is correct
+for the wallet-agent flow but relies on the runtime, not an in-circuit
+signature check. The emerging [MIP-0013] pattern (Schnorr signatures over
+JubJub, verified in-circuit) MAY be adopted as an upgrade path for stronger,
+non-wallet-dependent authorization. Implementations MAY add such verification
+to `prove_active_mandate` / `pay` while keeping the mandate-hash commitment
+mechanism unchanged.
+
+### Accounting, not Custody
+
+The zPay vault is an **accounting ledger**: `vault_balances` records authorized
+spend, and the actual NIGHT transfer happens in the same transaction envelope
+via the wallet. The contract cannot force the transfer (a malicious prover
+could deduct without transferring). This is honest by design: the accounting
+prevents over-spend beyond the mandate budget, and revocation is the kill
+switch. Custodial contracts (e.g., per [MIP-0012]) compose orthogonally.
 
 ## Implementation
 
 Repository: `github.com/devfelipenunes/zolvency`
 
-| Component      | Path                                         | Language          |
-| -------------- | -------------------------------------------- | ----------------- |
-| Nexus contract | `contracts/midnight/nexus/src/nexus.compact` | Compact `>= 0.20` |
-| zPay contract  | `contracts/midnight/zpay/src/zpay.compact`   | Compact `>= 0.20` |
-| TypeScript SDK | `zpay/zpay-midnight-sdk/`                    | TypeScript        |
-| MCP Server     | `zpay/zpay-midnight-mcp/src/index.ts`        | TypeScript        |
+| Component         | Path                                         | Language          |
+| ----------------- | -------------------------------------------- | ----------------- |
+| Nexus (normative) | `contracts/midnight/nexus/src/nexus.compact` | Compact `>= 0.20` |
+| zPay (reference)  | `contracts/midnight/zpay/src/zpay.compact`   | Compact `>= 0.20` |
+| TypeScript SDK    | `zpay/zpay-midnight-sdk/`                    | TypeScript        |
+| MCP Server        | `zpay/zpay-midnight-mcp/src/index.ts`        | TypeScript        |
 
-Compiler: `compactc` v0.31.1 (runtime v0.16.0)
+Compiler: `compactc` v0.31.1 (language v0.23.0, runtime v0.16.0, ledger 8.0.2).
 
 ## Testing
 
-- `deploy-all.mjs`: deploys + initializes + tests deposit/balance.
-- `e2e-simple.mjs`: emit → deposit → pay → balance.
-- `e2e-dust-sponsor.mjs`: DUST sponsorship via `balanceFinalizedTransaction`.
-- MCP Server: 5 tools validated against devnet.
-- Wallet transfer: `signRecipe` + `finalizeRecipe` for real NIGHT movement.
+Validation is layered (see [Implementation Plan]):
 
-All tests run on Midnight devnet (node 0.22.5, indexer 4.0.2, proof-server 8.1.0).
+1. **Simulator tests** (`test/pm-simulator.test.ts`): execute circuits in-memory
+   via `createConstructorContext`/`createCircuitContext` — no network, seconds.
+   Covers C1 (sealed write-once), C2 (emit hash-only, non-issuer and duplicate
+   rejected), A1 (revoke then prove/pay fails), A3 (unknown mandate fails),
+   A4 (non-admin deposit fails), INV-4 (over-cap fails), INV-5 (non-negative
+   balance). **Result: 21/21 passing.**
+2. **Deploy**: `deploy-all.mjs` deploys Nexus + zPay with constructor args and
+   validates the constructor executes on-chain.
+3. **E2E on-chain** (`e2e-*.mjs`): validates mutations (`emit_mandate`,
+   `deposit`) on the devnet. Note: complex circuits (queries, `pay`) may stall
+   on a GPU-less local devnet; on a public network or GPU-backed node they
+   complete normally. Pure circuits compute values off-chain, avoiding the
+   query path.
+4. **DUST sponsorship**: multi-wallet fee payment via `balanceFinalizedTransaction`
+   (see `e2e-dust-sponsor.mjs`).
 
 ## References
 
 - [MIP-0001: MIP Process](https://github.com/midnightntwrk/midnight-improvement-proposals)
 - [Midnight Developer Docs](https://docs.midnight.network/)
 - [Compact Language Guide](https://docs.midnight.network/development/compact)
+- [MPS-0015: Agent Identity](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0015-agent-identity.md)
+- [MAIS — Midnight Agent Identity Standard (#110)](https://github.com/midnightntwrk/midnight-improvement-proposals/issues/110)
 
 ## Acknowledgements
 
-Thanks to the Midnight Foundation team for the Compact language and Kachina protocol.
+Thanks to the Midnight Foundation team for the Compact language and Kachina
+protocol, and to Zidan (mzf11125) for the MAIS/MPS-0015 alignment that clarified
+the authority-vs-identity composition.
 
-## Copyright
+## Copyright Waiver
 
-This MIP is licensed under [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+All contributions (code and text) submitted in this MIP must be licensed under
+the Apache License, Version 2.0. Submission requires agreement to the Midnight
+Foundation Contributor License Agreement, which includes the assignment of
+copyright for your contributions to the Foundation.
+
+[RFC-2119]: https://datatracker.ietf.org/doc/html/rfc2119
+[MIP-0013]: https://github.com/midnightntwrk/midnight-improvement-proposals
+[Backwards Compatibility Assessment]: #backwards-compatibility-assessment
