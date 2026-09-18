@@ -1,18 +1,14 @@
-Mps xxxx
-
-Title A Stable, Versioned, and Well-Specified Serialization Format
-
-Authors Karmel  <Karmoola>
-
-Status Proposed
-
-Category Standards
-
-Created 17-Sep-2026
-
-Requires none
-
-Replaces none
+---
+MPS: "0042"  
+Title: Stable, Versioned and Well-Specified Serialization Format  
+Authors: Karmel (Karmoola)  
+Status: Proposed    
+Category: Standards    
+Created: 17-Sept-2026  
+Requires: none  
+Replaces: none   
+MIP: none  
+---
 
 <!-- Copyright 2026 Midnight Foundation Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at https://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License. -->
 
