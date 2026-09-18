@@ -1,5 +1,5 @@
 ---
-MPS: 0002  
+MPS: "0002"
 Title: Midnight Developer Tooling  
 Authors: Midnight Tooling Workforce  
 Status: Proposed  

@@ -1,6 +1,14 @@
 ---
-This is a legacy MPS that pre-dates the defined process, the components within may not conform to the MPS template.
+MPS: "0005"
+Title: Event Emission Support for Compact Smart Contracts (Phase 1)
+Status: Proposed
+Category: Standards
+Requires: none
+Replaces: none
+MIP: none
 ---
+
+> **Note:** This is a legacy MPS that pre-dates the defined process; the components within may not conform to the MPS template.
 
 # **Event Emission Support for Compact Smart Contracts- Phase 1**
 

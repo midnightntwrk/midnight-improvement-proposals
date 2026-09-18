@@ -1,5 +1,5 @@
 ---
-MIP: 0003
+MIP: "0003"
 Title: ECDSA signature support
 Authors:
   - Andrzej Kopeć (kapke)

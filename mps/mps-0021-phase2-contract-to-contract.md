@@ -40,4 +40,13 @@ The combined effect of the Phase 1 limitations: a DEX can be built now, but all 
 
 ## **Expected Outcomes**
 
-Builders can create multi-contract systems in which independently authored contracts implement the same interface with different circuit code and witness code. End users can interact with contracts whose code did not come from the hosting DApp, because the browser can discover and assemble what it needs. Token authors can ship distinctive logic and private behavior while remaining usable through standard interfaces.
+- Builders can create multi-contract systems in which independently authored contracts implement the same interface with different circuit code and witness code. End users can interact with contracts whose code did not come from the hosting DApp, because the browser can discover and assemble what it needs. Token authors can ship distinctive logic and private behavior while remaining usable through standard interfaces.
+
+- A circuit in contract A can call a circuit in contract B where the callee (B) defines witness functions and holds and updates its own private state across the call.
+- Private values can cross the call boundary in both directions — arguments into the callee and return values back to the caller — without being disclosed to the public transcript, unless explicitly disclosed by the contract author.
+- Privacy isolation holds between parties: the caller learns nothing about the callee's private state beyond the returned values, and the callee learns nothing about the caller's private state beyond the passed arguments.
+- The proofs for caller and callee circuits in a single logical call are cryptographically bound, such that neither can be replayed or recombined with a different counterpart transaction.
+- Existing v1 semantics are preserved: contracts without private state remain callable exactly as before, re-entrancy remains disallowed, and no previously valid multi-contract program changes behavior.
+- The feature is expressible in Compact with compiler, ledger, and SDK support released together, and demonstrated end to end with a working example in which a caller with private state invokes a callee that reads and updates its own private state (e.g. a token contract with private balances called by a second contract).
+
+
