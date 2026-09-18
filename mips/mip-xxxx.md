@@ -8,7 +8,7 @@ Category: Core
 Created: 2026-08-24
 Requires: none
 Replaces: none
-MPS: none
+MPS: ZK-Proof Verification Throughput Bottleneck, number pending
 License: Apache-2.0
 ---
 
@@ -40,6 +40,9 @@ In a controlled comparison across eight validators it made block production 42.4
 The change is local to a node: it changes how often validation work is repeated, not what a block contains or which blocks are valid.
 
 ## Motivation
+
+[ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/82) sets the target this proposal serves: 1,000 transactions per second, against a block author with roughly 1,500 ms per 6 second slot.
+That budget is what throughput is made of, and every millisecond of it spent re-checking a proof is a millisecond unavailable to another transaction.
 
 Proof checking is a significant part of the block path.
 In an instrumented run, ledger processing accounted for 91.5% of block import time, proof checking cost about 22 ms per transaction, and a full block spent 714 ms of 1183 ms there.
@@ -163,6 +166,7 @@ In addition:
 ## References
 
 - [midnight-node#744](https://github.com/midnightntwrk/midnight-node/pull/744)
+- [MPS-xxxx: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/82) (number pending)
 - Throughput exploration report, entry 0003, Proof Verification Cache: the hypothesis, the runs, and the measurements quoted here.
 - Throughput exploration report, block import profile of 2026-08-07: the repeated checking and the cache miss counts. //TODO add a link to the report when it is publicly available
 
