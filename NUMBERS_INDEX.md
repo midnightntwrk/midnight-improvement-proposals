@@ -59,6 +59,9 @@ MPS-0017: governance-observability (in review)
 [MPS-0037: heritable-rights](/mps/mps-0037-heritable-rights.md)  
 [MPS-0038: cardano-observation-cost](/mps/mps-0038-cardano-observation-cost.md)  
 [MPS-0039: lightweight-contract-interaction](/mps/mps-0039-lightweight-contract-interaction.md)  
+[MPS-0040: cross-contract-call-provenance](/mps/mps-0040-cross-contract-call-provenance.md)  
+[MPS-0041: custodian-proof-server-contracts](/mps/mps-0041-custodian-proof-server-contracts.md)  
+[MPS-0042: serialization-format](/mps/mps-0042-serialization-format.md)  
 
 # MIPs
 
