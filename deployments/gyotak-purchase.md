@@ -162,6 +162,8 @@ The contract is deployed on Preprod at
 `owner = 20fc1d0d…2af2e1be`. At the time of writing `purchases.size` and `bindings.size`
 are both 2. Every transaction below is independently queryable on the Preprod indexer.
 
+Mainnet address: `b6f0b4d275cdc96547042f0c38226aaa95beba95e325a831e1722f1313b15179` (deployed 2026-09-18, block 2,629,712, tx `00090f1943e5125408f2c7251f6255a6e4dc501b23a8d08c1cfaa3fcdf1ebfd3ee`, owner verified on the Mainnet indexer).
+
 ### 5.1 The commitment identity, measured
 
 The first pair of records was built specifically to test the claim that the circuit's
@@ -275,10 +277,16 @@ the one deployed.
 
 ### 5.5 Cost
 
-Each transaction settled for approximately 0.30 DUST, read from the `DustSpendProcessed`
-events on chain rather than from the indexer's fee field, which reports 1 speck and does not
-reflect what was actually spent. A purchase and its binding therefore cost about 0.60 DUST
-in total. The contract holds no assets, so this is the entire economic footprint.
+Each Preprod transaction settled for approximately 0.30 DUST, read from the
+`DustSpendProcessed` events on chain rather than from the indexer's fee field, which
+reports 1 speck and does not reflect what was actually spent. A purchase and its binding
+therefore cost about 0.60 DUST in total.
+
+The Mainnet deploy cost 50 DUST. That figure is a deliberate fee overhead we set for
+deploys only: a deploy that fails and has to be repeated produces a different contract
+address, which would invalidate every verification link already published. Recording
+transactions on Mainnet use the ordinary overhead. The contract holds no assets, so this
+is the entire economic footprint.
 
 ## 6. Scope of the guarantee
 
