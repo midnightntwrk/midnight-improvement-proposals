@@ -8,7 +8,9 @@ Category: Core
 Created: 2026-09-14
 Requires: none
 Replaces: none
-MPS: ZK-Proof Verification Throughput Bottleneck (https://github.com/midnightntwrk/midnight-improvement-proposals/pull/82, number pending)
+MPS: 
+- MPS-0032 (History Management for Midnight)
+- MPS-xxxx (ZK-Proof Verification Throughput Bottleneck, number pending)
 License: Apache-2.0
 ---
 
@@ -47,6 +49,8 @@ To benefit from the change, a node will have to start from genesis or use an rel
 The cost of keeping every interim state is paid per transaction, so it scales with throughput: any change that raises transactions per second also makes the store grow faster.
 The growth never reverses, so the longer a node runs and the more traffic it carries, the more it holds, and the experiment's data is consistent with a larger store being slower to operate.
 A network that intends to raise its throughput cannot keep a per-transaction storage cost that never falls.
+[MPS-0032: History Management for Midnight](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0032-storage-management.md) is where that concern is stated for the network: what a node has to keep on disk is what decides whether running one stays affordable as the chain ages, and MPS-0032 ties the urgency of that growth to the throughput targets of [MPS-xxxx: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/82).
+Interim states are the part of that growth nothing will ever read again, so they are the first part to go.
 
 The ledger already knows how to tell needed state from unneeded state.
 The node just never tells the ledger that a superseded interim state is no longer needed.
@@ -152,6 +156,8 @@ It is not entirely certain that the block-end form will not require a runtime up
 
 ## References
 
+- [MPS-0032: History Management for Midnight](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0032-storage-management.md): storage growth as an operational and decentralisation concern.
+- [MPS-xxxx: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/82) (number pending): the throughput targets that set the rate at which this cost is paid.
 - [midnight-node pull request #2050](https://github.com/midnightntwrk/midnight-node/pull/2050): the per-transaction form, and the source of the build that was measured.
 - Throughput exploration report, entry 0023, Execution Interim Storage Management: the experiment and the measurements this document quotes. Private at the time of writing, pending publication. //TODO add a link to the report when it is publicly available
 
