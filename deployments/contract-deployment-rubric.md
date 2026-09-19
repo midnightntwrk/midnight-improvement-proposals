@@ -1,5 +1,9 @@
 # Contract Deployment Rubric
 
+---
+Contract deploy request reviews are not audits!
+---
+
 ## Rubric scoring
 
 Below is a comprehensive rubric designed for scoring the risk level associated with various dimensions. This scoring system aims to provide a standardized, objective framework for assessing potential risks, allowing stakeholders to quickly identify areas of concern and prioritize mitigation efforts. The rubric assigns a risk score to each dimension based on predefined criteria, ensuring a consistent evaluation across all launch initiatives.

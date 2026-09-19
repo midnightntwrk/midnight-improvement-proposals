@@ -1,0 +1,12 @@
+**dApp name:** Ascend Perps
+
+**Repository:** [Ascend Perps Repository](https://github.com/Ascend-Perps/ascend-perps)
+
+**Brief description:**
+Ascend Perpetuals. The trading contract registers account keys and escrow mirrors, stores market configuration, persists active orders and positions, executes sequencer-submitted matches, and enforces user signatures, order expiry, maker-price crossing, escrow-window checks, a 64-open-order cap per account, and open-interest limits. The settlement contract registers external chains and escrow bindings, manages 3-of-5 committee keys, attests batch and account-state roots, and issues loss or settlement certificates bounded by per-account caps, expiry windows, high-water-mark nonces, and pause controls. Batch correctness is validity-attested, with off-chain proofs publicly verifiable against the attested state.
+
+| Category            | Score | Summary |
+| ------------------- | ----- | ------- |
+| Privacy-at-risk     | 2     | It exposes sensitive trading data on ledger, including account-key commitments, escrow mirror hashes and expiries, market state, order fields (side, price, size, remaining size, expiry), position size/direction/entry data, settlement roots, account-state roots, certificate amounts, chain IDs, and escrow references. This reveals financial behavior, timing, and strategy, but no direct real-world identity data (names, addresses, government IDs) is stored on-chain. |
+| Value-at-risk       | 2     | Contracts hold no token balances directly, so they are not a pooled vault, but certificate issuance authorizes movement against external escrow for active bindings. Loss and settlement issuance is bounded by user-authorized caps, expiry windows, high-water-mark certificate nonces, registered chain configuration, sequencer gating, pause controls, and 3-of-5 committee signatures. Batch correctness is publicly auditable off-chain, though not on-chain enforced. Blast radius is bounded to currently active external escrow exposure, not unlimited protocol TVL. |
+| State-space-at-risk | 2     | State grows with accounts, markets, chains, and active trading. Orders are capped at 64 open per account and removed on cancel, full fill, or expiry pruning; positions are removed when flattened; stale escrow bindings can be pruned after expiry. However, account keys, nonce and receipt high-water marks, certificate totals, market records, chain records, and rolling attested roots persist with usage. Growth is bounded per user or entity rather than globally static. |
