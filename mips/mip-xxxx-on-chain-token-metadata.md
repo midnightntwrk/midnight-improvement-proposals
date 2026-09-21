@@ -146,7 +146,20 @@ A conforming contract that wants its metadata published at deployment therefore 
 
 ### 2. Payload layout
 
-The payload is 256 bytes, big-endian, with no padding between fields:
+The v1 payload MUST be the result of `serialize<TokenMetadataPayload, 256>(payload)` for this ordered Compact struct:
+
+```compact
+struct TokenMetadataPayload {
+  domainSep: Bytes<32>,
+  kind: Uint<8>,
+  key: Bytes<32>,
+  valType: Uint<8>,
+  valLen: Uint<8>,
+  value: Bytes<189>
+}
+```
+
+This MIP uses the canonical [Compact 0.34.0 release](https://github.com/midnightntwrk/compact/releases/tag/compactc-v0.34.0) / language 0.26.0 serialization semantics, with runtime 0.19.0, for v1. The Compact types and their declaration order determine the bytes; a host-language object layout or ledger-state encoding does not. An implementation using another toolchain MUST reproduce these v1 bytes, or emit under a new event version. The struct identifiers `valType` and `valLen` correspond to the wire labels `val-type` and `val-len` below. The resulting payload is exactly 256 bytes, with no padding between fields:
 
 | Offset | Size | Field | Meaning |
 |---|---|---|---|
@@ -169,13 +182,15 @@ It takes exactly one of the following values:
 
 | `val-type` | Meaning | `val-len` and `value` rules |
 |---|---|---|
-| `0` | opaque bytes | `0 ≤ val-len ≤ 189` |
-| `1` | UTF-8 string | `value[0..val-len]` MUST be valid UTF-8 |
-| `2` | unsigned integer, big-endian | `1 ≤ val-len ≤ 16`; no leading-zero requirement |
-| `3` | UTF-8 JSON | `value[0..val-len]` MUST be one complete valid UTF-8 JSON value as defined by [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html); object, array and scalar values are allowed |
-| `4` | UTF-8 URI | `value[0..val-len]` MUST be valid UTF-8 and parse as an absolute URI |
-| `5` | Null | `val-len` MUST be zero; consumers MUST ignore all 189 `value` bytes; emitters SHOULD fill them with NUL |
+| `0` | opaque bytes | `Bytes<N>`; `0 ≤ val-len ≤ 189` |
+| `1` | UTF-8 string | `Bytes<N>`; `value[0..val-len]` MUST be valid UTF-8 |
+| `2` | unsigned integer | `Uint<128>`; `val-len` MUST be 16 |
+| `3` | UTF-8 JSON | `Bytes<N>`; `value[0..val-len]` MUST be one complete valid UTF-8 JSON value as defined by [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html); object, array and scalar values are allowed |
+| `4` | UTF-8 URI | `Bytes<N>`; `value[0..val-len]` MUST be valid UTF-8 and parse as an absolute URI |
+| `5` | Null | Empty tuple `[]`; `val-len` MUST be zero; consumers MUST ignore all 189 `value` bytes; emitters SHOULD fill them with NUL |
 | `6` to `255` | reserved | MUST reject the event |
+
+For types `0`, `1`, `3` and `4`, `N = val-len`, and the meaningful prefix `value[0..N]` MUST equal `serialize<Bytes<N>, N>(bytes)` for the value's bytes. Each `N` selects a concrete compile-time `Bytes<N>` type; `N` is not a runtime-sized Compact type. For type `2`, the meaningful prefix MUST equal `serialize<Uint<128>, 16>(number)`, and consumers decode it with the corresponding `deserialize<Uint<128>, 16>` semantics. For type `5`, the meaningful payload is `serialize<[], 0>([])`, which contains zero bytes. These backing types define the encoding; the UTF-8, JSON and URI rules in the table additionally constrain the bytes where applicable. The bytes of the 189-byte `value` field after the meaningful prefix remain ignored as specified in [2.2].
 
 Type validation is part of transport validation: an event whose `value` fails the rule for its declared `val-type` MUST be rejected.
 A consumer MUST NOT reinterpret a value under a type other than the one declared. Key-specific schemas and handling of schema mismatches belong to metadata-specific MIPs. Type `5` is an explicit null value, distinct from an empty string or byte sequence and from the JSON literal `null` carried under type `3`. Null changes the current value of the exact key without erasing history. Values `6` to `255` are reserved for a future event version.
@@ -184,7 +199,7 @@ A consumer MUST NOT reinterpret a value under a type other than the one declared
 
 - `val-len > 189` MUST reject the event.
 - A reserved `val-type` MUST reject the event.
-- `value` failing its `val-type` rule MUST reject the event.
+- `value` failing its `val-type` backing-type or semantic rule MUST reject the event.
 - Bytes of `value` at or after `val-len` MUST be ignored by consumers, including all 189 bytes for Null. Emitters SHOULD set ignored bytes to NUL.
 - A `key` consisting entirely of NUL bytes (empty key after trimming) MUST reject the event.
 
@@ -249,7 +264,7 @@ This MIP does not define the target document, whether one exists, or how a value
 
 #### 5.2 Values are typed bytes
 
-At the transport level a value is `val-len` bytes tagged with a `val-type` [2.1].
+At the transport level a value is a `val-len`-byte Compact-serialized prefix tagged with a `val-type` [2.1].
 The type says how to *read* the bytes; this MIP assigns no *meaning* to any key. A transport-valid declaration is accepted even if its key is unknown. Consumers MAY select which tokens, fields and history to retain or serve; they MUST NOT treat an omitted entry in a selected service as proof that no declaration exists on chain. Metadata-specific MIPs define key meanings, required fields, schema validation, projections and handling of schema mismatches. A schema mismatch alone does not make a transport-valid event malformed under this MIP.
 
 #### 5.3 Metadata schemas
@@ -351,7 +366,7 @@ The bracketed suffix is the layout version, in the same form the ledger uses for
 A future, incompatible layout uses a new name and never a reinterpretation of `mip-xxxx:token-metadata[v1]`: an amendment within this MIP bumps the bracket (`mip-xxxx:token-metadata[v2]`), and a superseding MIP gets a fresh name for free (`mip-yyyy:token-metadata[v1]`).
 A consumer that only knows `[v1]` ignores the other names; a consumer that knows several keeps them apart.
 
-After finalization, a version fixes its payload layout, accepted `val-type` and `kind` values, and transport-validation rules. Assigning a reserved datatype or kind, or changing those rules, requires a new event version. Type `5` (Null) and JSON Pointer validation are changes to this still-draft v1 definition; consumers and fixtures built to an earlier draft need to align. New keys may be introduced without a new event version because the transport assigns no fixed key registry or schema. Appendix A may change without changing transport rules.
+After finalization, a version fixes its payload layout and Compact serialization, accepted `val-type` and `kind` values, and transport-validation rules. Assigning a reserved datatype or kind, or changing those rules, requires a new event version. Type `5` (Null), JSON Pointer validation and tag `2`'s fixed 16-byte Compact `Uint<128>` encoding are changes to this still-draft v1 definition; consumers and fixtures built to an earlier draft need to align. New keys may be introduced without a new event version because the transport assigns no fixed key registry or schema. Appendix A may change without changing transport rules.
 
 ### Out of scope
 
@@ -465,7 +480,7 @@ The tag is deliberately a closed enum within each event version.
 
 ### Implementation Plan
 
-1. **Reference module and contracts**: a prior-draft example exists; see [Implementation Example](#implementation-example). Its Null and JSON Pointer validation need alignment with this draft.
+1. **Reference module and contracts**: a prior-draft example exists; see [Implementation Example](#implementation-example). Its Null and JSON Pointer validation and tag `2` integer encoding need alignment with this draft.
 2. **Reference deployment**: done on Stagenet (see below); repeat on Preprod when the events pipeline is available there.
 3. **Consumer reference**: a byte-exact decoder and simulator/Stagenet fixtures for the prior draft are published; align them with this draft and propose `TokenMetadata` decoding to at least one public explorer.
 4. **Library adoption**: propose the module (or an equivalent) to OpenZeppelin Compact Contracts as an optional extension of `NativeShieldedToken`, `NativeShieldedTokenFamily` and `FungibleToken`.
@@ -475,11 +490,11 @@ The tag is deliberately a closed enum within each event version.
 ## Backwards Compatibility Assessment
 
 No protocol, compiler or indexer change is required; this MIP is a convention over [MIP-0002](./mip-0002-public-contract-log-emission.md)'s existing `Misc` event.
-No deployed contract or protocol state is changed by this proposal. Contracts that do not emit `TokenMetadata` have no declarations under it. Consumers of prior v1 drafts must update their acceptance rules for Null, complete JSON values and `/metadata/` JSON Pointer keys.
+No deployed contract or protocol state is changed by this proposal. Contracts that do not emit `TokenMetadata` have no declarations under it. Consumers of prior v1 drafts must update their acceptance rules for Null, complete JSON values and `/metadata/` JSON Pointer keys. Replacing the earlier variable-length big-endian tag `2` integer encoding with canonical Compact `Uint<128>` serialization and exactly 16 meaningful bytes is a breaking wire-format change from those drafts; existing emitters, consumers and fixtures must align before claiming conformance to v1.
 
 Existing contracts deployed before ledger v9 cannot emit as deployed; [Upgrade Path for Existing Contracts](#upgrade-path-for-existing-contracts) describes how their maintenance authority adds an emitting circuit without redeployment. Only contracts with an empty or unreachable maintenance authority are left to an off-chain registry.
 
-Adopting the convention is additive to [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), [MIP-0011](./mip-0011-native-shielded-token.md) and [MIP-0014](./mip-0014-native-unshielded-token.md): a conforming token can retain its existing circuits and emit declarations as events. This MIP does not require matching values for particular keys; metadata-specific MIPs may define such consistency rules. Existing reference consumers and fixtures follow a prior v1 draft and need alignment with Null and JSON Pointer validation before claiming conformance to this draft.
+Adopting the convention is additive to [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), [MIP-0011](./mip-0011-native-shielded-token.md) and [MIP-0014](./mip-0014-native-unshielded-token.md): a conforming token can retain its existing circuits and emit declarations as events. This MIP does not require matching values for particular keys; metadata-specific MIPs may define such consistency rules. Existing reference consumers and fixtures follow a prior v1 draft and need alignment with Null, JSON Pointer validation and tag `2` integer encoding before claiming conformance to this draft.
 
 ## Upgrade Path for Existing Contracts
 
@@ -562,7 +577,7 @@ The measured publication shapes and their circuit-row counts are listed in [Appe
 
 ## Implementation Example
 
-Reference implementation: [`acedward/mip-erc7496-midnight-contracts` at `d4d6d0b`](https://github.com/acedward/mip-erc7496-midnight-contracts/tree/d4d6d0b773adaf29426ecf533716b809c51aa654) (Apache-2.0). Its contracts, decoder and fixtures illustrate a prior draft of this MIP; they do not yet demonstrate the new Null type or RFC 6901 key validation. Implementers must use this MIP's current draft rules when they differ.
+Reference implementation: [`acedward/mip-erc7496-midnight-contracts` at `d4d6d0b`](https://github.com/acedward/mip-erc7496-midnight-contracts/tree/d4d6d0b773adaf29426ecf533716b809c51aa654) (Apache-2.0). Its contracts, decoder and fixtures illustrate a prior draft of this MIP; they do not yet demonstrate the new Null type, RFC 6901 key validation or canonical tag `2` integer encoding. Implementers must use this MIP's current draft rules when they differ.
 
 ### Components
 
@@ -627,7 +642,7 @@ The examples below demonstrate transport encodings only. They do not define requ
 |---|---|---|---|
 | `name` | `1` string | `Acme Token` | A UTF-8 value under the exact key `name`. |
 | `symbol` | `1` string | `ACME` | A UTF-8 value under the exact key `symbol`. |
-| `decimals` | `2` integer | `0x06` | An unsigned integer value of 6. |
+| `decimals` | `2` integer | `6` as `Uint<128>` | The 16 meaningful bytes are `serialize<Uint<128>, 16>(6)`, beginning `0x06` and followed by 15 zero bytes. |
 | `metadata` | `3` JSON | `{"description":"Example"}` | One complete JSON value fitting in this event. |
 | `/metadata/0` | `1` string | `hello world` | An RFC 6901 pointer key with a UTF-8 value; no array or assembly behavior follows from the path alone. |
 | `tokenUri` | `4` URI | `https://example.org/token.json` | An absolute URI value. |
