@@ -184,13 +184,17 @@ It takes exactly one of the following values:
 |---|---|---|
 | `0` | opaque bytes | `Bytes<N>`; `0 ≤ val-len ≤ 189` |
 | `1` | UTF-8 string | `Bytes<N>`; `value[0..val-len]` MUST be valid UTF-8 |
-| `2` | unsigned integer | `Uint<128>`; `val-len` MUST be 16 |
+| `2` | unsigned integer | Byte-aligned `Uint<8>` through `Uint<248>`; `1 ≤ val-len ≤ 31`, equal to the selected type's serialized size. Emitters SHOULD use `Uint<128>` (`val-len = 16`) by default. |
 | `3` | UTF-8 JSON | `Bytes<N>`; `value[0..val-len]` MUST be one complete valid UTF-8 JSON value as defined by [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html); object, array and scalar values are allowed |
 | `4` | UTF-8 URI | `Bytes<N>`; `value[0..val-len]` MUST be valid UTF-8 and parse as an absolute URI |
 | `5` | Null | Empty tuple `[]`; `val-len` MUST be zero; consumers MUST ignore all 189 `value` bytes; emitters SHOULD fill them with NUL |
 | `6` to `255` | reserved | MUST reject the event |
 
-For types `0`, `1`, `3` and `4`, `N = val-len`, and the meaningful prefix `value[0..N]` MUST equal `serialize<Bytes<N>, N>(bytes)` for the value's bytes. Each `N` selects a concrete compile-time `Bytes<N>` type; `N` is not a runtime-sized Compact type. For type `2`, the meaningful prefix MUST equal `serialize<Uint<128>, 16>(number)`, and consumers decode it with the corresponding `deserialize<Uint<128>, 16>` semantics. For type `5`, the meaningful payload is `serialize<[], 0>([])`, which contains zero bytes. These backing types define the encoding; the UTF-8, JSON and URI rules in the table additionally constrain the bytes where applicable. The bytes of the 189-byte `value` field after the meaningful prefix remain ignored as specified in [2.2].
+For types `0`, `1`, `3` and `4`, `N = val-len`, and the meaningful prefix `value[0..N]` MUST equal `serialize<Bytes<N>, N>(bytes)` for the value's bytes. Each `N` selects a concrete compile-time `Bytes<N>` type; `N` is not a runtime-sized Compact type.
+
+For type `2`, `N = val-len` MUST be 1 through 31, and the bit width `W = 8 × N` selects the concrete native `Uint<W>` type. The meaningful prefix MUST be its canonical Compact serialization in exactly `N` bytes. Consumers MUST decode using the corresponding Compact deserialization semantics for the width indicated by `val-len` and MUST accept every permitted width; `Uint<128>` is an emitter default, not a decoder fallback. Emitters MAY use any permitted width and need not choose the smallest width that holds the number. For example, `serialize<Uint<24>, 3>(6)` and `serialize<Uint<128>, 16>(6)` are both valid type-`2` values when `val-len` is 3 and 16 respectively.
+
+For type `5`, the meaningful payload is `serialize<[], 0>([])`, which contains zero bytes. These backing types define the encoding; the UTF-8, JSON and URI rules in the table additionally constrain the bytes where applicable. The bytes of the 189-byte `value` field after the meaningful prefix remain ignored as specified in [2.2].
 
 Type validation is part of transport validation: an event whose `value` fails the rule for its declared `val-type` MUST be rejected.
 A consumer MUST NOT reinterpret a value under a type other than the one declared. Key-specific schemas and handling of schema mismatches belong to metadata-specific MIPs. Type `5` is an explicit null value, distinct from an empty string or byte sequence and from the JSON literal `null` carried under type `3`. Null changes the current value of the exact key without erasing history. Values `6` to `255` are reserved for a future event version.
@@ -366,7 +370,7 @@ The bracketed suffix is the layout version, in the same form the ledger uses for
 A future, incompatible layout uses a new name and never a reinterpretation of `mip-xxxx:token-metadata[v1]`: an amendment within this MIP bumps the bracket (`mip-xxxx:token-metadata[v2]`), and a superseding MIP gets a fresh name for free (`mip-yyyy:token-metadata[v1]`).
 A consumer that only knows `[v1]` ignores the other names; a consumer that knows several keeps them apart.
 
-After finalization, a version fixes its payload layout and Compact serialization, accepted `val-type` and `kind` values, and transport-validation rules. Assigning a reserved datatype or kind, or changing those rules, requires a new event version. Type `5` (Null), JSON Pointer validation and tag `2`'s fixed 16-byte Compact `Uint<128>` encoding are changes to this still-draft v1 definition; consumers and fixtures built to an earlier draft need to align. New keys may be introduced without a new event version because the transport assigns no fixed key registry or schema. Appendix A may change without changing transport rules.
+After finalization, a version fixes its payload layout and Compact serialization, accepted `val-type` and `kind` values, and transport-validation rules. Assigning a reserved datatype or kind, or changing those rules, requires a new event version. Type `5` (Null), JSON Pointer validation and tag `2`'s 1–31-byte native Compact integer encoding are changes to this still-draft v1 definition; consumers and fixtures built to an earlier draft need to align. New keys may be introduced without a new event version because the transport assigns no fixed key registry or schema. Appendix A may change without changing transport rules.
 
 ### Out of scope
 
@@ -490,7 +494,7 @@ The tag is deliberately a closed enum within each event version.
 ## Backwards Compatibility Assessment
 
 No protocol, compiler or indexer change is required; this MIP is a convention over [MIP-0002](./mip-0002-public-contract-log-emission.md)'s existing `Misc` event.
-No deployed contract or protocol state is changed by this proposal. Contracts that do not emit `TokenMetadata` have no declarations under it. Consumers of prior v1 drafts must update their acceptance rules for Null, complete JSON values and `/metadata/` JSON Pointer keys. Replacing the earlier variable-length big-endian tag `2` integer encoding with canonical Compact `Uint<128>` serialization and exactly 16 meaningful bytes is a breaking wire-format change from those drafts; existing emitters, consumers and fixtures must align before claiming conformance to v1.
+No deployed contract or protocol state is changed by this proposal. Contracts that do not emit `TokenMetadata` have no declarations under it. Consumers of prior v1 drafts must update their acceptance rules for Null, complete JSON values and `/metadata/` JSON Pointer keys. Replacing the earlier variable-length big-endian tag `2` integer encoding with canonical byte-aligned Compact `Uint` serialization is a breaking wire-format change from those drafts; existing emitters, consumers and fixtures must align before claiming conformance to v1. Values emitted under the intervening fixed-16-byte native draft remain valid as `Uint<128>`, but consumers of that draft must also accept the other permitted lengths and widths.
 
 Existing contracts deployed before ledger v9 cannot emit as deployed; [Upgrade Path for Existing Contracts](#upgrade-path-for-existing-contracts) describes how their maintenance authority adds an emitting circuit without redeployment. Only contracts with an empty or unreachable maintenance authority are left to an off-chain registry.
 
@@ -642,7 +646,8 @@ The examples below demonstrate transport encodings only. They do not define requ
 |---|---|---|---|
 | `name` | `1` string | `Acme Token` | A UTF-8 value under the exact key `name`. |
 | `symbol` | `1` string | `ACME` | A UTF-8 value under the exact key `symbol`. |
-| `decimals` | `2` integer | `6` as `Uint<128>` | The 16 meaningful bytes are `serialize<Uint<128>, 16>(6)`, beginning `0x06` and followed by 15 zero bytes. |
+| `decimals` | `2` integer | `6` as `Uint<128>` | The recommended default uses `val-len = 16`: `serialize<Uint<128>, 16>(6)` begins `0x06` and has 15 following zero bytes. |
+| `count` | `2` integer | `6` as `Uint<24>` | Another permitted width uses `val-len = 3`: `serialize<Uint<24>, 3>(6)` yields `0x060000`. |
 | `metadata` | `3` JSON | `{"description":"Example"}` | One complete JSON value fitting in this event. |
 | `/metadata/0` | `1` string | `hello world` | An RFC 6901 pointer key with a UTF-8 value; no array or assembly behavior follows from the path alone. |
 | `tokenUri` | `4` URI | `https://example.org/token.json` | An absolute URI value. |
