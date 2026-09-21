@@ -640,17 +640,17 @@ Submission requires agreement to the Midnight Foundation Contributor License Agr
 
 ## Appendix A: Example keys (informative)
 
-The examples below demonstrate transport encodings only. They do not define required fields, key meanings, schema types, validation beyond [2] and [5.1], projections or display behavior. Metadata-specific MIPs may define those rules.
+The examples below demonstrate transport encodings only. They do not define required fields, key meanings, schema types, validation beyond [2] and [5.1], projections or display behavior. Metadata-specific MIPs may define those rules. Each `Encoded` line shows exactly the meaningful `val-len` bytes; the ignored remainder of the 189-byte `value` field is omitted.
 
-| Example key | Example `val-type` | Example value | Transport interpretation |
-|---|---|---|---|
-| `name` | `1` string | `Acme Token` | A UTF-8 value under the exact key `name`. |
-| `symbol` | `1` string | `ACME` | A UTF-8 value under the exact key `symbol`. |
-| `decimals` | `2` integer | `6` as `Uint<128>` | The recommended default uses `val-len = 16`: `serialize<Uint<128>, 16>(6)` begins `0x06` and has 15 following zero bytes. |
-| `count` | `2` integer | `6` as `Uint<24>` | Another permitted width uses `val-len = 3`: `serialize<Uint<24>, 3>(6)` yields `0x060000`. |
-| `metadata` | `3` JSON | `{"description":"Example"}` | One complete JSON value fitting in this event. |
-| `/metadata/0` | `1` string | `hello world` | An RFC 6901 pointer key with a UTF-8 value; no array or assembly behavior follows from the path alone. |
-| `tokenUri` | `4` URI | `https://example.org/token.json` | An absolute URI value. |
+| Example key | Example `val-type` | `val-len` | Example value | Transport interpretation |
+|---|---|---:|---|---|
+| `name` | `1` string | 10 | `Acme Token`<br>Encoded: `0x41636d6520546f6b656e` | A UTF-8 value under the exact key `name`. |
+| `symbol` | `1` string | 4 | `ACME`<br>Encoded: `0x41434d45` | A UTF-8 value under the exact key `symbol`. |
+| `decimals` | `2` integer | 16 | `6` as `Uint<128>`<br>Encoded: `0x06000000000000000000000000000000` | The recommended default uses `serialize<Uint<128>, 16>(6)`. |
+| `count` | `2` integer | 3 | `6` as `Uint<24>`<br>Encoded: `0x060000` | Another permitted width uses `serialize<Uint<24>, 3>(6)`. |
+| `metadata` | `3` JSON | 25 | `{"description":"Example"}`<br>Encoded: `0x7b226465736372697074696f6e223a224578616d706c65227d` | One complete JSON value fitting in this event. |
+| `/metadata/0` | `1` string | 11 | `hello world`<br>Encoded: `0x68656c6c6f20776f726c64` | An RFC 6901 pointer key with a UTF-8 value; no array or assembly behavior follows from the path alone. |
+| `tokenUri` | `4` URI | 30 | `https://example.org/token.json`<br>Encoded: `0x68747470733a2f2f6578616d706c652e6f72672f746f6b656e2e6a736f6e` | An absolute URI value. |
 
 For `/metadata/0`, the entire pointer string is the key. A future metadata schema can define the target document and whether token `0` denotes an array element or an object property. Keys such as `description`, `image`, `website`, `metadataUri` or `bridge` can also be used, with meaning supplied by a separate schema or application convention.
 
