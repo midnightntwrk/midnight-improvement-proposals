@@ -307,7 +307,15 @@ Whether that circuit is callable once (a publish-once guard), owner-gated, or op
 
 #### 7.1 Acceptance and rejection
 
-A consumer applies [1] to recognize a v1 `TokenMetadata` event, then [2], [3] and [5] to validate it. Unrelated event types and unsupported names or versions are ignored. Recognized events with invalid payload size or other transport violations are rejected and MUST NOT be applied. Accepted declarations require no metadata-specific interpretation. Consumers SHOULD make rejection reasons available for diagnostics.
+A consumer applies [1] to recognize a v1 `TokenMetadata` event, then [2], [3] and [5] to validate it:
+
+| Input | Transport outcome |
+|---|---|
+| Unrelated event type or unsupported name/version | Ignore. |
+| Recognized v1 event with invalid payload size or another transport-rule violation | Reject; MUST NOT apply. |
+| Recognized v1 event satisfying transport rules, including one with an unknown key | Accept as a typed declaration. |
+
+Acceptance here does not impose metadata-specific schema interpretation; authoritative use also requires chain verification [7.3]. Consumers SHOULD make rejection reasons available for diagnostics.
 
 #### 7.2 Token states
 
@@ -402,7 +410,7 @@ Events are claims ([MIP-0002](./mip-0002-public-contract-log-emission.md), "Even
 Mint effects are facts the ledger verified.
 A consumer that let a claim override a fact would let a contract hide its own mints. A declaration can introduce a declared native identity, but it cannot create, remove or relabel an observed mint.
 Detecting contradictions between the two (a ledger declaration for a `domainSep` that was minted natively) and flagging the row was considered and rejected.
-With the full `kind` in the identity there is nothing to contradict: the declaration and the mint describe different rows, and the honest picture is simply that one of them has a name and the other does not.
+With the full `kind` in the identity there is nothing to contradict: the declaration and the mint describe different identities, one with an accepted declaration and the other without.
 The **declared** versus **described** terminology [7.2] records whether an applicable observation has also been established.
 
 ### Why on-chain `name`/`symbol` despite MIP-0014's rejection of it?
@@ -657,7 +665,7 @@ Metadata emission is inexpensive in these measured circuit shapes.
 | `getTraitValue(tokenId, traitKey)` | a consumer may derive the latest value for a retained key |
 | `getTraitMetadataURI` | a metadata-specific MIP may define a corresponding document or pointer |
 | ERC-721 `tokenURI(tokenId)` | a metadata-specific MIP may define a URI key, such as the Appendix A example `tokenUri` |
-| the contract is the authority | the emitting contract is the authority, enforced by color derivation |
+| the contract is the authority | the verified event's emitting address establishes the authority for both native and ledger declarations; native color is derived from that address and `domainSep` |
 
 ### Fields of the [Token Registry MPS (PR #104)](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104)
 
