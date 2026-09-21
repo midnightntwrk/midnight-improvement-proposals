@@ -481,8 +481,6 @@ Existing contracts deployed before ledger v9 cannot emit as deployed; [Upgrade P
 
 Adopting the convention is additive to [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), [MIP-0011](./mip-0011-native-shielded-token.md) and [MIP-0014](./mip-0014-native-unshielded-token.md): a conforming token can retain its existing circuits and emit declarations as events. This MIP does not require matching values for particular keys; metadata-specific MIPs may define such consistency rules. Existing reference consumers and fixtures follow a prior v1 draft and need alignment with Null and JSON Pointer validation before claiming conformance to this draft.
 
-Compact currently cannot serialize an `Opaque<"string">` into a circuit, so a contract that stores `name` as `Opaque<"string">` for the MIP-0011 circuits must also hold a byte form for the event path (the reference contracts take both at construction). This is a toolchain limitation, not a design choice, and would disappear if the compiler gained string-to-bytes conversion.
-
 ## Upgrade Path for Existing Contracts
 
 ### The gap
@@ -506,10 +504,9 @@ The upgrade is therefore, per contract, once the network runs ledger v9:
 Because the maintenance authority is a committee with a threshold, the upgrade is exactly as permissioned as any other change the issuer already reserved the right to make.
 No new trust is introduced: a consumer folding the resulting events applies the same rules as for a contract that emitted from day one, and the authority rule [6.1] holds because the event still comes from the token's own contract.
 
-### Two practical points for the new circuit
+### Token identity in the new circuit
 
-- **Compact cannot serialize `Opaque<"string">` into a circuit.** Contracts that store `name` and `symbol` as `Opaque<"string">` for their MIP-0011 / MIP-0014 / MIP-0004 circuits cannot emit those fields from state. The added circuit takes the byte form as arguments (owner-gated, called once) or bakes it in as compile-time literals, one measured shape in [Appendix B](#appendix-b-circuit-cost-informative). A metadata-specific schema may require consistency with getter results.
-- **`kernel.self()` and the color.** The new circuit reads the contract's existing `domain` from state and emits it as `domainSep`; it does not need to compute or emit the color, which a consumer derives [4].
+The new circuit reads the contract's existing `domain` from state and emits it as `domainSep`; it does not need to compute or emit the color, which a consumer derives [4].
 
 ### Limits
 
