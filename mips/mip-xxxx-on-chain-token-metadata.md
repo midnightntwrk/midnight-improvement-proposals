@@ -7,7 +7,7 @@ Authors:
 Status: Draft
 Category: Standards
 Created: 2026-09-17
-Requires: none
+Requires: "0002"
 Replaces: none
 MPS: "Off-Chain Token Metadata Registry for Midnight (unnumbered; https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104)"
 License: Apache-2.0
@@ -31,21 +31,11 @@ License: Apache-2.0
 
 ## Abstract
 
-Midnight has two kinds of contract-issued tokens.
-A *native* token is a 32-byte color derived from the issuing contract's address and a 32-byte domain separator; it moves as protocol-level UTXOs, and nothing on chain says what the color means.
-A *ledger* token ([MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md) style) is a balance in the contract's own state; it has no color, never appears in a transaction's mint effects, and keeps its `name`/`symbol`/`decimals` in state fields that only a client holding that contract's compiled artifact can decode, and even then only on trust, since nothing on chain proves the artifact matches the deployed contract.
-In neither case can a wallet or explorer that encounters an unfamiliar token learn what it is from the chain alone.
-Wallets show raw hex or nothing, and every application invents its own lookup table.
+Midnight contracts issue *native* tokens, held as protocol-level UTXOs, and *ledger* tokens, represented by balances in contract state. A native token's color is derived from the issuing contract address and a domain separator; a ledger token has no color or native mint effect. Generic consumers have no standardized, authenticated interpretation of a contract's metadata fields or supplied getters.
 
-This MIP specifies **how a contract publishes metadata about its own tokens on chain**, using the contract event mechanism from [MIP-0002](./mip-0002-public-contract-log-emission.md).
-A contract emits one `Misc` event, named `mip-xxxx:token-metadata[v1]` and referred to here as a `TokenMetadata` event, per `(domainSep, kind, key, value)` tuple, with a fixed 256-byte payload.
-A consumer folds these events, last write wins, into a table keyed by `(contract address, domainSep, kind)`.
-The emitting contract is the sole authority for its own tokens; because the color is derived from `(domainSep, contractAddress)`, no contract can describe another contract's token.
-The design follows [EIP-7496 (NFT Dynamic Traits)](https://eips.ethereum.org/EIPS/eip-7496): fixed-width keys, opaque values, updates as later events.
+This MIP defines how contracts publish typed metadata declarations for both token kinds through [MIP-0002](./mip-0002-public-contract-log-emission.md) `Misc` events. Each `TokenMetadata` event has a fixed 256-byte payload and the name `mip-xxxx:token-metadata[v1]`. Consumers verify events against chain data and apply accepted declarations in execution order, per `(contract address, domainSep, kind, key)`. The event's emitting contract is the authority for its declarations; a native color is derived from that address and `domainSep`.
 
-**This MIP defines the transport, not the schema.**
-It fixes the bytes on the wire and the rules for interpreting them; it does not require any particular key to be present.
-A set of common keys (`name`, `symbol`, `decimals`, `tokenUri`, `metadata`) is proposed as an *informative* convention in [Appendix A](#appendix-a-suggested-well-known-keys-informative) so that independently written consumers agree on the fields most tokens will want.
+**This MIP defines the transport, not a metadata schema.** It fixes the bytes on the wire, their transport validation and update order, without requiring or assigning meaning to particular keys. Metadata-specific proposals can define fields and document structure. [Appendix A](#appendix-a-example-keys-informative) gives illustrative examples. The design follows [EIP-7496 (NFT Dynamic Traits)](https://eips.ethereum.org/EIPS/eip-7496) in using keyed values and later events for updates. A verified declaration establishes what a contract emitted, not whether the asset is legitimate.
 
 This MIP responds to the problem statement "Off-Chain Token Metadata Registry for Midnight", referred to below as the [Token Registry MPS (PR #104)](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104), with an on-chain, registration-free base layer that an off-chain registry can build on rather than replace.
 
@@ -73,7 +63,7 @@ The consequences are those listed in the [Token Registry MPS (PR #104)](https://
 These read contract *state*, and reading them requires the contract's compiled artifact.
 A wallet that encounters an unfamiliar color does not have it.
 More fundamentally, a wallet that *does* have it, or even the full source code, still cannot use it as evidence: nothing on chain binds a deployed contract to any source or artifact, so there is no way to verify that the deployed ledger layout and circuits are the ones the source declares.
-The `name()` path is therefore not merely inconvenient for the general case; it is unverifiable in every case.
+The supplied `name()` path therefore does not by itself establish a chain-verified metadata declaration.
 MIP-0014 recognizes the general-case gap and delegates it to an off-chain registry ("PR #104") keyed by color, with a mandatory `(domain, contractAddress)` recomputation check.
 
 [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md) account-model tokens have the same shape: metadata lives in ledger fields that only a schema-aware client can read.
@@ -84,9 +74,9 @@ The [Token Registry MPS (PR #104)](https://github.com/midnightntwrk/midnight-imp
 But an off-chain registry cannot be the *only* layer, for reasons the MPS itself surfaces:
 
 - **An off-chain entry cannot prove who wrote it.** A registry entry claims to speak for a contract's issuer, so the registry has to add signed attestations, sequence numbers, a validating server and a governance process for deciding which signing keys are legitimate, all to establish that the issuer really wrote the entry. But there is nothing on chain for such an attestation to anchor to. A `ContractDeploy` records no creator; the contract's maintenance authority names the committee that may *upgrade* the contract, not who deployed it, and it may be empty; the DUST that paid the deployment fee proves nothing, since anyone may pay for anyone's transaction. The only party that can demonstrably speak for a contract is the contract itself, by executing. An emitted event is exactly that, and it needs no attestation because the transaction already is one.
-- **Per-token lookup leaks a shielded holder's portfolio.** If a wallet asks a metadata server about the colors it holds, the server learns which shielded tokens that wallet holds, which is precisely what shielding is meant to hide. The off-chain design can only mitigate this by having the wallet download the whole registry or pad its queries with decoy colors. On-chain events are already part of what every wallet syncs from the chain, so there is no third party to ask and nothing extra to leak.
-- **Discovery.** A registry "maps known colors to metadata" and is explicitly "not a search engine". An event stream is discovery by construction: the set of described tokens is the set of contracts that emitted.
-- **Registration is a bottleneck.** Every issuer must find, understand and submit to the registry. A contract that emits at deployment has registered by existing.
+- **Per-token lookup can reveal a shielded holder's interests.** If a wallet asks a metadata server about the colors it holds, the server can infer interest in those tokens. Synchronizing a broad or curated metadata collection independently of holdings avoids those per-token requests. The same risk returns when a wallet makes token-specific indexer queries or fetches external metadata and media URLs. An indexer may serve a selected collection; neither the stream nor this MIP requires every wallet to download all metadata.
+- **Discovery.** A registry "maps known colors to metadata" and is explicitly "not a search engine". A complete on-chain event stream permits discovery of declarations by construction. A filtered indexer response may expose only a selected subset.
+- **Registration is a bottleneck.** Every issuer must find, understand and submit to the registry. A contract can publish its own declarations by calling an emitting circuit after deployment, without a separate registration process.
 - **The long tail.** Community tokens, collection pieces, test tokens and LP shares will never be curated. They still need a name.
 
 What an off-chain registry adds, and what this MIP deliberately does not attempt, is *curation*: deciding which of several contracts calling themselves "USDC" is the real one, hosting large logos, recording cross-chain bridge mappings, and attaching third-party trust signals.
@@ -97,7 +87,7 @@ The two layers compose: on-chain events are the authoritative, issuer-written ba
 Compact contracts already have a public event mechanism ([MIP-0002](./mip-0002-public-contract-log-emission.md), live on Stagenet).
 Events are the right substrate for metadata because:
 
-1. **State layout is unverifiable; an event's layout is fixed by this MIP.** The hardest problem with reading metadata out of contract state is not access but proof. Nothing on chain declares what a contract's state fields mean, so a consumer looking at a deployed contract cannot verify that the first field is the name rather than something else. Holding the source code does not help, because nothing binds the deployed contract to that source. An event sidesteps this entirely: its byte layout is defined here, not by the contract, and the event says `name` in its own key field. The consumer needs no knowledge of the contract's state shape and takes nothing on trust except what the chain already verified, namely that this contract's circuit executed and produced these bytes.
+1. **The event carries the declaration itself.** Nothing on chain standardizes which contract-state positions mean metadata fields or authenticates a supplied source artifact or pure getter as the deployed contract's metadata interpretation. An event saying only "metadata changed" would still leave consumers dependent on that interpretation. This MIP therefore puts the key and actual value in an event whose layout is fixed here. Verification against chain execution establishes which contract emitted those bytes, without requiring its storage layout or a supplied getter.
 2. **They are schema-free for the consumer.** An indexer decodes a `Misc` event by name and byte layout, with no compiled artifact and no per-contract knowledge.
 3. **They are an append-only history.** Renames, trait updates and corrections are later events; consumers fold them last-write-wins and can show history.
 4. **They cost nothing at rest.** Events are not consensus state ([MIP-0002](./mip-0002-public-contract-log-emission.md), "Event Lifetime"); they do not grow the contract state that every node carries.
@@ -109,9 +99,9 @@ The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be interpreted a
 
 ### Scope
 
-**Normative** in this MIP: the event envelope [1], the payload layout [2], the `kind` byte [3], token identity [4], key/value handling rules [5], emission rules [6], consumer rules [7] and versioning [8].
+**Normative** in this MIP: the event envelope [1], the payload layout [2], the `kind` byte [3], token identity [4], key/value handling rules [5], emission rules [6], consumer acceptance, verification and input handling [7.1, 7.3–7.4], and versioning [8].
 
-**Informative** in this MIP: the suggested well-known keys ([Appendix A](#appendix-a-suggested-well-known-keys-informative)), the circuit-cost notes ([Appendix B](#appendix-b-circuit-cost-informative)), the mapping to EIP-7496 and the Token Registry MPS ([Appendix C](#appendix-c-mapping-to-eip-7496-and-the-token-registry-mps-informative)), and the reference module and contracts ([Implementation Example](#implementation-example)).
+**Informative** in this MIP: token-state terminology [7.2], example keys ([Appendix A](#appendix-a-example-keys-informative)), the circuit-cost notes ([Appendix B](#appendix-b-circuit-cost-informative)), the mapping to EIP-7496 and the Token Registry MPS ([Appendix C](#appendix-c-mapping-to-eip-7496-and-the-token-registry-mps-informative)), and the reference module and contracts ([Implementation Example](#implementation-example)).
 
 This MIP does not require any specific key to be emitted.
 A contract that emits zero `TokenMetadata` events is not non-conforming; it is simply undescribed.
@@ -124,8 +114,8 @@ A contract that emits only keys of its own invention is fully conforming.
 - **Native token**: value held as protocol-level UTXOs (shielded Zswap coins or unshielded UTXOs). The issuing contract mints; the protocol moves.
 - **Ledger token**: value held as balances in the contract's own state (the [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md) / OpenZeppelin `FungibleToken` model). No mint effect ever appears in a transcript; no color exists.
 - **Declaration**: a `TokenMetadata` event: a *claim* made by a contract about its own token.
-- **Observation**: a mint effect in a transaction transcript: a *fact* about which `(domainSep, kind)` a contract has actually minted. Only native kinds can be observed.
-- **Consumer**: any party folding `TokenMetadata` events into a token table: an indexer, a wallet, an explorer.
+- **Observation**: for a native kind, a verified mint effect in a transaction transcript. Observation criteria for ledger kinds require a separate token specification.
+- **Consumer**: any party processing `TokenMetadata` events, such as an indexer, wallet or explorer.
 
 ### 1. The event
 
@@ -138,21 +128,18 @@ Misc {
 }
 ```
 
-The event name is namespaced by this MIP's number so that no other contract's `Misc` event can collide with it, following the ledger's own `midnight:derive_token` style of lowercase, colon-separated labels, and it carries its layout version in square brackets the way the ledger's own serialization tags do (`impact-versioned-log-item[v1]`, `midnight:zswap-memo[v1]`).
+The event name is namespaced by this MIP's number to distinguish the convention from unrelated `Misc` events, following the ledger's own `midnight:derive_token` style of lowercase, colon-separated labels. It carries its layout version in square brackets like the ledger's serialization tags (`impact-versioned-log-item[v1]`, `midnight:zswap-memo[v1]`).
 `xxxx` is a placeholder for the four-digit number assigned when this MIP is merged; the final string is fixed at that point and this document is updated once.
 Throughout this document "a `TokenMetadata` event" means a `Misc` event carrying this name.
 
 `Misc` is the Compact standard library's catch-all event type (`LogEventType::Misc`, `onchain-vm` event tag 10); its `payload` field is fixed at `Bytes<256>` by MIP-0002.
 
-A consumer MUST accept an event as a `TokenMetadata` event if and only if:
+A consumer recognizes a v1 `TokenMetadata` event if and only if:
 
 1. its event type is `Misc`, and
-2. `name == pad(32, "mip-xxxx:token-metadata[v1]")`, that is, the bytes `0x6d69702d787878783a746f6b656e2d6d657461646174615b76315d` followed by 5 NUL bytes (to be recomputed for the assigned number), and
-3. its payload is exactly 256 bytes.
+2. `name == pad(32, "mip-xxxx:token-metadata[v1]")`, that is, the bytes `0x6d69702d787878783a746f6b656e2d6d657461646174615b76315d` followed by 5 NUL bytes (to be recomputed for the assigned number).
 
-Any other event MUST be ignored by a `TokenMetadata` consumer.
-An event that satisfies (1) and (2) but whose payload fails validation under [2], [3] or [5] MUST be recorded as **rejected** and MUST NOT be applied.
-Consumers SHOULD surface rejected events for diagnostics.
+Events of another type or name, including unsupported versions, MUST be ignored by a v1 consumer. A recognized v1 event MUST have exactly 256 payload bytes and satisfy [2], [3] and [5] before it is accepted. A recognized event that fails any transport rule MUST be rejected and MUST NOT be applied. Consumers SHOULD make the reason for rejection available for diagnostics.
 
 A Compact **constructor cannot emit**, directly or through a circuit it calls.
 A conforming contract that wants its metadata published at deployment therefore exposes a circuit (conventionally `publishMetadata()`) that the deployer calls immediately after deployment (see [6.7]).
@@ -165,7 +152,7 @@ The payload is 256 bytes, big-endian, with no padding between fields:
 |---|---|---|---|
 | 0 | 32 | `domainSep` | The token within the contract. For a native token, exactly the value passed to `mintShieldedToken` / `mintUnshieldedToken`. For a ledger token, any 32 bytes the contract chooses (e.g. `pad(32, "acme:gold")`). |
 | 32 | 1 | `kind` | See [3]. |
-| 33 | 32 | `key` | UTF-8 key name, NUL-padded. Compared after trimming trailing NULs [5.1]. |
+| 33 | 32 | `key` | Key identifier bytes, NUL-padded. Compared after trimming trailing NULs [5.1]; `/metadata/` keys require UTF-8. |
 | 65 | 1 | `val-type` | How to interpret `value`. See the table below. |
 | 66 | 1 | `val-len` | Number of meaningful bytes in `value`. `0 ≤ val-len ≤ 189`. |
 | 67 | 189 | `value` | The value bytes. Bytes at offset `≥ val-len` carry no meaning. |
@@ -182,24 +169,26 @@ It takes exactly one of the following values:
 
 | `val-type` | Meaning | `val-len` and `value` rules |
 |---|---|---|
-| `0` | opaque bytes | none; consumers surface as hex |
+| `0` | opaque bytes | `0 ≤ val-len ≤ 189` |
 | `1` | UTF-8 string | `value[0..val-len]` MUST be valid UTF-8 |
 | `2` | unsigned integer, big-endian | `1 ≤ val-len ≤ 16`; no leading-zero requirement |
-| `3` | UTF-8 JSON | valid UTF-8; the parse rule (object, array, part) is the key's to state |
-| `4` | UTF-8 URI | valid UTF-8, parses as an absolute URI |
-| `5` to `255` | reserved | MUST reject the event |
+| `3` | UTF-8 JSON | `value[0..val-len]` MUST be one complete valid UTF-8 JSON value as defined by [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html); object, array and scalar values are allowed |
+| `4` | UTF-8 URI | `value[0..val-len]` MUST be valid UTF-8 and parse as an absolute URI |
+| `5` | Null | `val-len` MUST be zero; consumers MUST ignore all 189 `value` bytes; emitters SHOULD fill them with NUL |
+| `6` to `255` | reserved | MUST reject the event |
 
 Type validation is part of transport validation: an event whose `value` fails the rule for its declared `val-type` MUST be rejected.
-A consumer MUST NOT reinterpret a value under a type other than the one declared; if a well-known key expects `val-type` `2` and the event carries `1`, the projection fails (see [5.3]) but the trait is still stored as declared.
-Values `5` to `255` are reserved for future value encodings an amendment may define.
+A consumer MUST NOT reinterpret a value under a type other than the one declared. Key-specific schemas and handling of schema mismatches belong to metadata-specific MIPs. Type `5` is an explicit null value, distinct from an empty string or byte sequence and from the JSON literal `null` carried under type `3`. Null changes the current value of the exact key without erasing history. Values `6` to `255` are reserved for a future event version.
 
 #### 2.2 Validation
 
 - `val-len > 189` MUST reject the event.
 - A reserved `val-type` MUST reject the event.
 - `value` failing its `val-type` rule MUST reject the event.
-- Bytes of `value` at or after `val-len` MUST be ignored by consumers. Emitters SHOULD set them to NUL.
+- Bytes of `value` at or after `val-len` MUST be ignored by consumers, including all 189 bytes for Null. Emitters SHOULD set ignored bytes to NUL.
 - A `key` consisting entirely of NUL bytes (empty key after trimming) MUST reject the event.
+
+An empty string or opaque byte sequence is valid. An empty integer, URI or JSON payload is invalid under the rules above. JSON validity is a transport rule; requirements that a particular key hold an object, array or other shape belong to a metadata-specific MIP.
 
 ### 3. The `kind` byte
 
@@ -214,15 +203,14 @@ The `kind` byte takes exactly one of four values. Each value fixes two attribute
 
 Any other value MUST reject the event.
 
-**Note on `kind = 3`.** The label is the contract's own description of how it keeps its balances; nothing on chain, and nothing in this MIP, verifies that those balances are actually confidential. No standard currently defines a confidential contract-state token, and no reference contract exercises this kind. Consumers MUST treat `3` as purely informative and MUST NOT present a token as private on the strength of it. The value is kept so that a future standard for such tokens has a kind to use without a wire change.
-Values `4` to `255` are reserved for future token categories that an amendment to this MIP may define; no other use of the byte (flags, versioning) is planned, since the event name already carries the version and per-token flags belong in ordinary keys.
+**Note on `kind = 3`.** The label is the contract's declaration about how it keeps balances; this MIP does not verify that those balances are confidential. Consumers MUST NOT present a token as private solely on the strength of this byte. Values `4` to `255` are reserved for a future event version; the event name carries the version and per-token flags belong in ordinary keys.
 
 A color exists only for native kinds (`0` and `1`).
 A consumer MUST NOT derive or display a color for a ledger kind (`2` or `3`).
 
 ### 4. Token identity
 
-A token is identified by the triple **`(contractAddress, domainSep, kind)`**.
+A token is identified by the triple **`(contractAddress, domainSep, kind)`**, scoped to a particular Midnight network. Equal triples on different networks are not the same identity.
 
 - `contractAddress` is taken from the event's own `contractAddress` field in the indexer/ledger event record, never from the payload [6.1].
 - `domainSep` is payload offset 0.
@@ -235,7 +223,7 @@ A contract describes each `(domainSep, kind)` it wants described separately, and
 **`domainSep` for ledger kinds.** For a native kind, `domainSep` is grounded: it is the mint argument and the color is derived from it. For a ledger kind nothing on chain ties `domainSep` to any balance structure; it is a label the contract chooses to identify one balance book. Two rules follow:
 
 - A contract that holds the same asset both in state and natively (MIP-0004 style) MUST use its native `domain` as the ledger `domainSep`, so that the rows link.
-- A pure ledger contract uses any stable 32 bytes per balance book. Several ledger `domainSep`s from one contract are several declared balance books (the ERC-1155 shape in state); the chain cannot corroborate any of them, and consumers present them as such [7.2].
+- A pure ledger contract uses any stable 32 bytes per balance book. Several ledger `domainSep`s from one contract declare several balance books (the ERC-1155 shape in state). Whether the underlying balance structures can be observed is defined by an applicable ledger-token specification [7.2].
 
 For native tokens the color is derived, never transmitted:
 
@@ -253,29 +241,25 @@ A consumer MUST compute the color itself from `(domainSep, contractAddress)` and
 
 Trailing NUL bytes are trimmed from `key`, then the remaining bytes are compared exactly.
 Keys are case-sensitive.
-Keys SHOULD be valid UTF-8; consumers MUST NOT reject a key solely for not being valid UTF-8 (they MAY display it as hex).
+Except for `/metadata/` keys as specified below, keys SHOULD be valid UTF-8; consumers MUST NOT reject another key solely for invalid UTF-8 (they MAY display it as hex).
+
+Keys whose trimmed bytes begin with the UTF-8 prefix `/metadata/` MUST be valid UTF-8 JSON Pointer strings under [RFC 6901](https://www.rfc-editor.org/rfc/rfc6901.html), within the same 32-byte key limit. In particular, a literal `~` in a reference token is encoded as `~0`, and `/` within a token as `~1`; any other `~` escape is invalid and MUST cause rejection. The `*` in `/metadata/*` is a literal property token, not a wildcard. The token `0` in `/metadata/0` may identify an array element or an object property named `"0"`, depending on a document structure defined elsewhere.
+
+This MIP does not define the target document, whether one exists, or how a value is applied at a path. In particular, pointer syntax does not require JSON assembly, nested updates, prefix replacement or concatenation. Last write wins only for the same exact key [6.2]. Other keys remain independent identifiers under the byte-comparison rule above.
 
 #### 5.2 Values are typed bytes
 
 At the transport level a value is `val-len` bytes tagged with a `val-type` [2.1].
-The type says how to *read* the bytes; this MIP assigns no *meaning* to any key.
-A consumer MUST store every accepted `(key, val-type, val-len, value)` verbatim against the token identity, regardless of whether it recognizes the key, and SHOULD render unknown keys according to their `val-type` (text for strings, a number for integers, hex for opaque bytes). This is EIP-7496's `getTraitValue`, and it is what makes the standard forward-compatible: new keys need no protocol change.
+The type says how to *read* the bytes; this MIP assigns no *meaning* to any key. A transport-valid declaration is accepted even if its key is unknown. Consumers MAY select which tokens, fields and history to retain or serve; they MUST NOT treat an omitted entry in a selected service as proof that no declaration exists on chain. Metadata-specific MIPs define key meanings, required fields, schema validation, projections and handling of schema mismatches. A schema mismatch alone does not make a transport-valid event malformed under this MIP.
 
-#### 5.3 Well-known keys are a convention, not a requirement
+#### 5.3 Metadata schemas
 
-[Appendix A](#appendix-a-suggested-well-known-keys-informative) proposes encodings and validation rules for a small set of common keys (`name`, `symbol`, `decimals`, `metadata`, `metadata/<n>`, `tokenUri`).
-These are informative.
-However, to keep independently written consumers interoperable:
-
-- An emitter that uses one of the Appendix A key names SHOULD use the encoding Appendix A gives for it.
-- A consumer that projects an Appendix A key into a dedicated column SHOULD apply Appendix A's validation for that key, and on failure SHOULD keep the raw trait [5.2] and flag the projection as invalid rather than reject the event.
-
-A future MIP MAY promote some or all of Appendix A to normative status without changing the wire format.
+[Appendix A](#appendix-a-example-keys-informative) illustrates possible keys and values without standardizing their encodings or meanings. A metadata-specific MIP MAY define a schema for some keys using this transport. Such a schema can impose requirements on its own implementations without changing transport acceptance of other keys.
 
 #### 5.4 Values longer than 189 bytes
 
 A single event carries at most 189 value bytes.
-Longer values are the emitter's problem to split and the consumer's to reassemble; this MIP fixes only one convention for doing so, the `metadata/<n>` part scheme in Appendix A, and does not mandate it.
+This MIP defines no multipart representation or reassembly rule. A metadata-specific MIP may define one; a URI value may point to an external document under that MIP's rules.
 
 ### 6. Emission rules
 
@@ -287,32 +271,26 @@ Because a native token's color is derived from `(domainSep, contractAddress)`, n
 
 #### 6.2 Last write wins
 
-Per `(contractAddress, domainSep, kind, key)`, the most recent accepted event is the current value.
-Ordering is by block height, then by the event's position in the transaction's evaluation order (the indexer's monotonic event `id` provides this).
-Earlier values are history, not truth; consumers MAY retain and display history.
+Per network and `(contractAddress, domainSep, kind, key)`, the last accepted event is the current value. Apply events in canonical block order, then transaction execution position within the block, then the order produced by ledger execution within that transaction. An indexer's monotonic event ID may serve as its cursor but does not define the normative order or token identity. Consumers using provisional blocks MUST roll back values from blocks removed by a reorganization; consumers may instead wait for finalized chain data.
 
-There is no delete.
-An emitter that wants to "unset" a key emits it with `val-len = 0`; a consumer MUST treat `val-len = 0` as "present, empty" at the transport level. Appendix A keys define their own handling of empty values.
+Earlier values remain history, which consumers MAY retain. Type `5` sets the current value of the exact key to Null without erasing its history. A zero-length string or opaque byte sequence is present and empty, not Null.
 
 #### 6.3 Observation is independent of declaration
 
 A mint effect in a transcript is a fact; a `TokenMetadata` event is a claim.
 Because the full `kind` is part of the identity [4], the two never contradict each other; they populate rows independently:
 
-- A mint of `(domainSep, kind 0 or 1)` creates or confirms that native row whether or not anything was declared for it. A declaration can never hide or relabel a mint.
+- A mint of `(domainSep, kind 0 or 1)` establishes a native observation whether or not anything was declared for it. A declaration can introduce a declared native identity but cannot manufacture, hide or relabel a mint.
 - A declaration for `(domainSep, kind)` populates exactly that row and no other. Declaring kind `2` says nothing about kind `0`; declaring kind `1` for a `domainSep` only ever minted as kind `0` describes a token that has not been minted yet, not the one that has.
-- A ledger declaration (kind `2` or `3`) has no observation that could ever confirm it. It stays a declaration.
+- Observation criteria for ledger kinds (`2` or `3`) belong to an applicable ledger-token specification. This MIP alone does not establish them.
 
 #### 6.4 Describing an unminted token is legal
 
-A ledger kind has no mint at all and can only ever be declared.
-A native kind MAY be described before, or without, its first mint.
-Consumers represent both as the **declared** state [7.2].
+A ledger kind has no native mint effect. A native kind MAY be declared before, or without, its first mint. Under the informative state terminology in [7.2], such a native token is **declared** until observed. A ledger declaration is also **declared** unless an applicable ledger-token specification establishes an observation.
 
 #### 6.5 No registration
 
-Nothing is registered with anyone.
-A consumer discovers described tokens from the transactions themselves: every contract call's transcript publicly states how many `log` operations it ran, and the consumer fetches the events of exactly those calls [7.3].
+Nothing is registered with anyone. A consumer can discover declarations from verified on-chain events [7.3]. Indexer selection and service coverage are implementation-dependent.
 
 #### 6.6 Disclosure
 
@@ -329,41 +307,34 @@ Whether that circuit is callable once (a publish-once guard), owner-gated, or op
 
 #### 7.1 Acceptance and rejection
 
-A consumer applies [1] to recognize a `TokenMetadata` event, then [2], [3] and [5] to validate it.
-Rejected events MUST NOT be applied and SHOULD be recorded with the reason.
+A consumer applies [1] to recognize a v1 `TokenMetadata` event, then [2], [3] and [5] to validate it. Unrelated event types and unsupported names or versions are ignored. Recognized events with invalid payload size or other transport violations are rejected and MUST NOT be applied. Accepted declarations require no metadata-specific interpretation. Consumers SHOULD make rejection reasons available for diagnostics.
 
 #### 7.2 Token states
 
-Folding observations (mint effects) and declarations (events) yields, for every `(contractAddress, domainSep, kind)`, one of three states a consumer SHOULD distinguish:
+The following terminology is informative. It does not require a consumer UI or database schema. A declaration is an accepted `TokenMetadata` event verified against chain data. Native observation comes from a verified mint; ledger observation depends on criteria in an applicable ledger-token specification.
 
-| State | Observed mint? | Any declaration? | Meaning |
-|---|---|---|---|
-| **observed** | yes | no | A native kind with a color that has been minted, but nobody has described it. This is every custom token today. |
-| **declared** | no | yes | Described, never minted natively. Every ledger kind is permanently here, since nothing on chain can corroborate it; a native kind is here until its first mint. |
-| **described** | yes | yes | A native kind, minted and described. |
+| State | Native token | Ledger token |
+|---|---|---|
+| **observed** | A verified mint exists; no metadata declaration has been accepted. | Observation criteria are specification-dependent; no metadata declaration has been accepted. |
+| **declared** | A metadata declaration has been accepted; no mint has been observed. | A metadata declaration has been accepted; no observation has been established under an applicable ledger-token specification. |
+| **described** | Both a verified mint and an accepted metadata declaration. | An accepted metadata declaration plus an observation established under an applicable ledger-token specification. |
 
-Only native kinds can reach **described**.
-A consumer SHOULD make the difference visible: a **described** row's name is a claim about a token the chain has seen; a **declared** row's name is a claim about a token the chain has not, and for ledger kinds never will.
+This MIP does not define ledger-token observation criteria. Without an applicable mechanism, accepted ledger metadata is **declared**; that status does not establish that its balance structure is absent. A declaration of an unminted native token is likewise **declared**, and cannot establish that a mint occurred.
 
-A contract that declares only kind `2` for a `domainSep` it then mints as kind `0` produces two rows: an **observed** kind `0` row with no name, and a **declared** kind `2` row with one. That is an accurate picture, not an error: the contract described its balance book and not its UTXOs. A consumer MAY hint that the rows share a `domainSep`.
+For example, a contract that declares only kind `2` for a `domainSep` it then mints as kind `0` has two distinct identities: kind `0` is **observed** without a declaration, while kind `2` is **declared** without an observation established by this MIP. An applicable ledger-token specification could establish a ledger observation separately. A consumer may relate identities sharing a `domainSep`.
 
 #### 7.3 Reading events from transactions
 
-Event *contents* cannot be read statically from a transaction: `emit` compiles to the VM's `log` opcode and its operand comes from the stack at execution time.
-What a transaction does state publicly is **how many `log` ops each contract call's transcript runs**.
-A consumer that does not simply trust an indexer therefore:
+Event contents are produced by execution: `emit` compiles to the VM's `log` opcode and its operand comes from the stack at runtime. Consumers MUST verify indexer-supplied metadata against authenticated on-chain data before treating it as authoritative. Verification establishes the actual event bytes, emitting contract, successful execution and inclusion in canonical order; an indexer response alone does not establish those facts.
 
-1. scans every transaction for `ContractDeploy` / `ContractCall` actions and for the mint effects of each call's transcripts (the observed facts);
-2. counts `log` ops in the guaranteed transcript and in the fallible transcript of every successful segment;
-3. for each call with at least one `log` op, fetches that call's events (from an indexer, or from its own ledger replay) and compares the count with what the transcript promised before applying anything.
+Guaranteed transcript effects apply when the transaction succeeds or partially succeeds; fallible transcript effects apply only for successful segments. Events and native mint observations follow the execution outcome of the transcript that produced them. Discovery and retrieval algorithms are implementation-dependent.
 
-Mints in a guaranteed transcript count when the transaction succeeded or partially succeeded; mints in a fallible transcript count only when that intent's segment succeeded.
-Events follow the same rule as the transcript that emitted them.
+Indexers MAY choose which tokens, fields and history they provide. Omission from a filtered response is not evidence that no declaration exists on chain. A claim that a value is current requires verifying that no later applicable update supersedes it over the relevant chain range. A consumer cannot infer completeness or currentness merely from authenticating the events that a service returned.
 
 #### 7.4 Untrusted input
 
 Every byte of a `TokenMetadata` payload is attacker-controlled.
-Consumers MUST bound-check all offsets and lengths, MUST treat `value` as untrusted for any parser they apply to it (UTF-8, JSON, URL), and MUST NOT dereference a URL found in a value without the same precautions they would apply to any remote content (see Security Considerations).
+Consumers MUST bound-check all offsets and lengths, MUST treat `value` as untrusted for any parser they apply to it (UTF-8, JSON, URI), and MUST NOT dereference a remote URI found in a value without the same precautions they would apply to any remote content (see Security Considerations).
 
 ### 8. Versioning
 
@@ -372,12 +343,12 @@ The bracketed suffix is the layout version, in the same form the ledger uses for
 A future, incompatible layout uses a new name and never a reinterpretation of `mip-xxxx:token-metadata[v1]`: an amendment within this MIP bumps the bracket (`mip-xxxx:token-metadata[v2]`), and a superseding MIP gets a fresh name for free (`mip-yyyy:token-metadata[v1]`).
 A consumer that only knows `[v1]` ignores the other names; a consumer that knows several keeps them apart.
 
-Within version 1, new keys may be introduced freely: unknown keys are already required to be stored verbatim as traits [5.2], so a key registry can grow without any wire change.
-Changes to Appendix A are amendments to this MIP, not superseding proposals.
+After finalization, a version fixes its payload layout, accepted `val-type` and `kind` values, and transport-validation rules. Assigning a reserved datatype or kind, or changing those rules, requires a new event version. Type `5` (Null) and JSON Pointer validation are changes to this still-draft v1 definition; consumers and fixtures built to an earlier draft need to align. New keys may be introduced without a new event version because the transport assigns no fixed key registry or schema. Appendix A may change without changing transport rules.
 
 ### Out of scope
 
 - **Which metadata a token should expose.** This MIP fixes the transport. Required fields, per-asset-class schemas (fungible, NFT, RWA), localization and media formats belong in separate, layered proposals that use this transport.
+- **How metadata documents and ledger observations work.** Metadata-specific MIPs define document structure, path application, multipart representation, schema-mismatch outcomes and projections. An applicable ledger-token MIP defines evidence for observing a ledger balance structure.
 - **Curation and trust.** Which of several contracts calling themselves "USDC" is real is not a question on-chain data can answer. That is the job of an off-chain registry, allowlist or attestation layer, which MAY be seeded from these events.
 - **Metadata for tokens whose issuer does not emit.** A contract deployed without this convention cannot be described on chain by anyone else [6.1]. Most such contracts can be upgraded by their own maintenance authority to emit (see [Upgrade Path for Existing Contracts](#upgrade-path-for-existing-contracts)); for the rest, an off-chain registry is the only path. This is a deliberate consequence of the authority rule, not an oversight.
 - **NIGHT and DUST.** The protocol's native asset has protocol-defined properties that clients hard-code; DUST is not a token. Neither is described by this mechanism.
@@ -396,14 +367,14 @@ Second, EIP-7496's lesson is that an open key/value space with a *conventional* 
 
 Third, layering keeps this MIP small and stable. A schema MIP for fungible tokens can be argued, revised and superseded without touching how bytes reach the chain.
 
-Appendix A exists because the alternative, every consumer inventing its own encoding for `decimals`, is exactly the fragmentation this MIP is meant to end. SHOULD-level guidance on the common keys gets interoperability without pretending the transport knows what a token is.
+Appendix A illustrates potential keys without assigning binding encodings or projections. Metadata-specific MIPs can establish interoperable schemas for the assets that need them, while retaining this common event transport.
 
 ### Why one event per `(key, value)` rather than one blob per token?
 
 - The `Misc` payload is fixed at 256 bytes by MIP-0002. A single blob would need a compression or chunking scheme before it could hold `name` + `symbol` + `decimals` + a URL.
 - Per-key events make updates cheap and precise: renaming a token is one event, not a re-emission of everything.
 - Per-key folding is what EIP-7496's `TraitUpdated` does, and what an indexer wants to store anyway.
-- The `metadata/<n>` part scheme (Appendix A) exists precisely for the case where a blob *is* wanted.
+- A larger document can be addressed by a metadata-specific MIP without changing this event envelope.
 
 ### Why `Misc` rather than a new `LogEventType` variant?
 
@@ -423,16 +394,16 @@ It also covers ledger tokens, which have a `domainSep` but no color.
 Midnight has four value domains (shielded/unshielded × native/ledger), and one 32-byte value can legitimately name up to four distinct token types: the same `domainSep` minted shielded and unshielded, and the same `domainSep` held as state balances and converted to UTXOs (MIP-0004).
 A consumer that keyed only on color would merge the first pair; one that keyed on color plus privacy would merge the second, and would then read a MIP-0004 token's ledger declaration as contradicting its own mints.
 Making the whole byte part of the identity removes both collisions, and it removes the need for any "which declaration wins" rule: every `(domainSep, kind)` is its own row, populated by its own mints and its own declarations.
-It also tells a consumer, per row, whether to expect a color at all and whether a mint could ever corroborate the declaration.
+It also tells a consumer, per identity, whether to derive a color and whether native mint observations apply.
 
 ### Why observations and declarations are kept independent?
 
 Events are claims ([MIP-0002](./mip-0002-public-contract-log-emission.md), "Event trust model").
 Mint effects are facts the ledger verified.
-A consumer that let a claim override a fact would let a contract hide its own mints from a token table, so a declaration is never allowed to create, remove or relabel a native row; only a mint does that.
+A consumer that let a claim override a fact would let a contract hide its own mints. A declaration can introduce a declared native identity, but it cannot create, remove or relabel an observed mint.
 Detecting contradictions between the two (a ledger declaration for a `domainSep` that was minted natively) and flagging the row was considered and rejected.
 With the full `kind` in the identity there is nothing to contradict: the declaration and the mint describe different rows, and the honest picture is simply that one of them has a name and the other does not.
-The **declared** versus **described** distinction [7.2] carries the remaining warning: it tells the user whether the chain has ever seen the token a name is attached to.
+The **declared** versus **described** terminology [7.2] records whether an applicable observation has also been established.
 
 ### Why on-chain `name`/`symbol` despite MIP-0014's rejection of it?
 
@@ -448,9 +419,7 @@ What on-chain metadata does not do, and MIP-0014 is right that nothing on chain 
 ### Why events rather than a metadata field in contract state?
 
 The decisive reason is verifiability.
-A `name` ledger field is only a name because the contract's source says so, and nothing on chain binds a deployed contract to any source.
-A consumer therefore cannot prove that the field it reads is the name, even with the code in hand.
-An event carries its own meaning in a layout this MIP fixes: the key field says `name`, and the only trust involved is the chain's own verification that the contract executed and emitted it.
+A `name` ledger field is only a name because a supplied contract schema says so, and nothing on chain standardizes or authenticates that interpretation. A supplied pure getter and source code likewise do not themselves establish a chain-verified metadata declaration. A change notification would leave this gap in place. An event instead carries the actual key and value in a fixed layout; verified execution establishes that the emitting contract declared those bytes. A metadata-specific MIP supplies the key's meaning.
 
 Two lesser reasons point the same way.
 State grows the set every node carries; events do not.
@@ -466,43 +435,43 @@ Fixed widths make the decoder trivial and byte-exact, which matters when every c
 
 EIP-7496 leaves trait values as untyped `bytes32` and describes their types in an off-chain trait-metadata document.
 That works when a consumer already knows the collection; it fails for the generic explorer that meets an unknown key and has nothing but bytes.
-One byte of type tag lets any consumer render any trait sensibly (a string as text, an integer as a number) without knowing the key, and lets well-known keys carry a machine-checkable type instead of a documented convention.
-It costs one byte of value width, and the value width was never the binding constraint: anything that does not fit in 189 bytes did not fit in 190 either and goes through the `metadata/<n>` part scheme regardless.
-The tag is deliberately a closed enum with reserved values, so new encodings are an amendment, not a free-for-all.
+One byte of type tag identifies the value's transport encoding without requiring knowledge of the key. A metadata-specific MIP can use that information when defining fields.
+It costs one byte of value width. Larger-value representation is left to a metadata-specific MIP.
+The tag is deliberately a closed enum within each event version.
 
 ### Alternatives considered
 
-- **Off-chain registry only (the [Token Registry MPS (PR #104)](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104) as proposed).** Rejected as the sole layer: it needs attestation infrastructure and governance to provide the provenance that on-chain emission provides for free, and it cannot solve privacy-safe lookup or discovery. Retained as a complementary curation layer.
-- **`tokenUri` pointer only (ERC-721 style).** Rejected as the sole mechanism: it moves every field behind an HTTP fetch, which is a privacy leak for shielded holders and a liveness dependency. Retained as an Appendix A key for tokens that want it.
+- **Off-chain registry only (the [Token Registry MPS (PR #104)](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104) as proposed).** Rejected as the sole layer: it needs attestation infrastructure and governance to provide the provenance that verified on-chain emission provides directly. Broad or curated synchronization can avoid token-specific lookups. Retained as a complementary curation layer.
+- **URI pointer only (ERC-721 style).** Rejected as the sole mechanism: it moves every field behind an external fetch, which can reveal interest in shielded holdings and adds a liveness dependency. Appendix A includes an illustrative URI key for future schemas.
 - **A protocol-level `LogEventType::TokenMetadata` variant.** Deferred; see above.
-- **JSON in every event.** Rejected: 189 bytes is too small for most JSON objects, and it makes the common fields more expensive to emit and decode than fixed bytes. Available via the `metadata` / `metadata/<n>` keys for those who want it.
+- **JSON in every event.** Rejected: 189 bytes is too small for many JSON documents, and it makes simple values more expensive to emit and decode than typed bytes. A complete JSON value can still be carried under type `3` when it fits.
 
 ## Path to Active
 
 ### Acceptance Criteria
 
-- At least one independent consumer (indexer, explorer or wallet) folds `TokenMetadata` events into a token table and correctly renders all three states of [7.2] against the published fixtures.
+- At least one independent consumer (indexer, explorer or wallet) verifies and processes `TokenMetadata` events, and demonstrates the three informative states of [7.2] using fixtures aligned with this draft.
 - At least one issuer other than the author adopts the convention on a public network.
 - The Compact module is published in a form issuers can import (this repository or an ecosystem library such as OpenZeppelin Compact Contracts).
 - Community review through the MIP process, including reconciliation with the authors of the [Token Registry MPS (PR #104)](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104) on the on-chain/off-chain boundary.
 
 ### Implementation Plan
 
-1. **Reference module and contracts**: done; see [Implementation Example](#implementation-example).
+1. **Reference module and contracts**: a prior-draft example exists; see [Implementation Example](#implementation-example). Its Null and JSON Pointer validation need alignment with this draft.
 2. **Reference deployment**: done on Stagenet (see below); repeat on Preprod when the events pipeline is available there.
-3. **Consumer reference**: a byte-exact decoder and the simulator/Stagenet fixture corpus are published; propose `TokenMetadata` decoding to at least one public explorer.
+3. **Consumer reference**: a byte-exact decoder and simulator/Stagenet fixtures for the prior draft are published; align them with this draft and propose `TokenMetadata` decoding to at least one public explorer.
 4. **Library adoption**: propose the module (or an equivalent) to OpenZeppelin Compact Contracts as an optional extension of `NativeShieldedToken`, `NativeShieldedTokenFamily` and `FungibleToken`.
 5. **Upgrade template**: publish the added-circuit template for pre-v9 contracts and exercise it on Stagenet by upgrading a contract deployed without events, per [Upgrade Path for Existing Contracts](#upgrade-path-for-existing-contracts).
-6. **Schema follow-ups**: a fungible-token schema MIP promoting Appendix A's core keys to normative for MIP-0011/0014/0004 tokens, and an NFT content-metadata MIP (per the discussion on PR #104), both using this transport.
+6. **Schema follow-ups**: a fungible-token schema MIP defining common fields for MIP-0011/0014/0004 tokens, and an NFT content-metadata MIP (per the discussion on PR #104), both using this transport. Multipart documents and ledger observation criteria are separate follow-ups.
 
 ## Backwards Compatibility Assessment
 
 No protocol, compiler or indexer change is required; this MIP is a convention over [MIP-0002](./mip-0002-public-contract-log-emission.md)'s existing `Misc` event.
-No deployed contract is affected: contracts that do not emit `TokenMetadata` are simply undescribed.
+No deployed contract or protocol state is changed by this proposal. Contracts that do not emit `TokenMetadata` have no declarations under it. Consumers of prior v1 drafts must update their acceptance rules for Null, complete JSON values and `/metadata/` JSON Pointer keys.
 
 Existing contracts deployed before ledger v9 cannot emit as deployed; [Upgrade Path for Existing Contracts](#upgrade-path-for-existing-contracts) describes how their maintenance authority adds an emitting circuit without redeployment. Only contracts with an empty or unreachable maintenance authority are left to an off-chain registry.
 
-Adopting the convention is additive to [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), [MIP-0011](./mip-0011-native-shielded-token.md) and [MIP-0014](./mip-0014-native-unshielded-token.md): a conforming token keeps its `name()`/`symbol()`/`decimals()` circuits and additionally emits the same values as events. Nothing in those standards is changed.
+Adopting the convention is additive to [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), [MIP-0011](./mip-0011-native-shielded-token.md) and [MIP-0014](./mip-0014-native-unshielded-token.md): a conforming token can retain its existing circuits and emit declarations as events. This MIP does not require matching values for particular keys; metadata-specific MIPs may define such consistency rules. Existing reference consumers and fixtures follow a prior v1 draft and need alignment with Null and JSON Pointer validation before claiming conformance to this draft.
 
 Compact currently cannot serialize an `Opaque<"string">` into a circuit, so a contract that stores `name` as `Opaque<"string">` for the MIP-0011 circuits must also hold a byte form for the event path (the reference contracts take both at construction). This is a toolchain limitation, not a design choice, and would disappear if the compiler gained string-to-bytes conversion.
 
@@ -524,35 +493,35 @@ The upgrade is therefore, per contract, once the network runs ledger v9:
 
 1. **Compile a new circuit** against the contract's existing ledger layout, conventionally `publishMetadata()` (and, if updates are wanted, `setMetadata(...)`), that emits the `TokenMetadata` events of [1] and [2] for each `(domainSep, kind)` the contract issues.
 2. **Insert its verifier key** with a maintenance update signed by the contract's maintenance authority.
-3. **Call the new circuit** once. From that transaction on, the token is **described** [7.2].
+3. **Call the new circuit** once. An already-observed native token with an accepted declaration is then **described** under the informative terminology in [7.2]. An unminted native token or a ledger token without an observation established by another specification is **declared**.
 
 Because the maintenance authority is a committee with a threshold, the upgrade is exactly as permissioned as any other change the issuer already reserved the right to make.
 No new trust is introduced: a consumer folding the resulting events applies the same rules as for a contract that emitted from day one, and the authority rule [6.1] holds because the event still comes from the token's own contract.
 
 ### Two practical points for the new circuit
 
-- **Compact cannot serialize `Opaque<"string">` into a circuit.** Contracts that store `name` and `symbol` as `Opaque<"string">` for their MIP-0011 / MIP-0014 / MIP-0004 circuits cannot emit those fields from state. The added circuit takes the byte form as arguments (owner-gated, called once) or bakes it in as compile-time literals, which is also the cheap shape to prove ([Appendix B](#appendix-b-circuit-cost-informative)). The values SHOULD match what `name()` / `symbol()` / `decimals()` return.
+- **Compact cannot serialize `Opaque<"string">` into a circuit.** Contracts that store `name` and `symbol` as `Opaque<"string">` for their MIP-0011 / MIP-0014 / MIP-0004 circuits cannot emit those fields from state. The added circuit takes the byte form as arguments (owner-gated, called once) or bakes it in as compile-time literals, one measured shape in [Appendix B](#appendix-b-circuit-cost-informative). A metadata-specific schema may require consistency with getter results.
 - **`kernel.self()` and the color.** The new circuit reads the contract's existing `domain` from state and emits it as `domainSep`; it does not need to compute or emit the color, which a consumer derives [4].
 
 ### Limits
 
-- A contract whose maintenance authority is **empty** cannot be upgraded by anyone. Such a token can never be described on chain; an off-chain registry remains the only path for it (see [Out of scope](#out-of-scope)).
+- A contract whose maintenance authority is **empty** cannot be upgraded by anyone. If it does not already emit under this convention, an off-chain registry remains the path for metadata (see [Out of scope](#out-of-scope)).
 - A contract whose authority committee is no longer reachable is in the same position in practice.
-- The upgrade adds a circuit; it cannot change what the contract already does. A token whose issuance is finished and whose authority is retired stays undescribed by design.
+- The metadata-only procedure described here adds an emitting circuit while preserving the contract's existing operations and state. A token whose authority is retired before publication stays without an on-chain declaration under this convention.
 
 ### Timeline
 
 The upgrade can be prepared before the network upgrade (compile the circuit, agree the metadata, line up the authority signatures) and executed immediately after it.
-Because the events pipeline ships with ledger v9 itself, there is no second dependency to wait for: the day the network runs v9, every upgradable token can be described.
+Because the events pipeline ships with ledger v9 itself, there is no second dependency to wait for: once the network runs v9, every upgradable token can publish a declaration.
 The reference repository will publish the added-circuit template alongside the from-scratch templates.
 
 ## Security Considerations
 
 ### Impersonation
 
-Any contract can emit `name = "USDC"`.
+Any contract can emit a `name` key with the value `"USDC"`.
 This MIP binds the claim to the emitting contract's address and, for native tokens, to a color no other contract can produce; it does not and cannot say whether that contract is the one a user means.
-Consumers MUST display the contract address (or the derived color) alongside any name, and SHOULD integrate a curation signal (allowlist, registry attestation, user confirmation) before presenting a name as trusted.
+Consumers presenting a declaration as issuer metadata MUST preserve its `(network, contractAddress, domainSep, kind)` provenance. They SHOULD integrate a curation signal (allowlist, registry attestation or user confirmation) before presenting a claimed asset identity as trusted.
 This is identical to the situation on every EVM chain and to an unattested CIP-26 entry.
 
 ### Unauthorized updates
@@ -565,19 +534,17 @@ Consumers MAY surface the history of a key so that a hostile rename is visible.
 
 Events are metered by the existing `Log` opcode fee model and compete for the per-block `bytes_written` budget ([MIP-0002](./mip-0002-public-contract-log-emission.md), "Fee Metering").
 No new spam vector is introduced.
-A consumer's storage is bounded by what emitters pay for; consumers MAY cap traits per token or bytes per contract as a local policy.
+An indexer or consumer MAY select tokens, fields, retained history and service scope as local policy. A filtered service must not imply that omission establishes on-chain absence or that an authentic returned event is still the latest event.
 
 ### Untrusted payloads
 
 Every payload byte is attacker-controlled [7.4].
-Decoders must be bound-checked; UTF-8, JSON and URL parsers applied to `value` must be hardened against malformed input; `metadata/<n>` reassembly must bound total size (Appendix A caps it at 16 parts).
-A `tokenUri` or `image` URL MUST NOT be fetched automatically by a wallet on behalf of a shielded holder without considering that the fetch reveals interest in that token to the URL's host.
+Decoders must be bound-checked; UTF-8, JSON and URI parsers applied to `value` must be hardened against malformed input. This MIP does not define multipart reassembly.
+Fetching a token-specific metadata or image URI can reveal interest in that token to the remote host. Wallets SHOULD account for this before fetching such content for a shielded holder.
 
 ### Declarations that the chain cannot corroborate
 
-A ledger declaration is a claim with no possible on-chain corroboration: a contract can declare a balance book under any `domainSep`, or several, without any of them existing in its state.
-[7.2] keeps such rows permanently **declared**, and consumers SHOULD show that status rather than present a declared name with the same weight as a described one.
-A contract that describes its balance book but not its UTXOs (the "Ledger Liar" row of the reference set) yields an undescribed observed row next to a declared one; the mint is never hidden.
+A contract can declare a ledger balance book under any `domainSep` without this MIP establishing that such a structure exists in its state. An applicable ledger-token specification may define evidence for observation [7.2]. Until then, the declaration is **declared** under the informative terminology here. A contract that declares its ledger side but not its native UTXOs yields a separate observed native identity; the mint is never hidden by the declaration.
 
 ### Disclosure
 
@@ -586,30 +553,28 @@ No new leakage path is introduced; an issuer that emits a value has chosen to ma
 
 ### Proving cost
 
-Runtime-built payloads cost more to prove than literal ones, and the cost grows with the number of events in one circuit (Appendix B).
-This is not a security issue for the network, since the emitter pays, and the measured sizes are in the same range as ordinary token circuits.
-It is noted so that an issuer choosing between literal and runtime metadata does so knowingly.
+The measured publication shapes and their circuit-row counts are listed in [Appendix B](#appendix-b-circuit-cost-informative).
 
 ## Implementation Example
 
-Reference implementation: [`acedward/mip-erc7496-midnight-contracts`](https://github.com/acedward/mip-erc7496-midnight-contracts) (Apache-2.0). The repository tracks this MIP; its `main` branch is the current reference.
+Reference implementation: [`acedward/mip-erc7496-midnight-contracts` at `d4d6d0b`](https://github.com/acedward/mip-erc7496-midnight-contracts/tree/d4d6d0b773adaf29426ecf533716b809c51aa654) (Apache-2.0). Its contracts, decoder and fixtures illustrate a prior draft of this MIP; they do not yet demonstrate the new Null type or RFC 6901 key validation. Implementers must use this MIP's current draft rules when they differ.
 
 ### Components
 
-- **`contracts/TokenMetadata.compact`**: the module a conforming contract imports. Two circuits: `emitTokenMetadata(domainSep, kind, key, valType, valLen, value)` emits one event with the [2] layout; `emitStandardFields(domainSep, kind, name, nameLen, symbol, symbolLen, decimals)` emits the three Appendix A core fields. Three constants: `KIND_UNSHIELDED()` = 0, `KIND_SHIELDED()` = 1, `KIND_LEDGER_FLAG()` = 2.
-- **Reference contracts**, one per value domain, each composing an OpenZeppelin token module (where one exists), OpenZeppelin `Ownable` for update gating, and the module above:
+- **`contracts/TokenMetadata.compact`**: a prior-draft module issuers can adapt. Two circuits: `emitTokenMetadata(domainSep, kind, key, valType, valLen, value)` emits one event with the [2] layout; `emitStandardFields(domainSep, kind, name, nameLen, symbol, symbolLen, decimals)` emits three example fields. Three constants: `KIND_UNSHIELDED()` = 0, `KIND_SHIELDED()` = 1, `KIND_LEDGER_FLAG()` = 2.
+- **Reference contracts** illustrate several token representations, each composing an OpenZeppelin token module (where one exists), OpenZeppelin `Ownable` for update gating, and the module above:
   - `NativeShieldedToken.compact`: one static domain, kind 1 (MIP-0011 Fungible profile + events).
   - `NativeUnshieldedToken.compact`: one static domain, kind 0 (MIP-0014 shape + events).
   - `NativeDualToken.compact`: one domain minted both shielded and unshielded; publishes six events across two circuits.
   - `ShieldedCollection.compact`: one address, one domain per piece (MIP-0011 Family profile + per-piece events); the EIP-7496 shape.
-  - `LedgerToken.compact`: OpenZeppelin `FungibleToken` balances, kind 2; the case only events can make visible.
-  - `contracts/generated/*.compact`: the same contracts with all metadata as compile-time literals (see Appendix B for why).
-- **Consumer reference**: `test/token-metadata.ts`, a byte-exact decoder that deliberately reimplements [2] from this document rather than importing anything from the contracts.
-- **Fixtures**: `fixtures/simulator/` (offline, reproducible: events, mints, color vectors, expected token rows, negative payloads) and `fixtures/stagenet/` (the same recorded from the public Stagenet indexer, including raw transaction bytes).
+  - `LedgerToken.compact`: OpenZeppelin `FungibleToken` balances, kind 2; an example of a ledger declaration.
+  - `contracts/generated/*.compact`: variants with metadata as compile-time literals.
+- **Consumer reference**: `test/token-metadata.ts`, a byte-exact decoder for the prior draft that independently implements its wire layout.
+- **Fixtures**: `fixtures/simulator/` (offline events, mints, color vectors, expected token rows, negative payloads) and `fixtures/stagenet/` (recorded from the public Stagenet indexer, including raw transaction bytes). These are prior-draft fixtures requiring alignment with the current v1 rules.
 
 ### Reference deployment (Stagenet)
 
-The reference set is deployed to Midnight Stagenet: eleven contracts covering all four value domains and all three consumer states [7.2], including a token minted but never described, a token described but never minted, a dual-kind token producing two rows under one color, a collection with one `domainSep` per piece, and a contract that describes its ledger side but mints natively.
+The prior-draft reference set is deployed to Midnight Stagenet: eleven contracts illustrating native and ledger declarations, including a token minted without a declaration, a token declared before minting, a dual-kind token producing two identities under one color, a collection with one `domainSep` per piece, and a contract that declares its ledger side but mints natively. The deployment is an example rather than an exhaustive conformance test for this draft.
 
 Contract addresses, colors and deployment details are published and maintained in [`effectstream/staging-tokens-addresses`](https://github.com/effectstream/staging-tokens-addresses), which is the authoritative list; this document does not repeat them so that redeployments do not leave stale addresses in a merged MIP.
 The recorded events, expected token rows and raw transaction bytes for the same deployment live in the reference repository's `fixtures/stagenet/` directory.
@@ -630,6 +595,8 @@ The recorded events, expected token rows and raw transaction bytes for the same 
 - [EIP-7496: NFT Dynamic Traits](https://eips.ethereum.org/EIPS/eip-7496)
 - [ERC-1155: Multi Token Standard](https://eips.ethereum.org/EIPS/eip-1155)
 - [ERC-721: Non-Fungible Token Standard](https://eips.ethereum.org/EIPS/eip-721) (`tokenURI`)
+- [RFC 6901: JavaScript Object Notation (JSON) Pointer](https://www.rfc-editor.org/rfc/rfc6901.html)
+- [RFC 8259: The JavaScript Object Notation (JSON) Data Interchange Format](https://www.rfc-editor.org/rfc/rfc8259.html)
 - [CIP-26: Cardano Off-Chain Metadata](https://cips.cardano.org/cip/CIP-26)
 - [Reference implementation: acedward/mip-erc7496-midnight-contracts](https://github.com/acedward/mip-erc7496-midnight-contracts)
 - [OpenZeppelin Compact Contracts](https://github.com/OpenZeppelin/compact-contracts)
@@ -647,45 +614,34 @@ Submission requires agreement to the Midnight Foundation Contributor License Agr
 
 ---
 
-## Appendix A: Suggested well-known keys (informative)
+## Appendix A: Example keys (informative)
 
-These keys are a **convention**, not a requirement [5.3].
-An emitter that uses one of these key names SHOULD use the encoding given here; a consumer that projects one into a dedicated column SHOULD apply the validation given here, keeping the raw trait on failure.
+The examples below demonstrate transport encodings only. They do not define required fields, key meanings, schema types, validation beyond [2] and [5.1], projections or display behavior. Metadata-specific MIPs may define those rules.
 
-| Key | `val-type` | Validation | Notes |
+| Example key | Example `val-type` | Example value | Transport interpretation |
 |---|---|---|---|
-| `name` | `1` string | `1 ≤ val-len ≤ 189` | Display name. For a MIP-0011/0014/0004 token SHOULD equal `name()`. |
-| `symbol` | `1` string | `1 ≤ val-len ≤ 32` | Ticker. SHOULD equal `symbol()`. |
-| `decimals` | `2` integer | `val-len == 1`, `value[0] ≤ 36` | Display convention only; the protocol operates on integers. SHOULD equal `decimals()`. |
-| `metadata` | `3` JSON, single part | `val-len ≥ 2`, parses as a JSON object | Free-form rich metadata (`description`, `image`, `website`, …). |
-| `metadata/<n>` | `3` JSON, one part of several, `n = 0, 1, …`, each `≤ 189` bytes | Parts are concatenated in `n` order and applied only when `0..max` are all present and the concatenation parses as a JSON object; `n ≤ 15` (≤ 3 024 bytes). A single part need not parse on its own. | For JSON that does not fit one event. A single-part `metadata` and a multi-part `metadata/<n>` for the same token SHOULD NOT both be emitted; if they are, the most recently completed one wins. |
-| `tokenUri` | `4` URI | `val-len ≤ 189`, absolute `http(s)://` URL | The ERC-721 `tokenURI` analogue: where a metadata document for this token can be fetched. See Security Considerations on fetching. |
+| `name` | `1` string | `Acme Token` | A UTF-8 value under the exact key `name`. |
+| `symbol` | `1` string | `ACME` | A UTF-8 value under the exact key `symbol`. |
+| `decimals` | `2` integer | `0x06` | An unsigned integer value of 6. |
+| `metadata` | `3` JSON | `{"description":"Example"}` | One complete JSON value fitting in this event. |
+| `/metadata/0` | `1` string | `hello world` | An RFC 6901 pointer key with a UTF-8 value; no array or assembly behavior follows from the path alone. |
+| `tokenUri` | `4` URI | `https://example.org/token.json` | An absolute URI value. |
 
-A well-known key carried with a different `val-type` than listed is stored as a trait [5.2] but not projected into its column.
-
-Suggested trait names, with no encoding fixed here: `description`, `image` (a URL or a `data:` URI, usually inside `metadata`), `website`, `metadataUri` (EIP-7496's collection-level trait-definition document, distinct from the per-token `tokenUri`), `bridge` (the cross-chain mapping of the [Token Registry MPS (PR #104)](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104)).
-
-Any key not in this table is a **trait**: stored verbatim against `(contractAddress, domainSep, kind)` and rendered according to its `val-type`.
+For `/metadata/0`, the entire pointer string is the key. A future metadata schema can define the target document and whether token `0` denotes an array element or an object property. Keys such as `description`, `image`, `website`, `metadataUri` or `bridge` can also be used, with meaning supplied by a separate schema or application convention.
 
 ## Appendix B: Circuit cost (informative)
 
-The standard fixes the bytes on the wire, not how a contract assembles them, and the assembly strategy is what decides the proving cost.
-The figures below were measured on the payload layout of [2] (`val-type`, `val-len`, `Bytes<189>` value), each row being one circuit compiled from the reference contracts; `k` is the circuit size parameter (rows fit in `2^k`) and circuit rows is the constraint count.
-The toolchain and exact measurement procedure are recorded in the reference repository alongside the contracts, so the figures can be reproduced as the toolchain evolves.
+The five publication shapes and row counts below come from the [pinned historical MinoCrab-v3 benchmark](https://github.com/acedward/mip-erc7496-midnight-contracts/blob/d4d6d0b773adaf29426ecf533716b809c51aa654/benchmarks/token-metadata-shapes.md), rather than the current deployed reference contracts. The fixtures were compiled with Compact 0.34.0 and measured with its bundled `zkir-v3 mock-compile` oracle, with matching MinoCrab-v3 cost-model results.
 
-| What the circuit emits | Events | `k` | Circuit rows |
-|---|---|---|---|
-| `publishMetadata()`, every payload a compile-time literal (`name`, `symbol`, `decimals`) | 3 | 7 | 120 |
-| `publishMetadata()`, payloads assembled from ledger fields at runtime | 3 | 12 | 3 715 |
-| `emitTokenMetadata(...)`, the generic setter with a fully runtime `Bytes<189>` value | 1 | 11 | 1 914 |
-| Two independent runtime-built events in one circuit | 2 | 12 | 3 789 |
-| Three independent runtime-built events in one circuit | 3 | 13 | 5 672 |
+| Measured publication shape | Events | Circuit rows |
+|---|---:|---:|
+| Fixed literal publisher (`name`, `symbol`, `decimals`) | 3 | 120 |
+| Publisher assembling payloads from ledger fields | 3 | 3,715 |
+| One fully runtime typed event | 1 | 1,914 |
+| Two independent runtime-built events in one circuit | 2 | 3,789 |
+| Three independent runtime-built events in one circuit | 3 | 5,672 |
 
-What follows for issuers:
-
-- **Literals are roughly thirty times cheaper than runtime values** for the same three events (120 rows against 3 715). Issuers whose metadata is fixed at deployment, which is most tokens, SHOULD prefer literal payloads; the reference repository's `contracts/generated/` templates show the shape and emit exactly the same bytes as the parameterised templates.
-- **Runtime cost grows linearly with the number of events**, at roughly 1 900 rows per runtime-built event, so each doubling of events costs one step of `k`. Three runtime events fit in one `k = 13` circuit; splitting a publication across circuits is a choice, not a necessity.
-- **Emission is not a dominant cost.** A single runtime `emitTokenMetadata` call is a `k = 11` circuit, in the same range as ordinary token circuits, so adding a `setMetadata` circuit to a contract does not materially change what the contract's users pay to prove.
+Metadata emission is inexpensive in these measured circuit shapes.
 
 ## Appendix C: Mapping to EIP-7496 and the Token Registry MPS (informative)
 
@@ -698,9 +654,9 @@ What follows for issuers:
 | `traitValue: bytes32` | `value: Bytes<189>` with `val-type` and `val-len`: longer, typed values, no hashing |
 | trait types described in the `getTraitMetadataURI` document | `val-type` byte, in-band |
 | `TraitUpdated` event | one `TokenMetadata` `Misc` event |
-| `getTraitValue(tokenId, traitKey)` | the consumer's folded key/value table |
-| `getTraitMetadataURI` | the `metadata` JSON inline, or a `metadataUri` trait |
-| ERC-721 `tokenURI(tokenId)` | the `tokenUri` key |
+| `getTraitValue(tokenId, traitKey)` | a consumer may derive the latest value for a retained key |
+| `getTraitMetadataURI` | a metadata-specific MIP may define a corresponding document or pointer |
+| ERC-721 `tokenURI(tokenId)` | a metadata-specific MIP may define a URI key, such as the Appendix A example `tokenUri` |
 | the contract is the authority | the emitting contract is the authority, enforced by color derivation |
 
 ### Fields of the [Token Registry MPS (PR #104)](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104)
@@ -709,11 +665,11 @@ What follows for issuers:
 |---|---|---|
 | `subject` (color hex) | derived: `tokenType(domainSep, contractAddress)` | never transmitted |
 | `tokenOrigin` (domain, contract) | `domainSep` in payload + event `contractAddress` | authenticated by the transaction |
-| `name`, `ticker`, `decimals` | `name`, `symbol`, `decimals` (Appendix A) | `symbol` follows MIP-0011/0014 naming |
-| `description`, `url`, `logo` | traits or inside `metadata` | `logo` as a `data:` URI or URL |
+| `name`, `ticker`, `decimals` | example keys `name`, `symbol`, `decimals` (Appendix A) | A metadata-specific MIP must define interoperable meanings and encodings. |
+| `description`, `url`, `logo` | possible keys or schema-defined document fields | A metadata-specific MIP must define their meaning. |
 | quadrant | `kind` byte | four values |
 | `privacy` | not defined | a trait an issuer MAY emit |
 | `contractToken.standard`, circuit names | not defined | a trait an issuer MAY emit; a schema MIP could standardize |
 | `bridge` | not defined | a trait an issuer MAY emit |
-| attestation, sequence number | not needed | the transaction is the attestation; event order is the sequence |
+| attestation, sequence number | chain execution and event order | These establish a contract's declaration and its order, not third-party endorsement. |
 | governance / review | out of scope | the curation layer an off-chain registry adds on top |
