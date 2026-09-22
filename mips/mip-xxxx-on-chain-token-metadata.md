@@ -370,7 +370,7 @@ The bracketed suffix is the layout version, in the same form the ledger uses for
 A future, incompatible layout uses a new name and never a reinterpretation of `mip-xxxx:token-metadata[v1]`: an amendment within this MIP bumps the bracket (`mip-xxxx:token-metadata[v2]`), and a superseding MIP gets a fresh name for free (`mip-yyyy:token-metadata[v1]`).
 A consumer that only knows `[v1]` ignores the other names; a consumer that knows several keeps them apart.
 
-After finalization, a version fixes its payload layout and Compact serialization, accepted `val-type` and `kind` values, and transport-validation rules. Assigning a reserved datatype or kind, or changing those rules, requires a new event version. Type `5` (Null), JSON Pointer validation and tag `2`'s 1–31-byte native Compact integer encoding are changes to this still-draft v1 definition; consumers and fixtures built to an earlier draft need to align. New keys may be introduced without a new event version because the transport assigns no fixed key registry or schema. Appendix A may change without changing transport rules.
+After finalization, a version fixes its payload layout and Compact serialization, accepted `val-type` and `kind` values, and transport-validation rules. Assigning a reserved datatype or kind, or changing those rules, requires a new event version. New keys may be introduced without a new event version because the transport assigns no fixed key registry or schema. Appendix A may change without changing transport rules.
 
 ### Out of scope
 
@@ -477,16 +477,16 @@ The tag is deliberately a closed enum within each event version.
 
 ### Acceptance Criteria
 
-- At least one independent consumer (indexer, explorer or wallet) verifies and processes `TokenMetadata` events, and demonstrates the three informative states of [7.2] using fixtures aligned with this draft.
+- At least one independent consumer (indexer, explorer or wallet) verifies and processes `TokenMetadata` events, and demonstrates the three informative states of [7.2] using fixtures that exercise this MIP's rules.
 - At least one issuer other than the author adopts the convention on a public network.
 - The Compact module is published in a form issuers can import (this repository or an ecosystem library such as OpenZeppelin Compact Contracts).
 - Community review through the MIP process, including reconciliation with the authors of the [Token Registry MPS (PR #104)](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104) on the on-chain/off-chain boundary.
 
 ### Implementation Plan
 
-1. **Reference module and contracts**: a prior-draft example exists; see [Implementation Example](#implementation-example). Its Null and JSON Pointer validation and tag `2` integer encoding need alignment with this draft.
+1. **Reference module and contracts**: illustrative examples exist; see [Implementation Example](#implementation-example).
 2. **Reference deployment**: done on Stagenet (see below); repeat on Preprod when the events pipeline is available there.
-3. **Consumer reference**: a byte-exact decoder and simulator/Stagenet fixtures for the prior draft are published; align them with this draft and propose `TokenMetadata` decoding to at least one public explorer.
+3. **Consumer reference**: an illustrative decoder and simulator/Stagenet fixtures are published; propose `TokenMetadata` decoding to at least one public explorer.
 4. **Library adoption**: propose the module (or an equivalent) to OpenZeppelin Compact Contracts as an optional extension of `NativeShieldedToken`, `NativeShieldedTokenFamily` and `FungibleToken`.
 5. **Upgrade template**: publish the added-circuit template for pre-v9 contracts and exercise it on Stagenet by upgrading a contract deployed without events, per [Upgrade Path for Existing Contracts](#upgrade-path-for-existing-contracts).
 6. **Schema follow-ups**: a fungible-token schema MIP defining common fields for MIP-0011/0014/0004 tokens, and an NFT content-metadata MIP (per the discussion on PR #104), both using this transport. Multipart documents and ledger observation criteria are separate follow-ups.
@@ -494,11 +494,11 @@ The tag is deliberately a closed enum within each event version.
 ## Backwards Compatibility Assessment
 
 No protocol, compiler or indexer change is required; this MIP is a convention over [MIP-0002](./mip-0002-public-contract-log-emission.md)'s existing `Misc` event.
-No deployed contract or protocol state is changed by this proposal. Contracts that do not emit `TokenMetadata` have no declarations under it. Consumers of prior v1 drafts must update their acceptance rules for Null, complete JSON values and `/metadata/` JSON Pointer keys. Replacing the earlier variable-length big-endian tag `2` integer encoding with canonical byte-aligned Compact `Uint` serialization is a breaking wire-format change from those drafts; existing emitters, consumers and fixtures must align before claiming conformance to v1. Values emitted under the intervening fixed-16-byte native draft remain valid as `Uint<128>`, but consumers of that draft must also accept the other permitted lengths and widths.
+No deployed contract or protocol state is changed by this proposal. Contracts that do not emit `TokenMetadata` have no declarations under it.
 
 Existing contracts deployed before ledger v9 cannot emit as deployed; [Upgrade Path for Existing Contracts](#upgrade-path-for-existing-contracts) describes how their maintenance authority adds an emitting circuit without redeployment. Only contracts with an empty or unreachable maintenance authority are left to an off-chain registry.
 
-Adopting the convention is additive to [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), [MIP-0011](./mip-0011-native-shielded-token.md) and [MIP-0014](./mip-0014-native-unshielded-token.md): a conforming token can retain its existing circuits and emit declarations as events. This MIP does not require matching values for particular keys; metadata-specific MIPs may define such consistency rules. Existing reference consumers and fixtures follow a prior v1 draft and need alignment with Null, JSON Pointer validation and tag `2` integer encoding before claiming conformance to this draft.
+Adopting the convention is additive to [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), [MIP-0011](./mip-0011-native-shielded-token.md) and [MIP-0014](./mip-0014-native-unshielded-token.md): a conforming token can retain its existing circuits and emit declarations as events. This MIP does not require matching values for particular keys; metadata-specific MIPs may define such consistency rules.
 
 ## Upgrade Path for Existing Contracts
 
@@ -581,11 +581,11 @@ The measured publication shapes and their circuit-row counts are listed in [Appe
 
 ## Implementation Example
 
-Reference implementation: [`acedward/mip-erc7496-midnight-contracts` at `d4d6d0b`](https://github.com/acedward/mip-erc7496-midnight-contracts/tree/d4d6d0b773adaf29426ecf533716b809c51aa654) (Apache-2.0). Its contracts, decoder and fixtures illustrate a prior draft of this MIP; they do not yet demonstrate the new Null type, RFC 6901 key validation or canonical tag `2` integer encoding. Implementers must use this MIP's current draft rules when they differ.
+Illustrative implementation: [`acedward/mip-erc7496-midnight-contracts` at `d4d6d0b`](https://github.com/acedward/mip-erc7496-midnight-contracts/tree/d4d6d0b773adaf29426ecf533716b809c51aa654) (Apache-2.0). Its contracts, decoder and fixtures show possible integration patterns. This MIP defines conformance; the linked material is not a substitute for its requirements.
 
 ### Components
 
-- **`contracts/TokenMetadata.compact`**: a prior-draft module issuers can adapt. Two circuits: `emitTokenMetadata(domainSep, kind, key, valType, valLen, value)` emits one event with the [2] layout; `emitStandardFields(domainSep, kind, name, nameLen, symbol, symbolLen, decimals)` emits three example fields. Three constants: `KIND_UNSHIELDED()` = 0, `KIND_SHIELDED()` = 1, `KIND_LEDGER_FLAG()` = 2.
+- **`contracts/TokenMetadata.compact`**: an illustrative module issuers can adapt. Two circuits: `emitTokenMetadata(domainSep, kind, key, valType, valLen, value)` emits one event with the [2] layout; `emitStandardFields(domainSep, kind, name, nameLen, symbol, symbolLen, decimals)` emits three example fields. Three constants: `KIND_UNSHIELDED()` = 0, `KIND_SHIELDED()` = 1, `KIND_LEDGER_FLAG()` = 2.
 - **Reference contracts** illustrate several token representations, each composing an OpenZeppelin token module (where one exists), OpenZeppelin `Ownable` for update gating, and the module above:
   - `NativeShieldedToken.compact`: one static domain, kind 1 (MIP-0011 Fungible profile + events).
   - `NativeUnshieldedToken.compact`: one static domain, kind 0 (MIP-0014 shape + events).
@@ -593,12 +593,12 @@ Reference implementation: [`acedward/mip-erc7496-midnight-contracts` at `d4d6d0b
   - `ShieldedCollection.compact`: one address, one domain per piece (MIP-0011 Family profile + per-piece events); the EIP-7496 shape.
   - `LedgerToken.compact`: OpenZeppelin `FungibleToken` balances, kind 2; an example of a ledger declaration.
   - `contracts/generated/*.compact`: variants with metadata as compile-time literals.
-- **Consumer reference**: `test/token-metadata.ts`, a byte-exact decoder for the prior draft that independently implements its wire layout.
-- **Fixtures**: `fixtures/simulator/` (offline events, mints, color vectors, expected token rows, negative payloads) and `fixtures/stagenet/` (recorded from the public Stagenet indexer, including raw transaction bytes). These are prior-draft fixtures requiring alignment with the current v1 rules.
+- **Consumer reference**: `test/token-metadata.ts`, an illustrative event decoder.
+- **Fixtures**: `fixtures/simulator/` (offline events, mints, color vectors, expected token rows, negative payloads) and `fixtures/stagenet/` (recorded from the public Stagenet indexer, including raw transaction bytes).
 
 ### Reference deployment (Stagenet)
 
-The prior-draft reference set is deployed to Midnight Stagenet: eleven contracts illustrating native and ledger declarations, including a token minted without a declaration, a token declared before minting, a dual-kind token producing two identities under one color, a collection with one `domainSep` per piece, and a contract that declares its ledger side but mints natively. The deployment is an example rather than an exhaustive conformance test for this draft.
+The illustrative reference set is deployed to Midnight Stagenet: eleven contracts showing native and ledger declarations, including a token minted without a declaration, a token declared before minting, a dual-kind token producing two identities under one color, a collection with one `domainSep` per piece, and a contract that declares its ledger side but mints natively.
 
 Contract addresses, colors and deployment details are published and maintained in [`effectstream/staging-tokens-addresses`](https://github.com/effectstream/staging-tokens-addresses), which is the authoritative list; this document does not repeat them so that redeployments do not leave stale addresses in a merged MIP.
 The recorded events, expected token rows and raw transaction bytes for the same deployment live in the reference repository's `fixtures/stagenet/` directory.
