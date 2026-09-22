@@ -52,8 +52,11 @@ committee-signed Midnight facts. That is sound only if the committee and
 the data it signs are consensus-validated chain content rather than a side
 channel from whoever runs a relay, and only if verification fits Cardano's
 execution and transaction-size budgets. Beyond rewards, this bridge is the
-foundation for any Midnight-to-Cardano transfer mechanism: anything that
-must prove a Midnight fact on Cardano builds on it.
+trust foundation for any flow that must prove a Midnight fact on Cardano.
+The bridge carries only the committee lineage and the signed MMR root. It
+ferries no other information: each consumer proves its own fact against
+that root, in its own transaction, and the bridge tells the consuming
+contract which signatures to trust.
 
 ## Specification
 
@@ -91,12 +94,14 @@ commits to that block's header by hash, and through the header's
 
 ### Committee commitment (deduplicated, seat-weighted)
 
-Midnight committees are selected by Ariadne, the Partner Chains selection
-algorithm, with repetition: one member can hold multiple seats, and seats
-are the stake weight (see Rationale). Membership and seat counts are
-already public, since Ariadne selection is deterministic over public
-Cardano data; the commitment reveals nothing new, and slot-level
-production schedules are not involved. Rather than one Merkle leaf per seat
+The committee is what Ariadne, the Partner Chains selection algorithm,
+selects: a member list with a seat count per member, with repetition, so
+one member can hold multiple seats, and seats are the stake weight (see
+Rationale). Ariadne also derives a slot schedule from that list; the
+bridge uses the list and not the schedule, so no separate weighted set is
+computed for BEEFY. Membership and seat counts are already public, since
+Ariadne selection is deterministic over public Cardano data, and the
+commitment reveals nothing new. Rather than one Merkle leaf per seat
 (the upstream default), the commitment deduplicates keys to fit Cardano
 transaction limits:
 
