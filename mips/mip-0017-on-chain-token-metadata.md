@@ -1,5 +1,5 @@
 ---
-MIP: "0017"
+MIP: "0018"
 Title: On-Chain Token Metadata Emission (`TokenMetadata` Events)
 Authors:
   - Edward Alvarado <edward.alvarado@midnight.foundation>
