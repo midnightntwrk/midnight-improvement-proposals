@@ -33,7 +33,7 @@ License: Apache-2.0
 
 Midnight contracts issue *native* tokens, held as protocol-level UTXOs, and *ledger* tokens, represented by balances in contract state. A native token's color is derived from the issuing contract address and a domain separator; a ledger token has no color or native mint effect. Generic consumers have no standardized, authenticated interpretation of a contract's metadata fields or supplied getters.
 
-This MIP defines how contracts publish typed metadata declarations for both token kinds through [MIP-0002](./mip-0002-public-contract-log-emission.md) `Misc` events. Each `TokenMetadata` event has a fixed 256-byte payload and the name `mip-xxxx:token-metadata[v1]`. Consumers verify events against chain data and apply accepted declarations in execution order, per `(contract address, domainSep, kind, key)`. The event's emitting contract is the authority for its declarations; a native color is derived from that address and `domainSep`.
+This MIP defines how contracts publish typed metadata declarations for both token kinds through [MIP-0002](./mip-0002-public-contract-log-emission.md) `Misc` events. Each `TokenMetadata` event has a fixed 256-byte payload and the name `mip-0018:token-metadata[v1]`. Consumers verify events against chain data and apply accepted declarations in execution order, per `(contract address, domainSep, kind, key)`. The event's emitting contract is the authority for its declarations; a native color is derived from that address and `domainSep`.
 
 **This MIP defines the transport, not a metadata schema.** It fixes the bytes on the wire, their transport validation and update order, without requiring or assigning meaning to particular keys. Metadata-specific proposals can define fields and document structure. [Appendix A](#appendix-a-example-keys-informative) gives illustrative examples. The design follows [EIP-7496 (NFT Dynamic Traits)](https://eips.ethereum.org/EIPS/eip-7496) in using keyed values and later events for updates. A verified declaration establishes what a contract emitted, not whether the asset is legitimate.
 
@@ -123,13 +123,12 @@ A `TokenMetadata` event is a [MIP-0002](./mip-0002-public-contract-log-emission.
 
 ```
 Misc {
-  name:    pad(32, "mip-xxxx:token-metadata[v1]")   // Bytes<32>, NUL-padded
+  name:    pad(32, "mip-0018:token-metadata[v1]")   // Bytes<32>, NUL-padded
   payload: <the 256 bytes of [2]>        // Bytes<256>
 }
 ```
 
 The event name is namespaced by this MIP's number to distinguish the convention from unrelated `Misc` events, following the ledger's own `midnight:derive_token` style of lowercase, colon-separated labels. It carries its layout version in square brackets like the ledger's serialization tags (`impact-versioned-log-item[v1]`, `midnight:zswap-memo[v1]`).
-`xxxx` is a placeholder for the four-digit number assigned when this MIP is merged; the final string is fixed at that point and this document is updated once.
 Throughout this document "a `TokenMetadata` event" means a `Misc` event carrying this name.
 
 `Misc` is the Compact standard library's catch-all event type (`LogEventType::Misc`, `onchain-vm` event tag 10); its `payload` field is fixed at `Bytes<256>` by MIP-0002.
@@ -137,7 +136,7 @@ Throughout this document "a `TokenMetadata` event" means a `Misc` event carrying
 A consumer recognizes a v1 `TokenMetadata` event if and only if:
 
 1. its event type is `Misc`, and
-2. `name == pad(32, "mip-xxxx:token-metadata[v1]")`, that is, the bytes `0x6d69702d787878783a746f6b656e2d6d657461646174615b76315d` followed by 5 NUL bytes (to be recomputed for the assigned number).
+2. `name == pad(32, "mip-0018:token-metadata[v1]")`, that is, the bytes `0x6d69702d303031383a746f6b656e2d6d657461646174615b76315d` followed by 5 NUL bytes.
 
 Events of another type or name, including unsupported versions, MUST be ignored by a v1 consumer. A recognized v1 event MUST have exactly 256 payload bytes and satisfy [2], [3] and [5] before it is accepted. A recognized event that fails any transport rule MUST be rejected and MUST NOT be applied. Consumers SHOULD make the reason for rejection available for diagnostics.
 
@@ -367,7 +366,7 @@ Consumers MUST bound-check all offsets and lengths, MUST treat `value` as untrus
 
 **The event name is the version.**
 The bracketed suffix is the layout version, in the same form the ledger uses for its serialization tags.
-A future, incompatible layout uses a new name and never a reinterpretation of `mip-xxxx:token-metadata[v1]`: an amendment within this MIP bumps the bracket (`mip-xxxx:token-metadata[v2]`), and a superseding MIP gets a fresh name for free (`mip-yyyy:token-metadata[v1]`).
+A future, incompatible layout uses a new name and never a reinterpretation of `mip-0018:token-metadata[v1]`: an amendment within this MIP bumps the bracket (`mip-0018:token-metadata[v2]`), and a superseding MIP gets a fresh name for free (`mip-yyyy:token-metadata[v1]`).
 A consumer that only knows `[v1]` ignores the other names; a consumer that knows several keeps them apart.
 
 After finalization, a version fixes its payload layout and Compact serialization, accepted `val-type` and `kind` values, and transport-validation rules. Assigning a reserved datatype or kind, or changing those rules, requires a new event version. New keys may be introduced without a new event version because the transport assigns no fixed key registry or schema. Appendix A may change without changing transport rules.
