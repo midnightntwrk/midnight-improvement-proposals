@@ -62,6 +62,7 @@ MPS-0017: governance-observability (in review)
 [MPS-0040: cross-contract-call-provenance](/mps/mps-0040-cross-contract-call-provenance.md)  
 [MPS-0041: custodian-proof-server-contracts](/mps/mps-0041-custodian-proof-server-contracts.md)  
 [MPS-0042: serialization-format](/mps/mps-0042-serialization-format.md)  
+[MPS-0043: selective-disclosure](/mps/mps-0043-selective-disclosure.md)  
 
 # MIPs
 
