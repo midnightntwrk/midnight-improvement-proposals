@@ -1,10 +1,10 @@
 ---
-MPS: "xxxx"
+MPS: "0043"
 Title: Selective Disclosure to a Chosen Party 
 Authors:
   - Karmel Elshinnawi <Karmoola>
   - Ricardo Ruis <riusricardo>
-Status: Draft  
+Status: Proposed
 Category: Core  
 Created: 17-Sep-2026  
 Requires: none  
