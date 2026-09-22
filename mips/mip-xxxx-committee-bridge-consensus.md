@@ -301,8 +301,9 @@ in session order: session N's reward data becomes claimable only after
 session N's commitment is verified. No consensus rule forces voting;
 participation is driven by this coupling, since a committee that fails to
 produce justifications delays all reward payments, including its own.
-Individual non-participation is handled by monitoring and the candidate
-ban list (see Security Considerations).
+Individual non-participation is visible to anyone from the
+justifications; a response to it is future work (see Security
+Considerations).
 
 The same coupling keeps the bridge supplied on Cardano. While the light
 client does not advance, no reward digest can be loaded and no block
@@ -588,9 +589,10 @@ carried forward.
 - **Equivocation**, signing a divergent root while following the canonical
   chain, is provable and attributable through BEEFY's `DoubleVotingProof`
   and `ForkVotingProof`. There is no slashing, since stake is Cardano
-  delegation. A reporting extrinsic feeds a ban list consulted in
-  candidate filtering, and permissioned members are removed by
-  governance. A self-consistent full fork is chain takeover and out of
+  delegation. Permissioned members are removed by governance. A
+  reporting extrinsic and a ban list consulted in candidate filtering
+  are future work for a separate MIP; this MIP makes equivocation
+  provable and attributable, not penalized. A self-consistent full fork is chain takeover and out of
   scope here.
 - **Liveness.** More than a third of seats withholding votes freezes the
   bridge and rewards until participation resumes. A stall, never a theft,
@@ -640,18 +642,17 @@ carried forward.
 2. Node: enable BEEFY voting (session keys, candidate keys, storage
    migration), the deduplicated committee commitment, the
    MMR-root-only payload, and selection truncated at `signer_cap`.
-3. Equivocation reporting extrinsic and ban-list filtering.
-4. The Cardano light-client contracts: seat-sum quorum, handover state
+3. The Cardano light-client contracts: seat-sum quorum, handover state
    machine, Keccak MMR proofs, the single-UTxO reference-input state
    with `max_fee`, and the funding pool.
-5. The data pump in the node: the modular component, its configuration,
+4. The data pump in the node: the modular component, its configuration,
    the Cardano transaction builder, and the light-client module, which
    reuses the relay's proof building and encoding.
-6. Testnet rotation soak across many sessions, and an audit.
+5. Testnet rotation soak across many sessions, and an audit.
 
 Registration lives in the Cardano-side candidate registration and its
-tooling; steps 2, 3 and 5 in `midnight-node`, with step 5 drawing on
-`midnight-beefy-relay`; step 4 in `midnight-reserve-contracts` (the
+tooling; steps 2 and 4 in `midnight-node`, with step 4 drawing on
+`midnight-beefy-relay`; step 3 in `midnight-reserve-contracts` (the
 committee bridge validators). The rewards batcher of the Block Production
 Rewards MIP is the first consumer of the light client and does not
 change this design. That MIP adds the pump's next two modules, the
