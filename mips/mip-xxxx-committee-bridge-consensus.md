@@ -710,8 +710,8 @@ third of seats withheld and recovery when they return.
 
 ## References
 
-- Block Production Rewards MIP (companion; consumes this bridge),
-  submitted alongside this one.
+- Block Production Rewards MIP (companion; consumes this bridge):
+  [midnight-improvement-proposals PR #321](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/321).
 - BEEFY relay and payload worked example:
   [`midnight-node/relay/README.md`](https://github.com/midnightntwrk/midnight-node/blob/main/relay/README.md)
 - Polkadot BEEFY protocol documentation
