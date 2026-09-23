@@ -1,12 +1,5 @@
 # [Deployment Request] Shadow Labz
 
-> Draft for submission to the [Midnight Improvement Proposals](https://github.com/midnightntwrk/midnight-improvement-proposals)
-> repository. Copy this file into that repo's `deployments/` folder as
-> `shadow-labz.md` and open a PR titled `[Deployment Request] Shadow Labz`.
-> See `./README.md` for the full submit checklist.
-
----
-
 **dApp name:** Shadow Labz (VoteChain)
 
 **Contract repository:** https://github.com/paranormal39/Votechain (private) —
