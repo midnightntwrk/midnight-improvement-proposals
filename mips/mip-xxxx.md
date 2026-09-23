@@ -159,7 +159,134 @@ It is not entirely certain that the block-end form will not require a runtime up
 - [MPS-0032: History Management for Midnight](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0032-storage-management.md): storage growth as an operational and decentralisation concern.
 - [MPS-xxxx: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/82) (number pending): the throughput targets that set the rate at which this cost is paid.
 - [midnight-node pull request #2050](https://github.com/midnightntwrk/midnight-node/pull/2050): the per-transaction form, and the source of the build that was measured.
-- Throughput exploration report, entry 0023, Execution Interim Storage Management: the experiment and the measurements this document quotes. Private at the time of writing, pending publication. //TODO add a link to the report when it is publicly available
+- The measurements quoted in this proposal are summarised in Appendix A.
+
+## Appendix A: Experimental Evidence
+
+Every measurement quoted in this proposal comes from one experiment on the Midnight performance network (perfnet), run between 2026-08-18 and 2026-08-20.
+It tested two builds that release interim states, one after the other, each against an unmodified control on the same chain.
+The first, [midnight-node#1443](https://github.com/midnightntwrk/midnight-node/pull/1443), persists each new state and then releases the one it superseded.
+The second, [midnight-node#2050](https://github.com/midnightntwrk/midnight-node/pull/2050), holds interim states in a keep-alive cache and persists only the block's final state.
+The storage figures in the Abstract, 2.9 GB against 4.9 GB over 11,750 blocks in 20 hours, are from the first build.
+The second build removed the same share of growth and was adopted in its place.
+This appendix records how each run was set up, what was captured, and what was concluded.
+
+### A.1 Common method
+
+Both runs were an A/B of eight validators on one perfnet chain, four running the change and four running the build it was based on, plus one RPC node on the changed build.
+Both arms processed the same blocks, so any difference in what they stored or how long they took is the change.
+
+The quantity of interest is the size of the ledger's own store on disk, held separately from the Substrate chain database.
+Nothing in the node reports it, so it was measured directly on the filesystem with `du`, per node, at the start and end of each load window.
+The chain database was measured the same way as a control: it should grow identically on both arms, and did.
+The store only grows under load; across 43 idle intervals both arms were flat to within a few megabytes, so every storage figure below is over a loaded window.
+
+Timing came from the node's own Prometheus metrics, aggregated per arm in 30-minute buckets and expressed as the ratio of treatment to control, plotted against node uptime.
+The metrics were ledger transaction validation time, ledger transaction processing time, block verification and import time, block proposal time, and host CPU.
+Timing comparisons were conditioned on the number of extrinsics in a block, since an empty block takes about 5 ms to produce and a full one about 1,000 ms, and unconditioned comparisons invert.
+
+The workload was transfer traffic, submitted at about 24 user transactions per block, so that blocks filled evenly across arms without hitting the weight limit.
+
+### A.2 First build: release each superseded state, 2026-08-18 to 2026-08-19
+
+**Setup.**
+The treatment ran #1443.
+The control was the same commit with exactly one behavioural statement removed, the call that releases the superseded state, confirmed by diffing the two builds.
+Control flow, error paths, and computed state roots were therefore identical, and the arms could not fork.
+The main window ran 19.6 hours, blocks 43,888 to 55,638, 11,750 blocks, about 333,000 transaction validations across the eight validators, with no node restarting.
+
+**Captured.**
+Store size and chain database size per node at the start and end of the window.
+The five timing metrics in 40 consecutive 30-minute buckets, from 0.7 to 20.2 hours of node uptime.
+Per-process block IO delay accounting, CPU, write bytes, and write syscalls during load rounds.
+Host uptime and binary install time per node, after one window gave a contradictory result.
+
+**Found.**
+
+| Measure | Treatment | Control |
+|---|---|---|
+| Store growth over the window | 2,858 MB | 4,885 MB |
+| Store growth per block | 249 KB | 426 KB |
+| Chain database at end, all eight nodes | 2,113 to 2,116 MB | 2,113 to 2,116 MB |
+| Spread within an arm | 5 to 6 MB | 5 to 6 MB |
+
+The control grew 1.71 times faster; the treatment removed 41.5% of the store's growth.
+The ratio was stable across every window measured, from a one-hour run to the full 19.6 hours, and the gap between arms was about 400 times the spread within an arm.
+
+On timing, the treatment was faster on all three ledger metrics in every phase, by about 7% early in the run decaying to about 2% late, and slower in only 3 to 6 of 40 buckets on any metric.
+The advantage narrowed towards parity around 15 to 17 hours and then widened again over the last five hours, significantly on all three metrics.
+Both arms slowed substantially over the run, validation time roughly doubling, which is chain growth affecting everyone and not an arm effect.
+
+One earlier window measured the treatment 3.5 to 5% slower by two independent instruments.
+In that window the treatment hosts and binaries were about 26 hours older than the control's, and it was the only window in which the control's store was the smaller.
+The measured sensitivity of timing to node age predicts an 8 to 10 percentage point handicap for a 26-hour gap, which covers the observed anomaly.
+Arm age is therefore a first-order confound in this experiment, and the second run was designed to remove it.
+
+**From the source.**
+The release is one root-count decrement per transaction and involves no IO: block IO delay was exactly zero on both arms through every load round.
+Nothing in the node calls the ledger's collection pass, so nothing is ever deleted on either arm; the saving comes entirely from what is written.
+Only the final state of a block needs to stay rooted, so the intermediate releases could be deferred to block end, about 25 times fewer root-count writes at 25 transactions per block.
+That observation is the origin of the block-end form in the Specification.
+
+### A.3 Second build: persist only the block's final state, 2026-08-19 to 2026-08-20
+
+**Setup.**
+The treatment ran #2050, which reverts the storage migration and the four versioned host functions that #1443 added.
+The control was the merge base on main.
+A fresh chain was started, both arms deployed together, and all nine nodes rebooted immediately before load, so host age, page cache, and counters were identical at the start.
+The main window ran 15.5 hours, blocks 2,065 to 11,365, 9,300 blocks.
+A second load on the same node processes, without restart, ran for 813 blocks at 19 to 21 hours of uptime to test whether the trend continued.
+
+**Captured.**
+Store size and chain database size per node at the start and end of each window, cross-checked against filesystem series in Prometheus, which agreed to within 2 MB.
+The five timing metrics in 30-minute buckets against uptime, 32 buckets in the main window.
+The treatment build's own cache-size metric at every post-block flush, split into transient and anchored entries, as a correctness signal: a non-zero transient count means an interim state leaked past the block boundary.
+
+**Found.**
+
+| Measure | Treatment | Control |
+|---|---|---|
+| Store growth, main window | 2,607 MB | 4,545 MB |
+| Store growth per block, main window | 287 KB | 500 KB |
+| Store growth per block, 19 to 21 hours | 375 KB | 729 KB |
+| Chain database growth, main window | 606 MB | 606 MB |
+| Spread within an arm | 2 to 3 MB | 2 to 3 MB |
+
+The treatment removed 42.7% of the store's growth in the main window and 47.7% in the later one.
+
+| Timing metric, treatment against control | At 6 hours or more | At 12 hours or more | At 19 to 21 hours |
+|---|---|---|---|
+| Ledger transaction processing | 12.8% faster | 17.3% faster | 25.3% faster |
+| Block verification and import | 9.5% faster | 14.6% faster | 26.6% faster |
+| Block proposal | 13.3% faster | 18.3% faster | 8.8% faster |
+| Host CPU | 5.7% lower | 7.9% lower | 9.7% lower |
+| Ledger transaction validation | 2.7% faster | 7.7% faster | 16.4% faster |
+
+The treatment was faster on ledger transaction processing in every one of the 32 buckets.
+Two of the fitted slopes, block import and host CPU, were significantly negative, meaning the treatment pulled further ahead the longer the nodes ran.
+This is the opposite of the first build, whose advantage decayed towards parity, and it is the direction the mechanism predicts: the working set is rebuilt from the store once per block instead of about three times per transaction, while the control's store grows without bound.
+
+The one cost was ledger transaction validation, 13 to 20% slower on the treatment for the first three hours before crossing over at about 6.5 hours.
+The cause was not established; the pattern is consistent with the keep-alive cache paying a population cost before its saving dominates.
+
+The transient entry count was zero at every one of the 32 post-block flushes over 15.5 hours of sustained load, and the anchored count held at its capacity of four.
+The metric exists only on the treatment build, which independently confirmed the arm assignment.
+
+### A.4 Conclusions
+
+- Interim states are the majority of the ledger store's growth under transfer load. Releasing them removes about 42% of that growth, and the share is the same whether each state is released by its successor or never persisted at all.
+- Nodes with and without the change compute identical states and stayed in agreement on one chain for the whole of both runs.
+- Releasing costs no time. The first build was a few percent faster than its control throughout. The second was faster on every metric, by 25% or more on the ledger and import paths after 19 hours, with a margin that grew with uptime.
+- Nothing is reclaimed from disk on either arm, because nothing in the node runs the ledger's collection pass. The saving is what is not written, so the footprint of an existing node does not shrink on adoption.
+- The second build was adopted over the first: the same storage saving, a timing margin that grows rather than fades, and no storage migration or new host function.
+
+### A.5 Limits of the evidence
+
+- The longest window was about 20 hours of node uptime, short against production lifetimes.
+- One load shape, transfer traffic at about 24 transactions per block. How the per-transaction release cost of the first build behaves at higher throughput was not measured.
+- The early validation-time penalty of the second build is unexplained.
+- What the collection pass would reclaim on top of the saving, once something calls it, is unmeasured.
+- The first run's timing result was exposed to an arm-age confound and is explained rather than re-run; the second run controlled for it by design.
 
 ## Acknowledgements
 
