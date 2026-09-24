@@ -217,7 +217,7 @@ order:
 | `mmr_root` | 32 bytes | the signed root |
 | `block_number` | `Int` | the signed block |
 | `validator_set_id` | `Int` | the signing committee |
-| `signatures` | list of 64 bytes | one per multiproof leaf, in tree order |
+| `signatures` | list of 64 bytes or empty | one per multiproof leaf, in tree order; empty for a leaf that is not a signer |
 | `leaf` | `(version, parent_number, parent_hash, next: commitment, extra)` | the leaf of block `block_number` |
 | `mmr_proof` | list of 32 bytes | the MMR proof of `leaf` |
 | `multiproof` | tree | the signers' leaves against `S.keyset_commitment` |
@@ -241,10 +241,10 @@ and the *threshold* `(numerator, denominator)` from the threshold UTxO.
 4. Fail if the multiproof's leaves are not in strictly increasing key
    order.
 5. Fail if `signatures` has a different length than the multiproof's
-   leaves, or if signature `i` does not verify under the key of leaf `i`
-   over `Keccak-256(SCALE(Commitment))`.
-6. Fail if the sum of the leaves' seats is less than
-   `required(S.seat_count, numerator, denominator)`.
+   leaves, or if signature `i` is neither empty nor a valid signature
+   under the key of leaf `i` over `Keccak-256(SCALE(Commitment))`.
+6. Fail if the sum of the seats of the leaves whose signature is not
+   empty is less than `required(S.seat_count, numerator, denominator)`.
 7. Fail if the presented leaf's `parent_number ≠ block_number − 1`.
 8. Fail if the MMR proof does not prove `Keccak-256(SCALE(leaf))` at
    index `block_number − 1` of an MMR with `block_number` leaves against
@@ -463,6 +463,13 @@ nothing, since GRANDPA finality is already a two-thirds count over the
 same seats, so a bridge quorum cannot exceed the chain's own security.
 Seats *are* the stake weight under Ariadne; the bridge simply inherits
 the chain's trust model.
+
+### Why may a leaf carry no signature?
+
+So the relay proves any subset of the committee with one tree shape: a
+leaf beside a signer can be presented as itself with an empty signature
+and counts no seats. The cap counts leaves, so surplus leaves cost the
+submitter, and a signers-only proof stays the smallest.
 
 ### Why sort the commitment by key bytes?
 
@@ -723,7 +730,8 @@ from `midnight-node` `main` and `lglo/beefy-on-main` and from
   `max_fee`, the threshold UTxO (`BeefyThreshold`), the multiproof shape
   of the Notation, and the handover rule keyed on the leaf. Its quorum is
   `⌈seat_count × numerator / denominator⌉`, one seat below rule 6 when
-  `seat_count` is a multiple of three; it changes to `required`. The
+  `seat_count` is a multiple of three; it changes to `required`. It
+  accepts an empty signature for a non-signer leaf, as rule 5 does. The
   funding pool and `max_fee` do not exist yet.
 - A relay (`midnight-beefy-relay`) subscribes to justifications, builds
   the signer proofs with Keccak-256, and encodes them as Plutus data for
@@ -853,8 +861,9 @@ and `signer_cap + 1`.
 **Contract tests.**
 
 - One rejection per rule 0 to 10 and 12 to 17: an output without the
-  NFT, a stale height, a foreign committee, a wrong multiproof root, signers out of order, a missing or bad
-  signature, one seat short, a leaf for the wrong block, a bad MMR proof,
+  NFT, a stale height, a foreign committee, a wrong multiproof root,
+  signers out of order, a missing or bad signature, one seat short, a
+  leaf for the wrong block, a bad MMR proof,
   a non-successor committee, a next-committee signature without
   handover, a pool
   debit above the cap, a pool debit above the fee, a funded update that
@@ -905,6 +914,9 @@ expected relations are fixed here.
 - **Leaf.** Version `(0, 0)`, `parent_number = 600`, a given
   `parent_hash`, the commitment above, empty extra: 82 bytes
   `00 58020000 <parent_hash> <commitment> 00`, hashed with Keccak-256.
+- **Non-signer leaves (rules 5 and 6).** All leaves of a 12-key
+  committee presented, 9 with signatures and 3 empty: the seat sum is
+  the 9 signers' seats. One leaf fewer than signatures: rejected.
 - **Quorum (rule 6), ratio `(2, 3)`.** `seat_count = 10`: 7 seats
   accepted, 6 rejected. `seat_count = 6`: 5 accepted, 4 rejected.
   `seat_count = 3`: 3 accepted, 2 rejected. `seat_count = 1`: 1 accepted.
