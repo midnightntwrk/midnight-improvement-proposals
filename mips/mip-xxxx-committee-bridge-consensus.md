@@ -225,7 +225,7 @@ order:
 
 Every constructor, in the redeemer and in the datum, has index 0;
 integers are `Int` and byte strings are `ByteString`. The contract
-re-encodes `leaf` to its 82 SCALE bytes for rule 8.
+re-encodes `leaf` to its 82 SCALE bytes for rule 7.
 
 Validity is by exclusion: the update is accepted if no rule below fails.
 The state it reads is the light-client datum (see Light-client state)
@@ -239,21 +239,19 @@ and the *threshold* `(numerator, denominator)` from the threshold UTxO.
    nor `next_committee.validator_set_id`. Let `S` be the matching
    commitment.
 3. Fail if the multiproof's root is not `S.keyset_commitment`.
-4. Fail if the multiproof's leaves are not in strictly increasing key
-   order.
-5. Fail if `signatures` has a different length than the multiproof's
+4. Fail if `signatures` has a different length than the multiproof's
    leaves, or if signature `i` is neither empty nor a valid signature
    under the key of leaf `i` over `Keccak-256(SCALE(Commitment))`.
-6. Fail if the sum of the seats of the leaves whose signature is not
+5. Fail if the sum of the seats of the leaves whose signature is not
    empty is less than `required(S.seat_count, numerator, denominator)`.
-7. Fail if the presented leaf's `parent_number ≠ block_number − 1`.
-8. Fail if the MMR proof does not prove `Keccak-256(SCALE(leaf))` at
+6. Fail if the presented leaf's `parent_number ≠ block_number − 1`.
+7. Fail if the MMR proof does not prove `Keccak-256(SCALE(leaf))` at
    index `block_number − 1` of an MMR with `block_number` leaves against
    `mmr_root`.
-9. Let `L` be the leaf's `beefy_next_authority_set`. Fail if
+8. Let `L` be the leaf's `beefy_next_authority_set`. Fail if
    `L.validator_set_id` is neither `next_committee.validator_set_id` nor
    `next_committee.validator_set_id + 1`.
-10. Fail if `validator_set_id = next_committee.validator_set_id` and
+9. Fail if `validator_set_id = next_committee.validator_set_id` and
     `L.validator_set_id ≠ next_committee.validator_set_id + 1`.
 
 Otherwise the datum becomes: `latest_mmr_root ← mmr_root`,
@@ -262,7 +260,7 @@ Otherwise the datum becomes: `latest_mmr_root ← mmr_root`,
 a *handover*: `current_committee ← next_committee`,
 `next_committee ← L`. All other fields are unchanged.
 
-Rules 2, 9 and 10 are the induction. Committee N+1 can sign only after a
+Rules 2, 8 and 9 are the induction. Committee N+1 can sign only after a
 root signed by committee N proved a leaf that names N+1; a session's own
 mandatory justification can never bootstrap its own committee. Handovers
 are consumed in order.
@@ -299,7 +297,7 @@ about 10 KB (estimate, 2026-09). The limit it fits under is `maxTxSize`,
 the Cardano protocol parameter: 16,384 bytes on mainnet as of 2026-09,
 and not a rule of this MIP.
 
-11. `update_d_parameter` fails if
+10. `update_d_parameter` fails if
     `num_permissioned_candidates + num_registered_candidates > signer_cap`.
 
 Every seat can go to a different pool, so this is the one bound under
@@ -360,15 +358,15 @@ number of leaves in the update's multiproof, and let
 `cap = max_fee.base + max_fee.per_signer × s`. A transaction that spends
 the pool is valid if no rule fails:
 
-12. Fail if the transaction does not produce exactly one output at the
+11. Fail if the transaction does not produce exactly one output at the
     pool address.
-13. If `debit ≤ 0` the transaction is a top-up; no further rule applies.
-14. Fail if the transaction does not spend the light-client UTxO with a
+12. If `debit ≤ 0` the transaction is a top-up; no further rule applies.
+13. Fail if the transaction does not spend the light-client UTxO with a
     valid update.
-15. Fail if that update is not a handover: the light-client input datum
+14. Fail if that update is not a handover: the light-client input datum
     and output datum have the same `next_committee.validator_set_id`.
-16. Fail if `debit > fee`, the transaction's declared fee.
-17. Fail if `debit > cap`.
+15. Fail if `debit > fee`, the transaction's declared fee.
+16. Fail if `debit > cap`.
 
 A fee above the cap is allowed; the submitter's own inputs cover the
 difference. Both amounts of `max_fee` are measured in advance (see
@@ -435,7 +433,7 @@ ECDSA key. BEEFY signing requires the key in the node's hot keystore, and
 the cross-chain key is the candidate's registration identity, which must
 not live there.
 
-18. A candidate, registered or permissioned, without a `beef` key is
+17. A candidate, registered or permissioned, without a `beef` key is
     excluded from candidacy from `beefy_activation_block`.
 
 Misbehavior attribution maps the BEEFY key to the candidate through the
@@ -474,10 +472,10 @@ submitter, and a signers-only proof stays the smallest.
 
 ### Why sort the commitment by key bytes?
 
-A sorted tree gives the contract a cheap uniqueness check. Signers must
-appear in strictly increasing key order (rule 4), so no key can be
-counted twice, and no set of seen keys has to be kept. Any total order
-would do; byte order needs no decoding.
+A canonical order makes the root the same for every implementation that
+builds it. Any total order would do; byte order needs no decoding. The
+contract does not check the order: the root binds each leaf to one
+position, so a leaf cannot be counted twice.
 
 ### Why one leaf per distinct key?
 
@@ -722,7 +720,7 @@ from `midnight-node` `main` and `lglo/beefy-on-main` and from
   migration convenience on test networks and must be removed before BEEFY
   voting activates on a network whose light client carries value.
 - The D-parameter is read from `pallet_system_parameters`, not from a
-  Cardano UTxO. Rule 11 is a new check in `update_d_parameter`. Every
+  Cardano UTxO. Rule 10 is a new check in `update_d_parameter`. Every
   shipped network today has zero registered seats.
 - Equivocation reporting is a no-op in the runtime's `BeefyApi`, and there
   is no ban list.
@@ -730,9 +728,9 @@ from `midnight-node` `main` and `lglo/beefy-on-main` and from
   (`validators/committee_bridge.ak`). It has the datum of this MIP less
   `max_fee`, the threshold UTxO (`BeefyThreshold`), the multiproof shape
   of the Notation, and the handover rule keyed on the leaf. Its quorum is
-  `⌈seat_count × numerator / denominator⌉`, one seat below rule 6 when
+  `⌈seat_count × numerator / denominator⌉`, one seat below rule 5 when
   `seat_count` is a multiple of three; it changes to `required`. It
-  accepts an empty signature for a non-signer leaf, as rule 5 does. The
+  accepts an empty signature for a non-signer leaf, as rule 4 does. The
   funding pool and `max_fee` do not exist yet.
 - A relay (`midnight-beefy-relay`) subscribes to justifications, builds
   the signer proofs with Keccak-256, and encodes them as Plutus data for
@@ -806,14 +804,14 @@ forward.
   resume from the oldest missing session, in order.
 - **Fee extraction from the funding pool.** A submitter that is an SPO
   gets part of any Cardano fee back through Cardano's own rewards, so a
-  padded fee paid by the pool is profit, not griefing. Rule 17 bounds
+  padded fee paid by the pool is profit, not griefing. Rule 16 bounds
   the pool's debit by a cap that tracks the real cost per presented
   signer. The most a padded update takes is the gap between the cap and
   the real cost; presenting surplus signers raises both together.
-  Rule 15 funds one update per session, so extra submissions cannot
+  Rule 14 funds one update per session, so extra submissions cannot
   drain it.
 - **An unverifiable handover.** A session whose quorum does not fit one
-  transaction would stop the induction for good. Rule 11 holds the seat
+  transaction would stop the induction for good. Rule 10 holds the seat
   total at or under `signer_cap`, so no such session can occur.
 - **The base case.** Everything the light client accepts rests on the
   datum it was deployed with. Every field but `max_fee` is recomputable
@@ -833,9 +831,9 @@ forward.
    re-register existing SPOs before BEEFY voting activates.
 2. Node: enable BEEFY voting (session keys, candidate keys, storage
    migration), the deduplicated committee commitment, the
-   MMR-root-only payload, and rule 11 in `update_d_parameter`.
-3. The Cardano light-client contracts: rules 0 to 10 with `required`,
-   the datum with `max_fee`, and the funding pool with rules 12 to 17.
+   MMR-root-only payload, and rule 10 in `update_d_parameter`.
+3. The Cardano light-client contracts: rules 0 to 9 with `required`,
+   the datum with `max_fee`, and the funding pool with rules 11 to 16.
 4. The data pump in the node: the modular component, its configuration,
    the Cardano transaction builder, and the light-client module, which
    reuses the relay's proof building and encoding.
@@ -856,14 +854,14 @@ adds the pump's next modules.
 ascending order, `key ‖ seats` leaves, and total seat count as the
 denominator. The same root from a committee with and without repeated
 members. The `beef` key requirement in candidate filtering, and the
-storage migration on a populated session committee. Rule 11 at `signer_cap`
+storage migration on a populated session committee. Rule 10 at `signer_cap`
 and `signer_cap + 1`.
 
 **Contract tests.**
 
-- One rejection per rule 0 to 10 and 12 to 17: an output without the
+- One rejection per rule 0 to 9 and 11 to 16: an output without the
   NFT, a stale height, a foreign committee, a wrong multiproof root,
-  signers out of order, a missing or bad signature, one seat short, a
+  a missing or bad signature, one seat short, a
   leaf for the wrong block, a bad MMR proof,
   a non-successor committee, a next-committee signature without
   handover, a pool
@@ -915,10 +913,10 @@ expected relations are fixed here.
 - **Leaf.** Version `(0, 0)`, `parent_number = 600`, a given
   `parent_hash`, the commitment above, empty extra: 82 bytes
   `00 58020000 <parent_hash> <commitment> 00`, hashed with Keccak-256.
-- **Non-signer leaves (rules 5 and 6).** All leaves of a 12-key
+- **Non-signer leaves (rules 4 and 5).** All leaves of a 12-key
   committee presented, 9 with signatures and 3 empty: the seat sum is
   the 9 signers' seats. One leaf fewer than signatures: rejected.
-- **Quorum (rule 6), ratio `(2, 3)`.** `seat_count = 10`: 7 seats
+- **Quorum (rule 5), ratio `(2, 3)`.** `seat_count = 10`: 7 seats
   accepted, 6 rejected. `seat_count = 6`: 5 accepted, 4 rejected.
   `seat_count = 3`: 3 accepted, 2 rejected. `seat_count = 1`: 1 accepted.
 - **Height (rule 1).** `latest_height = 600`: `block_number = 600`
@@ -927,7 +925,7 @@ expected relations are fixed here.
   with peaks `P1, P2, P3`: items are `P1`, then the path siblings, then
   `P3` (the bagged right peaks); root =
   `Keccak-256(Keccak-256(P3 ‖ P2) ‖ P1)`.
-- **MMR proof edges (rule 8).** `block_number = 1`: one leaf, no
+- **MMR proof edges (rule 7).** `block_number = 1`: one leaf, no
   siblings, no peaks; the root equals the leaf hash. A leaf that is
   itself a peak (`block_number` a power of two plus one): no siblings,
   peaks only.
@@ -936,7 +934,7 @@ expected relations are fixed here.
   block 999, `current_committee = c`, `next_committee = c + 1`. The
   justification of block 1000 is accepted (rule 1) but not funded (rule
   15); the first funded update is session `c + 1`'s.
-- **Handover (rules 9 and 10).** Current `id = 4`, next `id = 5`: a
+- **Handover (rules 8 and 9).** Current `id = 4`, next `id = 5`: a
   leaf naming `id = 5` signed by committee 4 accepted without handover;
   a leaf naming `id = 6` signed by committee 5 accepted with handover; a
   leaf naming `id = 5` signed by committee 5 rejected; a leaf naming
