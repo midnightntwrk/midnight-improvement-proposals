@@ -105,8 +105,9 @@ which signatures to trust.
   `items` of `LeafProof` as `pallet-mmr` builds them. It is verified as
   `mmr-lib` 0.8.2 `MerkleProof::calculate_root` does, with the Keccak-256
   merge `Keccak-256(left ‖ right)`; that function is normative. The
-  items are the path siblings, then the bagged right peaks, then the
-  left peaks (see Test vectors).
+  items are the peaks left of the leaf's peak, left to right, then the
+  path siblings bottom up, then the right peaks bagged into one hash
+  (see Test vectors).
 - `required(seat_count, n, d)`: the seat quorum,
   `seat_count − ⌊(seat_count − 1) × (d − n) / d⌋`, integer division
   rounded down. At `n/d = 2/3` this is `seat_count − ⌊(seat_count − 1) / 3⌋`,
@@ -923,8 +924,9 @@ expected relations are fixed here.
 - **Height (rule 1).** `latest_height = 600`: `block_number = 600`
   rejected, `601` accepted.
 - **MMR proof, three peaks.** Leaf under the middle peak `P2` of an MMR
-  with peaks `P1, P2, P3`: items are the path siblings, then `P3` (as
-  `R`), then `P1`; root = `Keccak-256(Keccak-256(P3 ‖ P2) ‖ P1)`.
+  with peaks `P1, P2, P3`: items are `P1`, then the path siblings, then
+  `P3` (the bagged right peaks); root =
+  `Keccak-256(Keccak-256(P3 ‖ P2) ‖ P1)`.
 - **MMR proof edges (rule 8).** `block_number = 1`: one leaf, no
   siblings, no peaks; the root equals the leaf hash. A leaf that is
   itself a peak (`block_number` a power of two plus one): no siblings,
