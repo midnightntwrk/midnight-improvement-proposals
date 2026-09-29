@@ -1,9 +1,9 @@
 ---
-MIP: "xxxx"
+MIP: "0019"
 Title: Multipart Event
 Authors:
   - Edward Alvarado <edward.alvarado@midnight.foundation>
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-09-29
 Requires: MIP-0002
