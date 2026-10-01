@@ -7,7 +7,7 @@ Authors:
 Status: Proposed
 Category: Standards
 Created: 2026-09-17
-Requires: "MIP-0002"
+Requires: "MIP-0002 Public Contract Log Emission for Compact"
 Replaces: none
 MPS: "Off-Chain Token Metadata Registry for Midnight (unnumbered; https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104)"
 License: Apache-2.0
