@@ -59,6 +59,10 @@ MPS-0017: governance-observability (in review)
 [MPS-0037: heritable-rights](/mps/mps-0037-heritable-rights.md)  
 [MPS-0038: cardano-observation-cost](/mps/mps-0038-cardano-observation-cost.md)  
 [MPS-0039: lightweight-contract-interaction](/mps/mps-0039-lightweight-contract-interaction.md)  
+[MPS-0040: cross-contract-call-provenance](/mps/mps-0040-cross-contract-call-provenance.md)  
+[MPS-0041: custodian-proof-server-contracts](/mps/mps-0041-custodian-proof-server-contracts.md)  
+[MPS-0042: serialization-format](/mps/mps-0042-serialization-format.md)  
+[MPS-0043: selective-disclosure](/mps/mps-0043-selective-disclosure.md)  
 
 # MIPs
 
@@ -78,3 +82,5 @@ MPS-0017: governance-observability (in review)
 [MIP-0014: native-unshielded-token-standard](/mips/mip-0014-native-unshielded-token.md)  
 [MIP-0015: wallet-derived-deterministic-secrets](/mips/mip-0015-wallet-derived-deterministic-secrets.md)  
 [MIP-0016: night-staking](/mips/mip-0016-night-staking.md)  
+[MIP-0017: shielded-spend-auth](/mips/mip-0017-shielded-spend-auth/mip-0017-shielded-spend-auth.md)  
+[MIP-0018: on-chain-token-metadata-emission](/mips/mip-0018-on-chain-token-metadata.md)  
