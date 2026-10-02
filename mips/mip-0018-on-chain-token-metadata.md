@@ -36,7 +36,7 @@ A native UTXO carries a 32-byte color that identifies its token but no name, and
 
 This MIP lets a contract publish metadata for its own tokens. It defines two parts:
 
-1. **A transport layer.** Metadata travels in [MIP-0002](./mip-0002-public-contract-log-emission.md) `Misc` events named `mip-0018:token-metadata[v1]`. Each event names one token and carries one or more typed key/value records. Each event is bound to the contract that emitted it, so a contract can describe only its own tokens. A user who has the color of a native UTXO, or a ledger token's contract address, can use it to query that token's authoritative events. Consumers keep the latest value for each key; a Null record withdraws a token's metadata.
+1. **A transport layer.** Metadata travels in [MIP-0002](./mip-0002-public-contract-log-emission.md) `Misc` events named `mip-0018:token-metadata[v1]`. Each event names one token and carries one or more typed key/value records. Each event is bound to the contract that emitted it, so a contract can describe only its own tokens. A user who has the color of a native UTXO, or a ledger token's contract address, can use it to query that token's authoritative events. Consumers keep the latest value for each key; a Null record deletes its key, and a token with no keys left is not referenced at all.
 2. **Common metadata.** Three common keys (`name`, `symbol`, `decimals`) and an optional `standards` key give wallets and explorers a shared core for displaying tokens.
 
 The transport accepts any other key and is designed as a building block for future standards: later MIPs can define their own metadata on it without changing the transport.
@@ -93,8 +93,8 @@ The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be interpreted a
 - **Ledger token**: a token represented by contract logic rather than protocol UTXOs. The representation is up to the contract (public balances as in [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), encrypted balances, user-held coins or commitments, or a mix), and this MIP does not depend on it. It uses no color and has no mint effect.
 - **Token identity**: `(network, contractAddress, domainSep, kind)`; `kind` is defined in [Token identity and authority](#token-identity-and-authority).
 - **Record**: one typed key/value entry in an event.
-- **Field**: a token identity plus a key. A field has at most one current value.
-- **Tombstone**: a record of type Null. It withdraws all metadata of its token identity.
+- **Field**: a token identity plus a key. A field has at most one current value. A token identity exists only while at least one of its fields has a value.
+- **Tombstone**: a record of type Null. It deletes its field.
 - **Consumer**: any reader of these events, such as an indexer, wallet or explorer.
 
 How token identity, field and record relate:
@@ -231,7 +231,9 @@ For every token it tracks, a consumer's state MUST equal the result of applying,
 A consumer that follows non-final blocks MUST therefore recompute state when a reorganization removes blocks; alternatively it can follow only finalized blocks.
 
 - **Non-Null record:** sets that field's current value, replacing any earlier value. An event changes only the keys it carries; it is not a snapshot. A replaced value MUST NOT be presented as current or used as a fallback; consumers MAY keep it as clearly marked history.
-- **Null record (tombstone):** withdraws the whole token identity, whatever its key. The consumer MUST hide the identity, clear all its fields, and stop serving its earlier values as metadata or metadata history. A repeated tombstone has no effect. The next non-Null record makes the identity visible again with only that field set; nothing from before the tombstone returns. There is no per-key delete; a single key is changed by overwriting it.
+- **Null record (tombstone):** deletes its field. Consumers MUST stop serving the field's value and its earlier values, and MUST NOT fall back to an earlier value. A Null record for a field that has no value has no effect. A later non-Null record sets the field again; nothing from before the tombstone returns.
+
+A token identity exists only while at least one of its fields has a value. Once its last field is deleted, consumers MUST NOT reference the identity at all (in listings, lookups, groups or metadata history), as if it had never been described. A later non-Null record describes it again, with only that field. To withdraw a token, emit a Null record for each of its keys; one event can carry them all.
 
 ### Common fields
 
@@ -253,11 +255,11 @@ For each token identity it describes, a contract SHOULD publish the three common
 
 ### Symbol grouping
 
-Indexers SHOULD group visible token identities that share `(network, contractAddress)` and have the same usable `symbol`, compared as exact bytes.
+Indexers SHOULD group token identities that share `(network, contractAddress)` and have the same usable `symbol`, compared as exact bytes.
 
 - A group never spans contracts or networks.
 - Grouping is presentation only. Each identity keeps its own fields, and an update to one member changes no other member.
-- An identity with no usable `symbol` is ungrouped. Changing an identity's `symbol` moves only that identity; a tombstone removes it from its group.
+- An identity with no usable `symbol` is ungrouped. Changing an identity's `symbol` moves only that identity; deleting its `symbol` removes it from its group.
 
 ### Publishing
 
@@ -302,7 +304,7 @@ If off-chain content is used, the MIP that defines it SHOULD include a way to va
 - **Variable-length packed records.** The `Misc` payload is fixed at 256 bytes. One-byte lengths suffice within that limit, variable-length keys avoid spending 32 bytes on every key, and packing fits the three common fields plus `standards` in one event (95 bytes in [Appendix A](#appendix-a-example-event-informative)).
 - **Latest value per key.** As in EIP-7496, an update touches one key and costs one record, with no need to re-emit everything.
 - **No events in normal operation.** Events are not consensus state, but each one still costs fees, block space and storage in every indexer. A token can see thousands of mints and transfers; emitting metadata with them would create thousands of events for values that consumers reduce to one current value per key. The chain is not the place for that data; it belongs off chain, referenced as described in [Off-chain content](#off-chain-content) if needed.
-- **Identity-wide tombstone.** A single key can be changed by overwriting it. Null exists for the one operation overwriting cannot express: retracting a token's metadata entirely.
+- **Per-key tombstone.** Every record touches exactly one field: a non-Null record sets it and a Null record deletes it. A consumer's state is therefore just the fields that currently have a value, and a token exists only while it has some.
 - **Events rather than a metadata field in state.** As of October 2026, there is no way to read or prove what a value in a contract's ledger state means; an event carries the key and value in one fixed layout defined by this MIP. State also grows every node's storage and keeps no history.
 - **On-chain names despite MIP-0014.** MIP-0014 rejects on-chain `name`/`symbol` as inviting impersonation without removing the color-derivation check. Impersonation is just as easy in an off-chain registry. What this MIP adds is that every claim is bound to the contract that made it, and the derivation check is automatic because a consumer only ever derives colors. Which token to trust remains curation, which is out of scope.
 
@@ -356,7 +358,7 @@ The event still comes from the token's own contract, so [authority](#token-ident
 - **Impersonation.** Any contract can emit any `name` or `symbol`, including one another token already uses. A record is bound to its contract and color, not to a brand. Consumers MUST keep each claim attached to its token identity and SHOULD make that identity visible to users. They SHOULD require a curation signal (allowlist, registry attestation or user confirmation) before presenting a token as a known asset. This matches EVM chains and unattested CIP-26 entries.
 - **Curation is a separate layer.** These events are an issuer-written base layer. Deciding which of several tokens with the same name or symbol is genuine is curation, which this MIP does not attempt. A registry such as the one proposed in the [Token Registry MPS (PR #104)](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104) can provide it on top of these events.
 - **Shared symbols.** Anyone can copy a symbol. Because a group never spans contracts, copying one does not put a token into another contract's group. Consumers MUST NOT treat tokens from different contracts as the same asset because their `symbol` values match, and membership of a group within one contract does not prove its members are interchangeable.
-- **Unauthorized updates.** An unguarded emitting circuit lets anyone rename or withdraw a token. Consumers MAY show a field's earlier values, marked as history, so hostile renames are visible. A tombstone also removes that history from metadata views, although the events remain on chain.
+- **Unauthorized updates.** An unguarded emitting circuit lets anyone rename or withdraw a token. Consumers MAY show a field's earlier values, marked as history, so hostile renames are visible. A tombstone also removes that field's history from metadata views, although the events remain on chain.
 - **Self-declared standards.** Advertising an identifier in `standards` proves nothing; see [Common fields](#common-fields).
 - **Untrusted payloads.** See [Consuming](#consuming).
 - **Off-chain content.** A URL alone says nothing about what its host serves, and the host can change it at any time. A way to validate the content, such as a hash next to the URL ([Off-chain content](#off-chain-content)), lets consumers detect substituted content.
@@ -401,15 +403,15 @@ Unless stated otherwise, the header is `domainSep = 0x11` repeated 32 times and 
 
 **State rules:**
 
-- **S1. Order within an event.** For kind 1, records `name = "A"`, Null at key `retire` and `name = "B"` (at offsets 33, 41 and 50) leave the identity visible with only `name = "B"`. Without the Null, `name = "A"` followed by `name = "B"` in one event also leaves `name = "B"`.
+- **S1. Order within an event.** For kind 1, records `name = "A"`, Null at key `name` and `name = "B"` (at offsets 33, 41 and 48) leave the identity with only `name = "B"`. Without the Null, `name = "A"` followed by `name = "B"` in one event also leaves `name = "B"`.
 - **S2. Latest value wins.** `name = "Alpha"`, `symbol = "ALP"`, `decimals = 2` and `standards = "mip-0004"` produce the same state whether sent as four events or one. A later event with only `name = "Beta"` changes only `name`; `Alpha` is never shown as current or used as a fallback.
-- **S3. Tombstone.** Publish `name`, `symbol`, `decimals` and `standards` for kinds 1 and 3 under one `domainSep`, then a Null record for kind 1. Kind 1 is hidden with all fields cleared; kind 3 is unchanged; a second Null changes nothing. A later kind-1 `name = "New"` makes kind 1 visible with only `name`; `standards` reads as empty and the earlier list does not return. A Null record at key `name` has the same effect: it withdraws the whole identity, not only `name`.
-- **S4. Reorganization.** Removing the block containing the tombstone in S3 restores the earlier state; re-adding it withdraws the identity again.
+- **S3. Tombstone.** Publish `name`, `symbol`, `decimals` and `standards` for kinds 1 and 3 under one `domainSep`, then a Null record at key `name` for kind 1. Kind 1 keeps `symbol`, `decimals` and `standards` and has no `name`; kind 3 is unchanged. A second Null at `name`, or a Null at a key with no value (`retire`), changes nothing. Null records for kind 1's remaining keys, in one event, leave kind 1 with no fields, so it is not referenced anywhere; kind 3 is unchanged. A later kind-1 `name = "New"` describes kind 1 again with only `name`; `standards` reads as empty and the earlier list does not return.
+- **S4. Reorganization.** Removing the block that deleted kind 1's last fields in S3 restores those fields; re-adding it deletes them again.
 - **S5. Unusable fields.** After usable values, an empty `name`, a type-1 `decimals` of `"6"`, or `standards = "mip-0004  mip-0011"` (two spaces) is accepted, makes that field unusable and does not fall back to the earlier value.
 - **S6. Separate identities.** The same records under kinds 1, 2 and 3 create three identities, and the same payload from two contracts creates separate identities. Updating one leaves the others unchanged. No color is computed for kind 3.
 - **S7. Independent events.** Of two events in one transaction, a malformed one is rejected and the other applies normally.
 - **S8. Display.** A consumer that displays amounts shows the raw amount `123456` with `decimals = 2` as `1234.56`.
-- **S9. Symbol grouping.** Grouping is a SHOULD, so two outcomes are valid: no groups at all, or exactly the following groups. Kinds 1 and 3 of one contract with `symbol = "ACME"` form one group, and an identity of the same contract under another `domainSep` with `symbol = "ACME"` joins it. An identity with `symbol = "ACME"` from another contract, or on another network, does not. Neither do `acme`, ` ACME`, a type-0 value `ACME`, the key `SYMBOL`, or a missing `symbol`. Updating one member's `name` changes no other member; changing one member's `symbol` moves only that member; a tombstone removes it from the group.
+- **S9. Symbol grouping.** Grouping is a SHOULD, so two outcomes are valid: no groups at all, or exactly the following groups. Kinds 1 and 3 of one contract with `symbol = "ACME"` form one group, and an identity of the same contract under another `domainSep` with `symbol = "ACME"` joins it. An identity with `symbol = "ACME"` from another contract, or on another network, does not. Neither do `acme`, ` ACME`, a type-0 value `ACME`, the key `SYMBOL`, or a missing `symbol`. Updating one member's `name` changes no other member; changing one member's `symbol` moves only that member; a Null record at its `symbol` removes it from the group.
 
 ## References
 
