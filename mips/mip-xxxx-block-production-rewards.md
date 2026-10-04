@@ -1,13 +1,13 @@
 ---
-MIP: "xxxx"
+MIP: "0024"
 Title: Block Production Rewards Payout on Cardano
 Authors:
   - luminight99
   - MicroProofs
-Status: Draft
+Status: Proposed
 Category: Core
 Created: 2026-07-24
-Requires: MIP-xxxx (Committee Bridge Consensus Integration)
+Requires: MIP-0023
 Replaces: none
 MPS: MPS-0019
 License: Apache-2.0
@@ -45,7 +45,7 @@ and its delegators in the same proportions as Cardano staking rewards. It
 then builds a Merkle tree over the recipients that are payable, which are
 those with a funded account and a balance above a threshold the account's
 owner chose, and publishes the root in a Midnight block. Cardano contracts
-accept the root through the committee bridge of MIP-xxxx, which this
+accept the root through the committee bridge of MIP-0023, which this
 proposal requires. Earnings that are not yet payable accrue in node state.
 
 On Cardano, three unprivileged roles move the value: anyone may release
@@ -81,7 +81,7 @@ The two chains learn about each other by different mechanisms. Midnight uses
 direct observation: every node follows and validates Cardano while validating
 a block, so Cardano state reaches Midnight with no one carrying it.
 
-The return direction goes through the committee bridge of MIP-xxxx, which
+The return direction goes through the committee bridge of MIP-0023, which
 this proposal requires. The bridge keeps a light client on Cardano that
 holds the latest MMR root the Midnight committee signed, and that root
 commits to every Midnight block. This proposal uses it in one way: the
