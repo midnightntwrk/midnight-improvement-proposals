@@ -63,6 +63,7 @@ MPS-0017: governance-observability (in review)
 [MPS-0041: custodian-proof-server-contracts](/mps/mps-0041-custodian-proof-server-contracts.md)  
 [MPS-0042: serialization-format](/mps/mps-0042-serialization-format.md)  
 [MPS-0043: selective-disclosure](/mps/mps-0043-selective-disclosure.md)  
+[MPS-0044: consensus-performance](/mps/mps-0044-consensus-performance.md)  
 
 # MIPs
 
@@ -91,3 +92,5 @@ MPS-0017: governance-observability (in review)
 [MIP-0023: committee-bridge-consensus](/mips/mip-0023-committee-bridge-consensus.md)  
 [MIP-0024: block-production-rewards](/mips/mip-0024-block-production-rewards.md)  
 [MIP-0025: capsule-runtime](/mips/mip-0025-capsule-runtime.md)  
+[MIP-0026: interim-ledger-state](/mips/mip-0026-interim-ledger-state.md)  
+[MIP-0027: transaction-revalidation-cache](/mips/mip-0027-transaction-revalidation-cache.md)  
