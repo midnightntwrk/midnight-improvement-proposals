@@ -1,3 +1,15 @@
+---
+MPS: "0044"
+Title: ZK-Proof Verification Throughput Bottleneck
+Authors: Bob Blessing-Hartley (bobblessinghartley), Dominik Zajkowski (dzajkowski), Jon Rossie (jrossie)
+Status: Proposed
+Category: Core
+Created: 29-Apr-2026
+Requires: none
+Replaces: none
+MIP: none
+---
+
 <!--
  Copyright 2026 Midnight Foundation
 
@@ -13,18 +25,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
----
-MPS: xxxx
-Title: ZK-Proof Verification Throughput Bottleneck
-Authors: Bob Blessing-Hartley <bob.blessing-hartley@shielded.io>, Dominik Zajkowski <dominik.zajkowski@shielded.io>, Jon Rossie <jon.rossie@shielded.io>
-Status: Proposed
-Category: Core
-Created: 29-Apr-2026
-Requires: none
-Replaces: none
-
----
 
 ## Abstract
 
