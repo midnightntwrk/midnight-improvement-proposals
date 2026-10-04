@@ -1,5 +1,5 @@
 ---
-MIP: X
+MIP: "0025"
 Title: Managed Private State and Capsule Runtime
 Authors:
   - Andrzej Kopeć (kapke)
