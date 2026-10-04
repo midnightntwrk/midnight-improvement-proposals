@@ -1,10 +1,10 @@
 ---
-MIP: MIP-XXXX
+MIP: "0020"
 Title: On-Demand Prover Keys from Bundled ZKIR
 Authors:
   - Nicolas Di Prima (NicolasDP)
   - Vincent Hanquez (vincenthz)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-09-30
 Requires: none
