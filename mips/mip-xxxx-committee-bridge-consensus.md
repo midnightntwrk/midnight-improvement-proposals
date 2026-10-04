@@ -1,10 +1,10 @@
 ---
-MIP: "xxxx"
+MIP: "0023"
 Title: Committee Bridge Consensus Integration
 Authors:
   - luminight99
   - MicroProofs
-Status: Draft
+Status: Proposed
 Category: Core
 Created: 2026-07-31
 Requires: none
