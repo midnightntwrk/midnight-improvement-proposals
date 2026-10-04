@@ -1,14 +1,14 @@
 ---
-MIP: "xxxx"
+MIP: "0027"
 Title: Transaction Revalidation Cache
 Authors:
 - Dominik Zajkowski (@dzajkowski)
-Status: Draft
+Status: Proposed
 Category: Core
 Created: 2026-08-24
 Requires: none
 Replaces: none
-MPS: ZK-Proof Verification Throughput Bottleneck, number pending
+MPS: MPS-0044
 License: Apache-2.0
 ---
 
@@ -41,7 +41,7 @@ The change is local to a node: it changes how often validation work is repeated,
 
 ## Motivation
 
-[ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/82) sets the target this proposal serves: 1,000 transactions per second, against a block author with roughly 1,500 ms per 6 second slot.
+[MPS-0044: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0044-consensus-performance.md) sets the target this proposal serves: 1,000 transactions per second, against a block author with roughly 1,500 ms per 6 second slot.
 That budget is what throughput is made of, and every millisecond of it spent re-checking a proof is a millisecond unavailable to another transaction.
 
 Proof checking is a significant part of the block path.
@@ -166,7 +166,7 @@ In addition:
 ## References
 
 - [midnight-node#744](https://github.com/midnightntwrk/midnight-node/pull/744)
-- [MPS-xxxx: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/82) (number pending)
+- [MPS-0044: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0044-consensus-performance.md)
 - The measurements quoted in this proposal are summarised in Appendix A.
 
 ## Appendix A: Experimental Evidence
