@@ -1,16 +1,14 @@
 ---
-MIP: "xxxx"
+MIP: "0026"
 Title: Interim Ledger State Management
 Authors:
 - Dominik Zajkowski (@dzajkowski)
-Status: Draft
+Status: Proposed
 Category: Core
 Created: 2026-09-14
 Requires: none
 Replaces: none
-MPS: 
-- MPS-0032 (History Management for Midnight)
-- MPS-xxxx (ZK-Proof Verification Throughput Bottleneck, number pending)
+MPS: MPS-0032, MPS-0044
 License: Apache-2.0
 ---
 
@@ -49,7 +47,7 @@ To benefit from the change, a node will have to start from genesis or use an rel
 The cost of keeping every interim state is paid per transaction, so it scales with throughput: any change that raises transactions per second also makes the store grow faster.
 The growth never reverses, so the longer a node runs and the more traffic it carries, the more it holds, and the experiment's data is consistent with a larger store being slower to operate.
 A network that intends to raise its throughput cannot keep a per-transaction storage cost that never falls.
-[MPS-0032: History Management for Midnight](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0032-storage-management.md) is where that concern is stated for the network: what a node has to keep on disk is what decides whether running one stays affordable as the chain ages, and MPS-0032 ties the urgency of that growth to the throughput targets of [MPS-xxxx: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/82).
+[MPS-0032: History Management for Midnight](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0032-storage-management.md) is where that concern is stated for the network: what a node has to keep on disk is what decides whether running one stays affordable as the chain ages, and MPS-0032 ties the urgency of that growth to the throughput targets of [MPS-0044: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0044-consensus-performance.md).
 Interim states are the part of that growth nothing will ever read again, so they are the first part to go.
 
 The ledger already knows how to tell needed state from unneeded state.
@@ -157,7 +155,7 @@ It is not entirely certain that the block-end form will not require a runtime up
 ## References
 
 - [MPS-0032: History Management for Midnight](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0032-storage-management.md): storage growth as an operational and decentralisation concern.
-- [MPS-xxxx: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/82) (number pending): the throughput targets that set the rate at which this cost is paid.
+- [MPS-0044: ZK-Proof Verification Throughput Bottleneck](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0044-consensus-performance.md): the throughput targets that set the rate at which this cost is paid.
 - [midnight-node pull request #2050](https://github.com/midnightntwrk/midnight-node/pull/2050): the per-transaction form, and the source of the build that was measured.
 - The measurements quoted in this proposal are summarised in Appendix A.
 
