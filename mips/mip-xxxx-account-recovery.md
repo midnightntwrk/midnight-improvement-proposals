@@ -1,15 +1,16 @@
 ---
-MIP: MIP-XXXX
+MIP: "0022"
 Title: Recovery Paths for Custody Accounts
 Authors:
   - Nicolas Di Prima (NicolasDP)
   - Raphael Toledo (rrtoledo)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-08-24
 License: Apache-2.0
 Requires: MIP-0012, MIP-0013
-Replaces: N/A
+Replaces: none
+MPS: MPS-0018
 ---
 
 <!--
