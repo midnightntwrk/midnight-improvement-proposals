@@ -1,5 +1,5 @@
 ---
-MIP: X
+MIP: "0021"
 Title: Domain-Separation Convention
 Authors:
   - Jay Albert (@JAlbertCode)
