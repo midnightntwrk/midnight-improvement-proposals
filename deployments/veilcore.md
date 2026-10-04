@@ -6,8 +6,8 @@
 
 VeilCore records who held a plant cultivar and when, without anyone disclosing the
 genetics. A record is hashed client-side; only a domain-separated commitment reaches
-the chain. The contract exposes twelve circuits across two concerns: provenance
-(`anchor`, `anchorBatch`, `proveOwnership`, `pairDna`) and licensing
+the chain. The contract exposes thirteen circuits across two concerns: provenance
+(`anchor`, `anchorBatch`, `proveOwnership`, `pairDna`, `rotateRecordSecret`) and licensing
 (`issueLicense`, `countersignLicense`, `proposeTransfer`, `approveTransfer`,
 `withdrawTransfer`, `revokeLicense`, `proveLicense`, `licenseStatus`). Genetic
 preimages, licence terms and counterparties never leave the holder's device — they are
@@ -118,10 +118,12 @@ SHA-256 of compiled artefacts (`contract/src/managed/veilcore/`):
 | `keys/anchor.verifier` | `ded343e7eb21a4dc4fbf2b0968020a78e6bd3f35e011badfcfd399e5a0930dd8` |  <!-- unchanged since approval -->
 | `keys/anchorBatch.prover` | `785faa21fa5b1105554a012e46ddceff34adff95b0c2a941e1bb55f23892bdf4` |
 | `keys/anchorBatch.verifier` | `fe662bf56906d169dd03dc5ab21ad8684a57274ab4f162726fa75ad9d7e6a9c9` |
-| `keys/proveOwnership.prover` | `ea345c18b31d593ea364bfa625942e969e80072e87ce16bc863d861b2e02ad6a` |  <!-- unchanged since approval -->
-| `keys/proveOwnership.verifier` | `f4546dce72170047e0205d2350ad60e1b8d47ce39c021b35c48468823b83d424` |  <!-- unchanged since approval -->
-| `keys/pairDna.prover` | `75fdab3affffb26d895743f3944bb61e5af8b8905ab9c075ad815654bf9f7739` |  <!-- unchanged since approval -->
-| `keys/pairDna.verifier` | `82239caa00d04357d67aee25d7c961542f4ac4f9e1ae7876ad0e35732649c5fa` |  <!-- unchanged since approval -->
+| `keys/proveOwnership.prover` | `f5a47297aa9ed9d6336e0c6e93295491a87ebb6ac512414e2fe7f900d4a6b9f9` |  <!-- CHANGED, third revision -->
+| `keys/proveOwnership.verifier` | `6e767c5c0fe99d0a2a1b1183869d811374eb4e622ba08196eaef99a1604e2f24` |  <!-- CHANGED, third revision -->
+| `keys/pairDna.prover` | `f4faf7f469b15e659b3ac562f1e2599592db4f2636e3b8eeefd975e28f347746` |  <!-- CHANGED, third revision -->
+| `keys/pairDna.verifier` | `11639f2a848f3948b3696bf16217abacc57ddaef021b87fce03f9ff2474f1f9a` |  <!-- CHANGED, third revision -->
+| `keys/rotateRecordSecret.prover` | `01ac3c8e9c1f2136b436d0983a1cb72bcef325a0bae26341036d7aced105822f` |  <!-- NEW, third revision -->
+| `keys/rotateRecordSecret.verifier` | `45632e5a11adcaacb2218203f9c86dfe9b809e712e5509d79c31f94740475861` |  <!-- NEW, third revision -->
 | `keys/issueLicense.prover` | `bb6327ed4ac98797f069c42c4f7418238536d5c3a92a7b5a97cb45aec1e613fb` |
 | `keys/issueLicense.verifier` | `94e9563f2684222d21fb50727a0e8f0d4a622a061be9d23b50f75166c7b61b6f` |
 | `keys/countersignLicense.prover` | `e538299298e05b9920ed6fbcb52a6c3159c0d0ea0a45d4ba3018b8e31d011868` |
@@ -219,3 +221,193 @@ rather this document, the review, and the deployed bytes agree before it is.
 - License: Apache-2.0.
 - The application layer (record metadata service, browser client) is operated
   separately and is not part of this submission. Only the Compact contract is in scope.
+
+## Revision — 13 September 2026
+
+A third revision, and the first that touches the provenance circuits. The two
+prior revisions could say that `anchor`, `proveOwnership` and `pairDna` carried
+the same artefact fingerprints as at approval. That is no longer true of two of
+them, and the table above marks which.
+
+**What was wrong.** Working through Midnight's own security guide before mainnet,
+`proveOwnership` computed `disclose(commit(localGeneticSecret()))` into a local
+and never let it reach a public position. The guide is explicit that `disclose()`
+clears the compiler's private-data check and does not publish: a value becomes
+visible only when it crosses a public boundary, through a ledger write, a return
+from an exported circuit, or a contract-to-contract call. The commitment did none
+of those.
+
+> **Corrected 16 September 2026.** A return from an exported circuit is *not* a
+> public boundary. See *Correction — 16 September 2026* at the end of this
+> document.
+
+The public transcript of a `proveOwnership` call was, in full:
+
+```
+[ idx path[2], addi 1, ins ]
+```
+
+A counter increment. An observer could see that somebody proved knowledge of some
+secret and could not tell which record it concerned, which is the entire
+evidentiary claim the circuit exists to support. The document approved in August
+described it as disclosing the commitment in a dated transaction. It did not.
+
+`pairDna` had the same defect on one side: it wrote the DNA commitment to
+`lastAnchor` and dropped the record commitment, publishing a fingerprint attached
+to nothing.
+
+**What changed.** Both circuits now return their commitment, which is a public
+position. The API and CLI surface it with the transaction hash and block height,
+so a verifier receives something to compare against the earlier anchor rather
+than a transaction hash and a claim.
+
+> **Corrected 16 September 2026.** This paragraph is wrong and the revision it
+> describes did not fix the defect it reported closed. See *Correction — 16
+> September 2026*.
+
+**What was added.** `rotateRecordSecret`, in response to the checklist item that a
+role must not be permanently lockable by a single lost secret. A witness secret
+cannot be recovered from the chain, and a holder who lost theirs previously lost
+every record keyed to it with no remedy. The holder proves control of the current
+secret and publishes a new commitment; the old one is returned, so the rotation is
+a checkable link between two identities rather than an unexplained new anchor.
+
+> **Corrected 16 September 2026.** Returning it published nothing, so under the
+> build recorded here a rotation is an unexplained new anchor. See *Correction —
+> 16 September 2026*.
+
+Licences issued against the old record are deliberately not re-keyed by this
+circuit. Rewriting every agreement attached to a record would move other parties'
+rights without their knowledge, so they go through the existing transfer path
+where the issuer approves.
+
+**What did not change.** `anchor` and `anchorBatch` carry the same fingerprints as
+at approval. Every licensing artefact is byte-identical to the second revision:
+sixteen prover and verifier keys across eight circuits, unchanged.
+
+**Two claims in the contract were corrected rather than the code.** The header
+described state as bounded by design; the bound is economic. `issueLicense`
+requires owning a record, and a record is owned by committing a secret the caller
+chooses, so a party holding no material can issue licences to themselves and grow
+the maps at the cost of a fee per entry. And `anchorBatch` is unauthenticated by
+design, so `lastBatchRoot` holds whichever root anyone wrote most recently. An
+inclusion proof is checked against the root in the transaction a holder cites,
+never against that slot. Both are now stated in the source.
+
+**Regression coverage.** Three attack cases were added for the new circuit: a
+stranger's rotation cannot land on another holder's record, a holder's rotation
+returns the identity it replaces, and a rotation to the commitment already held is
+refused. Eight adversarial cases now pass in `contract/test-contract.mjs`.
+
+> **Corrected 16 September 2026.** The second of those asserted on the return
+> value and passed against a circuit that published nothing — the test carried the
+> same defect as this document. Nine adversarial cases pass as of the correction.
+> See *Correction — 16 September 2026*.
+
+### The updatability decision
+
+The mainnet readiness checklist asks for this to be settled before the contract
+holds value, so it is recorded here rather than made at the console.
+
+The preprod deployment has a maintenance authority nobody chose. `deployContract`
+installs a single-signature authority when none is supplied, sampling a key and
+storing it in the private state provider, and that is what happened. The store was
+encrypted with a password inherited from the example this repository was forked
+from — published, therefore not a password. Both are now fixed in the source: the
+deploy path requires an explicit signing key or an explicit null, and the password
+is read from the environment with no fallback.
+
+For mainnet the authority will be named at deploy time and held jointly, not by
+one person and not in a file on a laptop.
+
+It will not be relinquished at deployment. Circuits are bound to the proof system
+that compiled them, and an un-upgradable contract cannot be repaired when that
+changes — only replaced, leaving every record naming its address pointing at a
+contract that can no longer be called. Relinquishing later, once the proving stack
+has settled, remains open and is the intended end state: a registry able to
+rewrite its own rules is not the neutral thing this format claims to be, and the
+transaction that gives up that power is worth more as a public act than the power
+is worth holding.
+
+The reason this is a choice rather than a risk is that anchoring is optional by
+design. Verification is SHA-256 over a canonical serialisation and requires
+nothing from any chain; §3.2 of the specification carries `contractAddress` per
+record, so a record names its own deployment and an unanchored record verifies
+while stating plainly that its date rests on whoever holds it. A contract that
+becomes uncallable degrades new anchoring. It does not invalidate evidence.
+
+**Nothing is deployed to mainnet, and the deploy key issued on 8 September has not
+been used.** The preprod deployment at
+`fb9c55944908c466dcea7b9807f00ea727b37cebec13870080016ddc5a9d721d` predates every
+change in this revision.
+
+---
+
+## Correction — 16 September 2026
+
+The third revision reported a defect and reported it fixed. The defect was real.
+**The fix was not a fix, and this document asserted the reasoning that made it look
+like one.** Recorded here rather than edited into the section above, on the same
+principle that section was written under: a deployment record that no longer
+describes what it authorises is worth less than one that says so.
+
+**What this document got wrong.** It listed "a return from an exported circuit" as
+one of the boundaries across which a disclosed value becomes public. It is not. A
+return travels in the call's communication commitment, which is blinded with
+randomness: it reaches the caller's own DApp and nobody reading the ledger. The
+third revision then applied that rule — it made `proveOwnership` and `pairDna`
+return their commitments and recorded the defect as closed.
+
+Max Weber (ODATANO / NIGHTGATE) compiled the artefact recorded above and searched
+each call's `proofData.publicTranscript` — what a `ContractCall` actually carries —
+against its `input`/`output`, which only the communication commitment covers:
+
+| Call | Value | Public transcript | Input/output only |
+|---|---|---|---|
+| `anchor(rec)` | rec | yes | |
+| `proveOwnership()` | rec | **no** | yes |
+| `pairDna(rec, dna)` | rec | **no** | yes |
+| `pairDna(rec, dna)` | dna | yes | |
+| `rotateRecordSecret(new)` | old | **no** | yes |
+| `rotateRecordSecret(new)` | new | yes | |
+
+So of the build whose fingerprints are recorded above:
+
+- a prior-possession proof is **not** checkable by a third party — the chain shows
+  `proofSeq + 1` and nothing else;
+- a DNA pairing publishes the fingerprint and **not** the record it binds;
+- a rotation publishes the new commitment and **nothing** linking it to the old.
+
+Those are the three properties the third revision reported as restored. The API and
+CLI did surface the returned values, which is what made it look right in testing —
+but the API and CLI *are* the caller's DApp, and that is the one place a return is
+visible.
+
+**The actual fix** is a ledger write per value a verifier needs: four cells,
+`lastOwnershipProof`, `lastPairedRecord`, `lastRotatedFrom` and `lastRotatedTo`, in
+separate slots rather than reusing `lastAnchor` — because `anchor` proves the
+preimage of what it writes there and these circuits do not, so a reader treating one
+cell's history as dated possession would collect claims nobody established.
+
+**Status, plainly.** The fix exists in the implementation repository at commit
+`63a178e` and is **not** in the fingerprints recorded above. Nor was that build
+ever deployed: the preprod deployment named in this document predates every change
+in the third revision, nothing is on mainnet, and the deploy key issued on 8
+September remains unused. **No deployed contract is affected by this correction.
+What is affected is this document.**
+
+**A fourth revision will follow**, carrying new fingerprints for `proveOwnership`,
+`pairDna` and `rotateRecordSecret`, and it will be filed before the deploy key is
+used and before any mainnet deployment is requested. We would rather file a
+correction that says a fix is pending than leave an approved record asserting an
+evidentiary property nothing has.
+
+**The rule that catches this class**, and that this document should have applied:
+assert the value appears in `out.proofData.publicTranscript`, not in `out.result`.
+Applying it found the same defect in our own test suite — the regression case named
+*"the rotation names the identity it replaces"* asserted on the return value and
+passed against a circuit that published nothing. It now asserts on the ledger cell,
+with a separate case recording that the return agrees with it and is not the proof
+of it. **Nine adversarial cases** pass in `contract/test-contract.mjs` as of this
+correction, up from eight.
+
