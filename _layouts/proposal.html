@@ -1,0 +1,42 @@
+---
+layout: default
+---
+
+<h1>{{ page.Title | default: page.name }}</h1>
+
+<table class="proposal-meta">
+  <tbody>
+    {% if page.MIP and page.MIP != "none" %}
+    <tr><th scope="row">MIP</th><td>{{ page.MIP }}</td></tr>
+    {% endif %}
+    {% if page.MPS and page.MPS != "none" %}
+    <tr><th scope="row">MPS</th><td>{{ page.MPS }}</td></tr>
+    {% endif %}
+    {% if page.Status %}
+    <tr><th scope="row">Status</th><td>{{ page.Status }}</td></tr>
+    {% endif %}
+    {% if page.Category %}
+    <tr><th scope="row">Category</th><td>{{ page.Category }}</td></tr>
+    {% endif %}
+    {% if page.Authors %}
+    <tr><th scope="row">Authors</th><td>
+      {%- comment -%}
+        Authors may be a YAML list (MIPs) or a plain string (MPSs).
+        `.first` is truthy for arrays, nil for strings — use it to discriminate.
+      {%- endcomment -%}
+      {% if page.Authors.first %}{{ page.Authors | join: ", " }}{% else %}{{ page.Authors }}{% endif %}
+    </td></tr>
+    {% endif %}
+    {% if page.Created %}
+    <tr><th scope="row">Created</th><td>{{ page.Created }}</td></tr>
+    {% endif %}
+    {% if page.Requires and page.Requires != "none" %}
+    <tr><th scope="row">Requires</th><td>{{ page.Requires }}</td></tr>
+    {% endif %}
+    {% if page.Replaces and page.Replaces != "none" %}
+    <tr><th scope="row">Replaces</th><td>{{ page.Replaces }}</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+
+{{ content }}

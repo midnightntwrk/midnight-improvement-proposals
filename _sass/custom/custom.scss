@@ -1,0 +1,15 @@
+// Custom overrides for the just-the-docs theme.
+
+// The site title "Midnight Improvement Proposals" wraps to multiple lines in the
+// sidebar, but the theme locks the header to a single toolbar row height
+// (3.75rem) with vertical centering, which clips the top line ("Midnight").
+// Let the header grow to fit the full title so the whole thing is visible.
+.site-header {
+  height: auto;
+  min-height: 3.75rem;
+  max-height: none;
+}
+
+.site-title {
+  height: auto;
+}

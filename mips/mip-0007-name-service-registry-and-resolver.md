@@ -1,5 +1,5 @@
 ---
-MIP: 0007
+MIP: "0007"
 Title: Midnight Name Service — Canonical Registry and Resolver Standard
 Authors:
   - Midnames (midnames)
@@ -8,6 +8,7 @@ Category: Standards
 Created: 2026-05-28
 Requires: none
 Replaces: none
+MPS: MPS-0012
 License: Apache-2.0
 ---
 

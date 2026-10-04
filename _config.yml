@@ -1,0 +1,69 @@
+# Jekyll configuration for the Midnight Improvement Proposals static site.
+# Deployed to GitHub Pages at https://midnightntwrk.github.io/midnight-improvement-proposals/
+
+title: Midnight Improvement Proposals
+description: >-
+  The canonical home for Midnight's open development documents — where the
+  community proposes, discusses, and records changes to the Midnight protocol,
+  standards, and ecosystem.
+
+# The site is served from a project subpath on github.io.
+url: "https://midnightntwrk.github.io"
+baseurl: "/midnight-improvement-proposals"
+
+# Theme + plugins (all resolved via the Gemfile).
+theme: just-the-docs
+plugins:
+  - jekyll-relative-links
+
+# just-the-docs options.
+search_enabled: true
+color_scheme: dark
+heading_anchors: true
+aux_links:
+  "View on GitHub":
+    - "https://github.com/midnightntwrk/midnight-improvement-proposals"
+back_to_top: true
+back_to_top_text: "Back to top"
+
+# jekyll-relative-links: turn `[...](./foo.md)` into working page links.
+relative_links:
+  enabled: true
+  collections: false
+
+# Apply the proposal layout to every rendered MIP/MPS page by path.
+# Page-level front matter (e.g. on the index pages) overrides these.
+defaults:
+  - scope:
+      path: "mips"
+    values:
+      layout: proposal
+  - scope:
+      path: "mps"
+    values:
+      layout: proposal
+
+# Files/dirs that are repo metadata, not site content.
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor/
+  - LICENSE
+  - CODEOWNERS
+  - CODE_OF_CONDUCT.md
+  - SECURITY.md
+  - CHANGELOG.md
+  - CONTRIBUTING.md
+  - NUMBERS_INDEX.md
+  - ROLLING_AGENDA.md
+  - README.md
+  - .envrc
+  - .github/
+  - .midnight-expert/
+  # deployments/*.md have no front matter, so Jekyll would copy them raw.
+  # Keep them in the repo but out of the built site for now.
+  - deployments/
+  - mps/deployments/
+  # Templates are not proposals — keep them out of the rendered site.
+  - mips/mip-template.md
+  - mps/mps-template.md

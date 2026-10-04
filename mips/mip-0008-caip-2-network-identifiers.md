@@ -1,5 +1,5 @@
 ---
-MIP: 0008
+MIP: "0008"
 Title: CAIP-2 Network Identifiers for Midnight
 Authors:
   - alba-press (alba-press)
@@ -8,6 +8,7 @@ Category: Standards
 Created: 2026-05-30
 Requires: none
 Replaces: none
+MPS: MPS-0003
 ---
 
 <!--

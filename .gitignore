@@ -1,2 +1,9 @@
 .DS_Store
 /.midnight-expert
+
+# Jekyll static site
+_site/
+.jekyll-cache/
+.jekyll-metadata
+vendor/
+Gemfile.lock
