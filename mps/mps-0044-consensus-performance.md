@@ -7,7 +7,7 @@ Category: Core
 Created: 29-Apr-2026
 Requires: none
 Replaces: none
-MIP: none
+MIP: MIP-0026, MIP-0027
 ---
 
 <!--
