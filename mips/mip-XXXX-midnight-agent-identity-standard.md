@@ -1,13 +1,14 @@
 ---
-MIP: X
+MIP: "0029"
 Title: Midnight Agent Identity Standard (MAIS)
 Authors:
   - Zidan (mzf11125)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-05-18
 Requires: none
 Replaces: none
+MPS: MPS-0015
 ---
 
 <!--
@@ -402,7 +403,7 @@ ERC-8004 is the main agent identity standard on EVM chains. Midnight agents that
 
 ### Acceptance Criteria
 
-MIP-X should be considered for Accepted status when three things are true.
+MIP-0029 should be considered for Accepted status when three things are true.
 
 First, a working reference implementation of the Identity Registry, Reputation Registry, and Disclosure Tier Registry Compact contracts exists and passes a test suite on Midnight testnet.
 
@@ -410,7 +411,7 @@ Second, the proposal has been presented at a Midnight community workshop and fee
 
 Third, at least two Midnight ecosystem projects have said they intend to adopt the standard. This could be Midnight City, AlphaTON, an Aliit Fellowship project, or similar.
 
-MIP-X should be considered for Active status when five things are true.
+MIP-0029 should be considered for Active status when five things are true.
 
 First, all core contracts are deployed on Midnight testnet and have operated for at least 4 weeks without critical issues. Second, the `@midnight-agent/mais-sdk` TypeScript package is published and documented. Third, at least 5 unique agent identities are registered on testnet with at least 20 reputation evidence operations completed. Fourth, complete developer documentation exists including ARCHITECTURE.md, CONTRIBUTING.md, and a quickstart that gets a test agent registered in under 10 minutes. Fifth, a mainnet deployment plan has been prepared and reviewed.
 
