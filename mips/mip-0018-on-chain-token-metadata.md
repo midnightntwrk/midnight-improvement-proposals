@@ -32,24 +32,24 @@ License: Apache-2.0
 ## Abstract
 
 Midnight wallets and explorers cannot tell what a token is.
-A native UTXO carries a 32-byte color that identifies its token but no name, and a ledger token is whatever its contract implements, with no generic way to find or label it.
+A contract-issued UTXO carries a 32-byte color that identifies its token but no name, and a contract token is whatever its contract implements, with no generic way to find or label it.
 
 This MIP lets a contract publish metadata for its own tokens. It defines two parts:
 
-1. **A transport layer.** Metadata travels in [MIP-0002](./mip-0002-public-contract-log-emission.md) `Misc` events named `mip-0018:token-metadata[v1]`. Each event names one token and carries one or more typed key/value records. Each event is bound to the contract that emitted it, so a contract can describe only its own tokens. A user who has the color of a native UTXO, or a ledger token's contract address, can use it to query that token's authoritative events. Consumers keep the latest value for each key; a Null record deletes its key, and a token with no keys left is not referenced at all.
-2. **Common metadata.** Three common keys (`name`, `symbol`, `decimals`) and an optional `standards` key give wallets and explorers a shared core for displaying tokens.
+1. **A transport layer.** Metadata travels in [MIP-0002](./mip-0002-public-contract-log-emission.md) `Misc` events named `mip-0018:token-metadata[v1]`. Each event names one token and carries one or more typed key/value records. Each event is bound to the contract that emitted it, so a contract can describe only its own tokens. A user who has the color of a contract-issued UTXO, or a contract token's contract address, can use it to query that token's authoritative events. Consumers keep the latest value for each key; a Null record deletes its key, and a token with no keys left is not referenced at all.
+2. **Common metadata.** Three common keys (`name`, `symbol`, `decimals`) and the optional keys `standards`, `image` and `image_sha256` give wallets and explorers a shared core for displaying tokens.
 
-The transport accepts any other key and is designed as a building block for future standards: later MIPs can define their own metadata on it without changing the transport.
+The transport is designed as a building block for future standards: later MIPs can define further keys on it without changing the transport, and consumers serve those keys only for tokens that declare the defining standard.
 Events are emitted when a token is created and for extraordinary updates, never as part of normal token operation.
 
 ## Motivation
 
 ### The problem
 
-Every native UTXO has a color, `tokenType(domainSep, contractAddress)`, that identifies its token.
+Every contract-issued UTXO has a color, `tokenType(domainSep, contractAddress)`, that identifies its token.
 Mint effects are public in the transaction transcript, so anyone can list every color and the contract that minted it, but nothing says what that token is called or how to display it.
 
-Ledger tokens are not visible even at that level.
+Contract tokens are not visible even at that level.
 They have no mint effect, and each contract represents them its own way: public balances, encrypted balances, coins or commitments held by users, a mix of these, or anything else a contract can implement.
 A scanner that does not know the contract cannot tell that a token exists.
 
@@ -87,10 +87,10 @@ The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be interpreted a
 
 ### Terminology
 
-- **Color**: the 32-byte token type carried by every native UTXO, `tokenType(domainSep, contractAddress)` from the Compact standard library. All UTXOs of one native token have the same color.
-- **`domainSep`**: 32 bytes identifying a token within its contract, like an ERC-1155 `id`. For a native token it is the value passed to `mintShieldedToken` or `mintUnshieldedToken`. For a ledger token it is a custom identifier the contract chooses for that token.
-- **Native token**: value held as protocol-level UTXOs (shielded Zswap coins or unshielded UTXOs) and minted by a contract. Its UTXOs carry a color.
-- **Ledger token**: a token represented by contract logic rather than protocol UTXOs. The representation is up to the contract (public balances as in [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), encrypted balances, user-held coins or commitments, or a mix), and this MIP does not depend on it. It uses no color and has no mint effect.
+- **Color**: the 32-byte token type carried by every contract-issued UTXO, `tokenType(domainSep, contractAddress)` from the Compact standard library. All UTXOs of one contract-issued UTXO token have the same color.
+- **`domainSep`**: 32 bytes identifying a token within its contract, like an ERC-1155 `id`. For a contract-issued UTXO token it is the value passed to `mintShieldedToken` or `mintUnshieldedToken`. For a contract token it is a custom identifier the contract chooses for that token.
+- **Contract-issued UTXO token**: value held as protocol-level UTXOs (shielded Zswap coins or unshielded UTXOs) and minted by a contract. Its UTXOs carry a color. Other MIPs call these native tokens, such as the native shielded and native unshielded tokens of MIP-0011 and MIP-0014.
+- **Contract token**: a token represented by contract logic rather than protocol UTXOs. The representation is up to the contract (public balances as in [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), encrypted balances, user-held coins or commitments, or a mix), and this MIP does not depend on it. It uses no color and has no mint effect.
 - **Token identity**: `(network, contractAddress, domainSep, kind)`; `kind` is defined in [Token identity and authority](#token-identity-and-authority).
 - **Record**: one typed key/value entry in an event.
 - **Field**: a token identity plus a key. A field has at most one current value. A token identity exists only while at least one of its fields has a value.
@@ -196,9 +196,9 @@ Empty strings, empty bytes, zero bytes and JSON `null` are ordinary values, not 
 
 | `kind` | Representation | Example | Color |
 |---:|---|---|---|
-| 1 | native shielded | MIP-0011 | yes |
-| 2 | native unshielded | MIP-0014 | yes |
-| 3 | ledger | MIP-0004 | no |
+| 1 | shielded UTXO | MIP-0011 | yes |
+| 2 | unshielded UTXO | MIP-0014 | yes |
+| 3 | contract token | MIP-0004 | no |
 
 Any other value rejects the event.
 
@@ -206,22 +206,23 @@ Every record in an event belongs to the token identity `(network, contractAddres
 
 - `network` is the network the event was read from.
 - `contractAddress` is the address of the contract the event is bound to. Consumers MUST take it from the event record, never from the payload, so a contract can describe only its own tokens.
-- Each kind is a separate identity with its own metadata events, even when several represent the same asset. A contract may mint one asset both shielded and unshielded and also represent it as a ledger token (as MIP-0004 does), and a user may hold all three at once. The contract describes each representation separately; indexers and UIs combine them, for example through [Symbol grouping](#symbol-grouping).
-- For a ledger token, `domainSep` is any stable 32 bytes the contract chooses, such as `pad(32, "acme:gold")`.
+- Each kind is a separate identity with its own metadata events, even when several represent the same asset. A contract may mint one asset both shielded and unshielded and also represent it as a contract token (as MIP-0004 does), and a user may hold all three at once. The contract describes each representation separately; indexers and UIs combine them, for example through [Symbol grouping](#symbol-grouping).
+- A contract may mint many contract-issued UTXO tokens and keep many contract tokens; `domainSep` tells them apart. For a contract token it is any stable 32 bytes the contract chooses, such as `pad(32, "acme:gold")`.
 
-**Lookup.** A user finds a token's metadata from what the user holds: the color of a native UTXO (kinds 1 and 2) or a ledger token's contract address (kind 3).
-For native tokens, indexers record the contract address and `domainSep` of every mint in each block, compute `color = tokenType(domainSep, contractAddress)`, and keep a table from color to `(contractAddress, domainSep)`.
+**Lookup.** A user finds a token's metadata from what the user holds: the color of a contract-issued UTXO (kinds 1 and 2) or a contract token's contract address (kind 3).
+For contract-issued UTXO tokens, indexers record the contract address and `domainSep` of every mint in each block, compute `color = tokenType(domainSep, contractAddress)`, and keep a table from color to `(contractAddress, domainSep)`.
 A mint is a `shieldedMints` or `unshieldedMints` effect of a contract call.
 A color held by a user resolves through that table to a token identity, whose metadata events the user then queries.
 A shielded and an unshielded mint with the same `domainSep` have the same color; the kind is given by what the user holds (a shielded coin → kind 1, an unshielded UTXO → kind 2), not by the color.
 A color MUST always be computed this way, never read from a value.
-For kind 3, querying the contract's kind-3 events lists its ledger tokens. This MIP does not define how a client picks the user's token among several; that is left to the standards the token declares in `standards`.
+For kind 3, querying the contract's kind-3 events lists its contract tokens. This MIP does not define how a client picks the user's token among several; that is left to the standards the token declares in `standards`.
 
 ### Keys
 
 - Keys are compared as exact bytes: case-sensitive, with no trimming or Unicode normalization.
-- Keys SHOULD be UTF-8, but consumers MUST NOT reject an event because a key is not UTF-8.
-- Any key is allowed. This MIP gives meaning only to the keys in [Common fields](#common-fields); later MIPs can define others.
+- A key has meaning only when a MIP defines it, together with its value type. The keys this MIP defines are in [Common fields](#common-fields); later MIPs can define others.
+- Consumers MUST NOT serve a key that is neither defined in [Common fields](#common-fields) nor defined by a standard the token currently declares in `standards`. What they store is up to them. An event that carries such a key is still valid.
+- Keys MUST be valid UTF-8.
 
 ### Applying records
 
@@ -237,18 +238,22 @@ A token identity exists only while at least one of its fields has a value. Once 
 
 ### Common fields
 
-For each token identity it describes, a contract SHOULD publish the three common keys `name`, `symbol` and `decimals`, and MAY publish the optional key `standards`.
+For each token identity it describes, a contract SHOULD publish the three common keys `name`, `symbol` and `decimals`, and MAY publish the optional keys `standards`, `image` and `image_sha256`.
 
 | Key | Value type | Requirement | Meaning |
 |---|---|---|---|
-| `name` | UTF-8 string (1), not empty | SHOULD | Display name. |
-| `symbol` | UTF-8 string (1), not empty | SHOULD | Ticker. |
+| `name` | UTF-8 string (1), 1–64 characters | SHOULD | Display name. |
+| `symbol` | UTF-8 string (1), 1–12 characters | SHOULD | Ticker. |
 | `decimals` | unsigned integer (2) | SHOULD | Number of decimal places: 10^`decimals` base units make one whole token, so a raw amount is shown as `amount / 10^decimals`. Emitters SHOULD use `Uint<8>`, the type MIP-0011 and MIP-0014 use. |
 | `standards` | UTF-8 string (1) | MAY | Standards the token claims to implement; see below. |
+| `image` | URI (4) | MAY | Image or logo of the token. |
+| `image_sha256` | bytes (0), exactly 32 | MAY | SHA-256 of the file at `image`. |
 
 - A token that also exposes standard getters (for example those of MIP-0004, MIP-0011 or MIP-0014) SHOULD emit the same values those getters return when it first publishes them. A later update, such as a rename, is the token's current metadata for consumers of this MIP even where the getters cannot change. A MIP that defines a token standard MAY restrict or override the behavior of this MIP for tokens that declare that standard in the emitted `standards` field.
 - A field whose current value lacks the type or form above is **unusable**: consumers show no value for it and MUST NOT fall back to an earlier value. The event that set it remains valid.
-- If `name`, `symbol` or `decimals` was never set, there is no value. Consumers MUST NOT assume a default, such as 0 or 18 decimals.
+- Emitters SHOULD keep `name` and `symbol` within their lengths; consumers SHOULD discard any extra characters.
+- If `name`, `symbol` or `decimals` was never set, there is no value; a token whose `decimals` was never set has unknown decimals. Consumers MUST NOT assume a default, such as 0 or 18 decimals. A MIP that defines a token standard MAY define a default for tokens that declare it.
+- When `image_sha256` is set, consumers MUST NOT display content from `image` whose SHA-256 differs from it. Without `image_sha256`, the content cannot be checked; see [Off-chain content](#off-chain-content).
 - `standards` is a list of identifiers separated by single spaces (`0x20`). An identifier is non-empty and contains no spaces or control characters (no byte in `0x00`–`0x20` or `0x7f`). Identifiers are compared exactly and are case-sensitive; order and duplicates carry no meaning. An empty value, or no `standards` field, means no standards are claimed; a malformed value is unusable, not empty.
 - This MIP defines only the list format, not what an identifier means or what claiming it implies. A MIP is identified as `mip-NNNN` (for example `mip-0011`), and that MIP defines its meaning. A token may also claim standards from elsewhere, such as BIPs or ERCs; their identifiers and what they mean on Midnight SHOULD be defined in a MIP.
 - `standards` is self-declared. A consumer MAY use an identifier it recognizes to choose a UI or adapter it already trusts, but MUST NOT treat it as proof of conformance and MUST NOT fetch or run code because of it.
@@ -260,6 +265,7 @@ Indexers SHOULD group token identities that share `(network, contractAddress)` a
 - A group never spans contracts or networks.
 - Grouping is presentation only. Each identity keeps its own fields, and an update to one member changes no other member.
 - An identity with no usable `symbol` is ungrouped. Changing an identity's `symbol` moves only that identity; deleting its `symbol` removes it from its group.
+- Representations of one asset typically share a `symbol` and MAY use different names, such as "Acme Shielded" and "Acme Unshielded".
 
 ### Publishing
 
@@ -284,11 +290,11 @@ Indexers SHOULD group token identities that share `(network, contractAddress)` a
 ### Off-chain content
 
 Content that does not fit in an event, such as an image or a document, stays off chain.
-If off-chain content is used, the MIP that defines it SHOULD include a way to validate that content, such as a URL together with a hash of the content.
+If off-chain content is used, the MIP that defines it SHOULD include a way to validate that content, such as a URL together with a hash of the content. `image` and `image_sha256` follow this pattern.
 
 ### Out of scope
 
-- **Schemas beyond the common fields**: real-world-asset (RWA) fields, media, localization, privacy properties and cross-chain mappings. Later MIPs can define them as keys on this transport.
+- **Schemas beyond the common fields**: real-world-asset (RWA) fields, media other than `image`, localization, privacy properties and cross-chain mappings. Later MIPs can define them as keys on this transport.
 - **Data that changes during normal operation**, such as supply, prices or per-item data. It belongs off chain; see [Publishing](#publishing).
 - **Curation**: deciding which of several tokens with the same name or symbol is genuine. That belongs to registries and allowlists, which can be seeded from these events.
 - **NIGHT and DUST**: their properties are fixed by the protocol.
@@ -297,11 +303,14 @@ If off-chain content is used, the MIP that defines it SHOULD include a way to va
 ## Rationale
 
 - **`Misc` rather than a new event type.** A dedicated `LogEventType` would need a ledger release and a coordinated node upgrade, and would freeze the format in the protocol. `Misc` works today, the versioned name gives a way to evolve, and the convention can be promoted to a dedicated type later.
-- **`domainSep` rather than color.** The color is derivable from `domainSep` and the emitting contract's address. Sending it would add 32 redundant bytes a contract could forge; deriving it means a contract can never claim another contract's color. `domainSep` also covers ledger tokens, which use no color.
-- **A `kind` byte.** One asset can exist as shielded, unshielded and ledger tokens at once, and each representation needs its own metadata and lifecycle; combining them is left to indexers and UIs. Ledger tokens get a single kind because their representation is up to the contract and can change without creating a different asset, so it is not a sound identity attribute.
-- **Grouping by symbol within one contract.** One contract can represent an asset in several ways (shielded, unshielded, ledger, or under several `domainSep` values), and a wallet should be able to show them together. Limiting a group to one contract stops another contract from joining it by copying the symbol.
+- **`domainSep` rather than color.** The color is derivable from `domainSep` and the emitting contract's address. Sending it would add 32 redundant bytes a contract could forge; deriving it means a contract can never claim another contract's color. `domainSep` also covers contract tokens, which use no color.
+- **A `kind` byte.** One asset can exist as shielded and unshielded contract-issued UTXO tokens and as a contract token at once, and each representation needs its own metadata and lifecycle; combining them is left to indexers and UIs.
+- **One contract kind.** A contract token's privacy is a spectrum, not a shielded/unshielded pair: how it is stored, moved and used can each be more or less private, and the contract can change that without creating a different asset. A two-value tag would not describe it, so contract tokens share one kind.
+- **`domainSep` for every kind.** A contract can mint many contract-issued UTXO tokens and keep many contract tokens, so every kind needs a stable identifier. `name` and `symbol` cannot serve: they can be renamed or deleted, and other tokens can copy them.
+- **Grouping by symbol within one contract.** One contract can represent an asset in several ways (shielded UTXO, unshielded UTXO, contract token, or under several `domainSep` values), and a wallet should be able to show them together. Limiting a group to one contract stops another contract from joining it by copying the symbol.
 - **Typed values.** [EIP-7496](https://eips.ethereum.org/EIPS/eip-7496) stores trait values as untyped `bytes32` and describes their types off chain, which helps only consumers that already know the collection. One type byte lets a generic explorer decode a key it has never seen.
 - **Variable-length packed records.** The `Misc` payload is fixed at 256 bytes. One-byte lengths suffice within that limit, variable-length keys avoid spending 32 bytes on every key, and packing fits the three common fields plus `standards` in one event (95 bytes in [Appendix A](#appendix-a-example-event-informative)).
+- **A finite key set.** Consumers serve only keys that this MIP or a declared standard defines, so the transport cannot be used as a general key-value store served as token metadata.
 - **Latest value per key.** As in EIP-7496, an update touches one key and costs one record, with no need to re-emit everything.
 - **No events in normal operation.** Events are not consensus state, but each one still costs fees, block space and storage in every indexer. A token can see thousands of mints and transfers; emitting metadata with them would create thousands of events for values that consumers reduce to one current value per key. The chain is not the place for that data; it belongs off chain, referenced as described in [Off-chain content](#off-chain-content) if needed.
 - **Per-key tombstone.** Every record touches exactly one field: a non-Null record sets it and a Null record deletes it. A consumer's state is therefore just the fields that currently have a value, and a token exists only while it has some.
@@ -313,7 +322,6 @@ If off-chain content is used, the MIP that defines it SHOULD include a way to va
 - *Circuit code only (reading metadata through `name()`, `symbol()` and `decimals()` getters)*: requires executing contract code against the ledger, gives indexers no direct way to learn that a value changed, and, as of October 2026, a contract's executable interface cannot be obtained. Kept as a complementary building block, alongside this MIP.
 - *Off-chain registry only*: needs attestations and governance to recover the provenance an emitted event has by construction. Kept as the curation layer.
 - *URI only (ERC-721 `tokenURI`)*: every field becomes a remote fetch that adds a liveness dependency, and a plain URL gives no way to check what was fetched. Off-chain content remains possible, with a way to validate it ([Off-chain content](#off-chain-content)).
-- *JSON for every record*: costlier to emit and decode than typed bytes for simple values. Type 3 remains available.
 - *A protocol-level event type*: deferred, as above.
 - *[MIP-0019](./mip-0019-multipart-event.md) multipart events for longer values*: would let one payload span several events, but every consumer would then have to collect and join events before parsing them. Metadata values are short, and larger content stays off chain ([Off-chain content](#off-chain-content)).
 
@@ -361,7 +369,7 @@ The event still comes from the token's own contract, so [authority](#token-ident
 - **Unauthorized updates.** An unguarded emitting circuit lets anyone rename or withdraw a token. Consumers MAY show a field's earlier values, marked as history, so hostile renames are visible. A tombstone also removes that field's history from metadata views, although the events remain on chain.
 - **Self-declared standards.** Advertising an identifier in `standards` proves nothing; see [Common fields](#common-fields).
 - **Untrusted payloads.** See [Consuming](#consuming).
-- **Off-chain content.** A URL alone says nothing about what its host serves, and the host can change it at any time. A way to validate the content, such as a hash next to the URL ([Off-chain content](#off-chain-content)), lets consumers detect substituted content.
+- **Off-chain content.** A URL alone says nothing about what its host serves, and the host can change it at any time. `image_sha256`, or a similar hash for other off-chain content ([Off-chain content](#off-chain-content)), lets consumers detect substituted content. Images are untrusted content; consumers SHOULD render them in a way that cannot run scripts, for example not as inline SVG.
 - **Spam and cost.** Events pay the existing `Log` fee and compete for each block's `bytes_written` budget ([MIP-0002](./mip-0002-public-contract-log-emission.md), "Fee Metering"). Indexers MAY limit what they index.
 - **Disclosure.** `emit` is a disclosure point checked by the compiler, so this MIP introduces no new leak path.
 
@@ -386,9 +394,10 @@ Unless stated otherwise, the header is `domainSep = 0x11` repeated 32 times and 
 
 - **A1. Common fields and `standards`.** `name = "Acme Token"`, `symbol = "ACME"`, `decimals = 6` as `Uint<8>` and `standards = "mip-0004"`. Records start at offsets 33, 50, 63 and 75; content ends at offset 95, followed by 161 zero bytes. The full bytes are in [Appendix A](#appendix-a-example-event-informative).
 - **A2. Capacity.** One type-0 (bytes) record with a 220-byte key and an empty value, or with a 1-byte key and a 219-byte value, fills exactly 256 bytes with no padding.
-- **A3. Exact bytes.** `symbol` and `symbol` followed by `0x00` are different keys. The type-0 value `01 00 00` keeps its trailing zeros. A non-UTF-8 key is accepted.
+- **A3. Exact bytes.** `symbol` and `symbol` followed by `0x00` are different keys. The type-0 value `01 00 00` keeps its trailing zeros.
 - **A4. Integer widths.** `decimals` as `06` (`Uint<8>`) and as `06` followed by 15 zero bytes (`Uint<128>`) both decode to 6.
 - **A5. Non-tombstones.** An empty string (type 1), empty bytes (type 0) and JSON `null` (type 3) are ordinary values.
+- **A6. Image.** `image = "https://example.org/acme.png"` (type 4) and a 32-byte `image_sha256` (type 0) in one event.
 
 **Must reject the whole event, applying none of its records:**
 
@@ -396,7 +405,7 @@ Unless stated otherwise, the header is `domainSep = 0x11` repeated 32 times and 
 - **R2.** A key, type byte, length byte or value that extends past byte 256, such as a 221-byte key with an empty value, or a 1-byte key with a 220-byte value.
 - **R3.** After a valid record, a zero `keyLen` followed by any non-zero byte.
 - **R4.** `kind` 0, 4 or 255; `valType` 6 or higher.
-- **R5.** Invalid UTF-8 in a type-1, type-3 or type-4 value; invalid JSON; a relative URI; an integer of 0 or 32 bytes; a Null record with `valLen` > 0.
+- **R5.** Invalid UTF-8 in a key or in a type-1, type-3 or type-4 value; invalid JSON; a relative URI; an integer of 0 or 32 bytes; a Null record with `valLen` > 0.
 - **R6.** A valid record, including a tombstone, followed by an invalid one.
 
 **Must ignore:** `Misc` events with any other name, including `mip-0018:token-metadata[v2]`, and events of other types.
@@ -412,6 +421,9 @@ Unless stated otherwise, the header is `domainSep = 0x11` repeated 32 times and 
 - **S7. Independent events.** Of two events in one transaction, a malformed one is rejected and the other applies normally.
 - **S8. Display.** A consumer that displays amounts shows the raw amount `123456` with `decimals = 2` as `1234.56`.
 - **S9. Symbol grouping.** Grouping is a SHOULD, so two outcomes are valid: no groups at all, or exactly the following groups. Kinds 1 and 3 of one contract with `symbol = "ACME"` form one group, and an identity of the same contract under another `domainSep` with `symbol = "ACME"` joins it. An identity with `symbol = "ACME"` from another contract, or on another network, does not. Neither do `acme`, ` ACME`, a type-0 value `ACME`, the key `SYMBOL`, or a missing `symbol`. Updating one member's `name` changes no other member; changing one member's `symbol` moves only that member; a Null record at its `symbol` removes it from the group.
+- **S10. Served keys.** A record `foo = "x"` (type 1) is accepted but not served. If a standard `S` defines key `k`, a record for `k` is served only while the token's current `standards` lists `S`.
+- **S11. Name and symbol length.** A 70-character `name` is displayed as its first 64 characters and a 15-character `symbol` as its first 12.
+- **S12. Image hash.** With `image_sha256` set, content from `image` whose SHA-256 differs is not displayed. An `image_sha256` that is not 32 bytes is unusable.
 
 ## References
 
@@ -452,7 +464,7 @@ The payload of test A1: the three common fields plus `standards`, for `domainSep
 ```
 offset  bytes (hex)                                   meaning
 0       11 × 32                                       domainSep
-32      03                                            kind = ledger
+32      03                                            kind = contract token
 33      04 6e616d65 01 0a 41636d6520546f6b656e        name = "Acme Token"
 50      06 73796d626f6c 01 04 41434d45                symbol = "ACME"
 63      08 646563696d616c73 02 01 06                  decimals = 6 (Uint<8>)
@@ -469,9 +481,10 @@ Each record reads `keyLen | key | valType | valLen | value`.
 | `subject` (color) | Derived for kinds 1 and 2 as `tokenType(domainSep, contractAddress)`; never transmitted. |
 | `tokenOrigin` (domain, contract) | `domainSep` from the payload; `contractAddress` from the event record. |
 | `name`, `ticker`, `decimals` | Common fields `name`, `symbol`, `decimals`. |
-| `description`, `url`, `logo` | Left to a later schema MIP; these can be ordinary keys, with a way to validate any off-chain content ([Off-chain content](#off-chain-content)). |
-| quadrant | `kind`. |
-| `privacy` | Not defined; a later MIP may add keys. |
+| `logo` | `image` and `image_sha256`. |
+| `description`, `url` | Left to a later schema MIP. |
+| quadrant | `kind`: Ledger shielded → 1, Ledger unshielded → 2, both Contract quadrants → 3. |
+| `privacy` | Contract-issued UTXO tokens: the shielded or unshielded `kind`. Contract tokens: not encoded, since their privacy is a spectrum; a later MIP may define keys for it. |
 | `contractToken.standard` | `standards`. |
 | `bridge` | Not defined; an issuer may emit a key for it. |
 | attestation, sequence number | Chain execution and chain order. |
