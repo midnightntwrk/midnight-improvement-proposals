@@ -93,6 +93,7 @@ The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be interpreted a
 - **Contract token**: a token represented by contract logic rather than protocol UTXOs. The representation is up to the contract (public balances as in [MIP-0004](./mip-0004-fungible-token-standard-with-utxo.md), encrypted balances, user-held coins or commitments, or a mix), and this MIP does not depend on it. It uses no color and has no mint effect.
 - **Token identity**: `(network, contractAddress, domainSep, kind)`; `kind` is defined in [Token identity and authority](#token-identity-and-authority).
 - **Record**: one typed key/value entry in an event.
+- **Character**: a visible character, that is, a grapheme cluster as defined by [Unicode Standard Annex #29](https://www.unicode.org/reports/tr29/).
 - **Field**: a token identity plus a key. A field has at most one current value. A token identity exists only while at least one of its fields has a value.
 - **Tombstone**: a record of type Null. It deletes its field.
 - **Consumer**: any reader of these events, such as an indexer, wallet or explorer.
@@ -182,7 +183,7 @@ Each fixed-size field must be exactly as long as the key or value it carries: a 
 | 1 | UTF-8 string | Valid UTF-8; may be empty. |
 | 2 | unsigned integer | `valLen` 1–31; little-endian, the Compact serialization of `Uint<8 × valLen>`. |
 | 3 | JSON | One complete UTF-8 JSON value ([RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html)). |
-| 4 | URI | A URI as defined in [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986): a scheme is required, a fragment is allowed, and relative references are not. All characters are ASCII; characters outside ASCII MUST be percent-encoded, and host names converted to their ASCII form, before emitting. |
+| 4 | URI | A URI as defined in [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986): a scheme is required, a fragment is allowed, and relative references are not. The value is ASCII only: anything outside ASCII MUST be percent-encoded, and host names converted to their ASCII form, before emitting. |
 | 5 | Null | `valLen` = 0. A tombstone; see [Applying records](#applying-records). |
 | 6–255 | reserved | Reject the event. |
 
@@ -242,8 +243,8 @@ For each token identity it describes, a contract SHOULD publish the three common
 
 | Key | Value type | Requirement | Meaning |
 |---|---|---|---|
-| `name` | UTF-8 string (1), 1–64 Unicode characters (code points) | SHOULD | Display name. |
-| `symbol` | UTF-8 string (1), 1–12 Unicode characters (code points) | SHOULD | Ticker. |
+| `name` | UTF-8 string (1), 1–64 characters | SHOULD | Display name. |
+| `symbol` | UTF-8 string (1), 1–12 characters | SHOULD | Ticker. |
 | `decimals` | unsigned integer (2) | SHOULD | Number of decimal places: 10^`decimals` base units make one whole token, so a raw amount is shown as `amount / 10^decimals`. Emitters SHOULD use `Uint<8>`, the type MIP-0011 and MIP-0014 use. |
 | `standards` | UTF-8 string (1) | MAY | Standards the token claims to implement; see below. |
 | `image` | URI (4) | MAY | Image or logo of the token. |
@@ -254,7 +255,7 @@ For each token identity it describes, a contract SHOULD publish the three common
 - Emitters SHOULD keep `name` and `symbol` within their lengths; consumers SHOULD discard any extra characters.
 - If `name`, `symbol` or `decimals` was never set, there is no value; a token whose `decimals` was never set has unknown decimals. Consumers MUST NOT assume a default, such as 0 or 18 decimals. A MIP that defines a token standard MAY define a default for tokens that declare it.
 - When `image_sha256` is set, consumers MUST NOT display content from `image` whose SHA-256 differs from it. Without `image_sha256`, the content cannot be checked; see [Off-chain content](#off-chain-content).
-- `standards` is a list of identifiers separated by single spaces (`0x20`). An identifier is non-empty and contains no spaces or control characters (no byte in `0x00`–`0x20` or `0x7f`). Identifiers are compared exactly and are case-sensitive; order and duplicates carry no meaning. An empty value, or no `standards` field, means no standards are claimed; a malformed value is unusable, not empty.
+- `standards` is a list of identifiers separated by single spaces (`0x20`). An identifier is non-empty and contains no byte in `0x00`–`0x20` or `0x7f` (ASCII space and control codes). Identifiers are compared exactly and are case-sensitive; order and duplicates carry no meaning. An empty value, or no `standards` field, means no standards are claimed; a malformed value is unusable, not empty.
 - This MIP defines only the list format, not what an identifier means or what claiming it implies. A MIP is identified as `mip-NNNN` (for example `mip-0011`), and that MIP defines its meaning. A token may also claim standards from elsewhere, such as BIPs or ERCs; their identifiers and what they mean on Midnight SHOULD be defined in a MIP.
 - `standards` is self-declared. A consumer MAY use an identifier it recognizes to choose a UI or adapter it already trusts, but MUST NOT treat it as proof of conformance and MUST NOT fetch or run code because of it.
 
@@ -422,7 +423,7 @@ Unless stated otherwise, the header is `domainSep = 0x11` repeated 32 times and 
 - **S8. Display.** A consumer that displays amounts shows the raw amount `123456` with `decimals = 2` as `1234.56`.
 - **S9. Symbol grouping.** Grouping is a SHOULD, so two outcomes are valid: no groups at all, or exactly the following groups. Kinds 1 and 3 of one contract with `symbol = "ACME"` form one group, and an identity of the same contract under another `domainSep` with `symbol = "ACME"` joins it. An identity with `symbol = "ACME"` from another contract, or on another network, does not. Neither do `acme`, ` ACME`, a type-0 value `ACME`, the key `SYMBOL`, or a missing `symbol`. Updating one member's `name` changes no other member; changing one member's `symbol` moves only that member; a Null record at its `symbol` removes it from the group.
 - **S10. Served keys.** A record `foo = "x"` (type 1) is accepted but not served. If a standard `S` defines key `k`, a record for `k` is served only while the token's current `standards` lists `S`.
-- **S11. Name and symbol length.** A 70-character `name` is displayed as its first 64 characters and a 15-character `symbol` as its first 12.
+- **S11. Name and symbol length.** A 70-character `name` is truncated to its first 64 characters and a 15-character `symbol` to its first 12.
 - **S12. Image hash.** With `image_sha256` set, content from `image` whose SHA-256 differs is not displayed. An `image_sha256` that is not 32 bytes is unusable.
 
 ## References
