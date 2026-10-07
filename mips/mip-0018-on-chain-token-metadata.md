@@ -250,7 +250,7 @@ For each token identity it describes, a contract SHOULD publish the three common
 | `image_sha256` | bytes (0), exactly 32 | MAY | SHA-256 of the file at `image`. |
 
 - A token that also exposes standard getters (for example those of MIP-0004, MIP-0011 or MIP-0014) SHOULD emit the same values those getters return when it first publishes them. A later update, such as a rename, is the token's current metadata for consumers of this MIP even where the getters cannot change. A MIP that defines a token standard MAY restrict or override the behavior of this MIP for tokens that declare that standard in the emitted `standards` field.
-- A field whose current value lacks the type or form above is **unusable**: consumers show no value for it and MUST NOT fall back to an earlier value. The event that set it remains valid.
+- A field whose current value lacks the type or form above is **unusable**: consumers show no value for it and MUST NOT fall back to an earlier value. The event that set it remains valid. A `name` or `symbol` over its maximum length is still usable; it is truncated as described next.
 - Emitters SHOULD keep `name` and `symbol` within their lengths; consumers SHOULD discard any extra characters.
 - If `name`, `symbol` or `decimals` was never set, there is no value; a token whose `decimals` was never set has unknown decimals. Consumers MUST NOT assume a default, such as 0 or 18 decimals. A MIP that defines a token standard MAY define a default for tokens that declare it.
 - When `image_sha256` is set, consumers MUST NOT display content from `image` whose SHA-256 differs from it. Without `image_sha256`, the content cannot be checked; see [Off-chain content](#off-chain-content).
