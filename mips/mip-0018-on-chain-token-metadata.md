@@ -242,8 +242,8 @@ For each token identity it describes, a contract SHOULD publish the three common
 
 | Key | Value type | Requirement | Meaning |
 |---|---|---|---|
-| `name` | UTF-8 string (1), 1–64 characters | SHOULD | Display name. |
-| `symbol` | UTF-8 string (1), 1–12 characters | SHOULD | Ticker. |
+| `name` | UTF-8 string (1), 1–64 Unicode characters (code points) | SHOULD | Display name. |
+| `symbol` | UTF-8 string (1), 1–12 Unicode characters (code points) | SHOULD | Ticker. |
 | `decimals` | unsigned integer (2) | SHOULD | Number of decimal places: 10^`decimals` base units make one whole token, so a raw amount is shown as `amount / 10^decimals`. Emitters SHOULD use `Uint<8>`, the type MIP-0011 and MIP-0014 use. |
 | `standards` | UTF-8 string (1) | MAY | Standards the token claims to implement; see below. |
 | `image` | URI (4) | MAY | Image or logo of the token. |
