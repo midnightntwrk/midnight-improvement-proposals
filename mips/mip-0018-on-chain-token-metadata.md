@@ -7,7 +7,7 @@ Authors:
 Status: Proposed
 Category: Standards
 Created: 2026-09-17
-Requires: "MIP-0002 Public Contract Log Emission for Compact"
+Requires: "MIP-0002: Public Contract Log Emission for Compact"
 Replaces: none
 MPS: "Off-Chain Token Metadata Registry for Midnight (unnumbered; https://github.com/midnightntwrk/midnight-improvement-proposals/pull/104)"
 License: Apache-2.0
@@ -172,6 +172,7 @@ Rejecting one event never affects another.
 
 Every emitter MUST produce exactly these bytes, whatever its toolchain.
 Compact has no runtime-sized byte strings, so a Compact emitter builds each payload from fixed-size fields (for example `Uint<8>` lengths and `Bytes<K>` keys), using the serialization the Compact compiler provides for those types.
+Each fixed-size field must be exactly as long as the key or value it carries: a shorter value padded with zero bytes is a different value (for example `"AGL"` sent as a `Bytes<4>` is `"AGL\0"`), and consumers accept it as such.
 
 ### Value types
 
@@ -181,7 +182,7 @@ Compact has no runtime-sized byte strings, so a Compact emitter builds each payl
 | 1 | UTF-8 string | Valid UTF-8; may be empty. |
 | 2 | unsigned integer | `valLen` 1–31; little-endian, the Compact serialization of `Uint<8 × valLen>`. |
 | 3 | JSON | One complete UTF-8 JSON value ([RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html)). |
-| 4 | URI | A UTF-8 absolute URI ([RFC 3986](https://www.rfc-editor.org/rfc/rfc3986)). |
+| 4 | URI | A URI as defined in [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986): a scheme is required, a fragment is allowed, and relative references are not. All characters are ASCII; characters outside ASCII MUST be percent-encoded, and host names converted to their ASCII form, before emitting. |
 | 5 | Null | `valLen` = 0. A tombstone; see [Applying records](#applying-records). |
 | 6–255 | reserved | Reject the event. |
 
@@ -210,7 +211,9 @@ Every record in an event belongs to the token identity `(network, contractAddres
 
 **Lookup.** A user finds a token's metadata from what the user holds: the color of a native UTXO (kinds 1 and 2) or a ledger token's contract address (kind 3).
 For native tokens, indexers record the contract address and `domainSep` of every mint in each block, compute `color = tokenType(domainSep, contractAddress)`, and keep a table from color to `(contractAddress, domainSep)`.
-A color held by a user resolves through that table to a token identity (kind 1 for a shielded coin, kind 2 for an unshielded UTXO), whose metadata events the user then queries.
+A mint is a `shieldedMints` or `unshieldedMints` effect of a contract call.
+A color held by a user resolves through that table to a token identity, whose metadata events the user then queries.
+A shielded and an unshielded mint with the same `domainSep` have the same color; the kind is given by what the user holds (a shielded coin → kind 1, an unshielded UTXO → kind 2), not by the color.
 A color MUST always be computed this way, never read from a value.
 For kind 3, querying the contract's kind-3 events lists its ledger tokens. This MIP does not define how a client picks the user's token among several; that is left to the standards the token declares in `standards`.
 
@@ -223,6 +226,7 @@ For kind 3, querying the contract's kind-3 events lists its ledger tokens. This 
 ### Applying records
 
 Consumers apply records from accepted events in chain order: block, transaction within the block, event within the transaction, then record within the event.
+Within a transaction, events are in the ledger's execution order: the guaranteed part of every intent (in ascending segment id), then each successful fallible segment (in ascending segment id); within a part, actions and their operations in order.
 For every token it tracks, a consumer's state MUST equal the result of applying, in that order, every accepted event on the canonical chain.
 A consumer that follows non-final blocks MUST therefore recompute state when a reorganization removes blocks; alternatively it can follow only finalized blocks.
 
@@ -240,7 +244,7 @@ For each token identity it describes, a contract SHOULD publish the three common
 | `decimals` | unsigned integer (2) | SHOULD | Number of decimal places: 10^`decimals` base units make one whole token, so a raw amount is shown as `amount / 10^decimals`. Emitters SHOULD use `Uint<8>`, the type MIP-0011 and MIP-0014 use. |
 | `standards` | UTF-8 string (1) | MAY | Standards the token claims to implement; see below. |
 
-- A token that also exposes MIP-0004, MIP-0011 or MIP-0014 getters SHOULD emit the same values those getters return.
+- A token that also exposes standard getters (for example those of MIP-0004, MIP-0011 or MIP-0014) SHOULD emit the same values those getters return when it first publishes them. A later update, such as a rename, is the token's current metadata for consumers of this MIP even where the getters cannot change. A MIP that defines a token standard MAY restrict or override the behavior of this MIP for tokens that declare that standard in the emitted `standards` field.
 - A field whose current value lacks the type or form above is **unusable**: consumers show no value for it and MUST NOT fall back to an earlier value. The event that set it remains valid.
 - If `name`, `symbol` or `decimals` was never set, there is no value. Consumers MUST NOT assume a default, such as 0 or 18 decimals.
 - `standards` is a list of identifiers separated by single spaces (`0x20`). An identifier is non-empty and contains no spaces or control characters (no byte in `0x00`–`0x20` or `0x7f`). Identifiers are compared exactly and are case-sensitive; order and duplicates carry no meaning. An empty value, or no `standards` field, means no standards are claimed; a malformed value is unusable, not empty.
@@ -259,14 +263,14 @@ Indexers SHOULD group visible token identities that share `(network, contractAdd
 
 - **No events in normal operation.** Normal token operation, such as mints, transfers and burns, MUST NOT emit metadata events. A contract emits them only when a token is created (or first described, for an existing token) and for extraordinary updates, such as a rename.
 - A Compact constructor cannot emit. A contract that wants metadata at deployment exposes a circuit, conventionally `publishMetadata()`, which the deployer calls right after deployment.
-- Who may call an emitting circuit is the contract's choice. Anyone who can call it can rename or withdraw the token, so it SHOULD be access-controlled or publish-once.
+- Who may call an emitting circuit is the contract's choice. Anyone who can call it can rename or withdraw the token, so it SHOULD be access-controlled, publish-once, or removed after use.
 - Records for one token identity MAY be emitted in different events, but SHOULD be grouped into as few events as the size limit allows ([Limitations](#limitations)).
 - The producer is responsible for making sure the transaction that emits the event is included and executed in a block.
 - Everything emitted is public.
 
 ### Consuming
 
-- **Reading events.** How consumers obtain events is defined by [MIP-0002](./mip-0002-public-contract-log-emission.md).
+- **Reading events.** How consumers obtain events is defined by [MIP-0002](./mip-0002-public-contract-log-emission.md). Some sources drop trailing zero bytes; consumers MUST treat missing trailing bytes as zero, so that every `name` is 32 bytes and every `payload` 256 bytes, before decoding.
 - **Completeness.** Verifying the events a service returned does not prove that no later update or tombstone exists, and a field missing from a filtered response is not proof that it was never set. Indexers MAY index only some tokens or keys.
 - **Untrusted input.** Every payload byte is attacker-controlled. Consumers MUST bounds-check every length before slicing and MUST harden their UTF-8, JSON and URI parsers. Consumers MUST NOT fetch a URI from a value without the precautions they apply to any remote content.
 
@@ -338,6 +342,7 @@ A contract that never emits is simply undescribed.
 
 All contracts can emit once MIP-0002 is in effect (ledger v9, Midnight 2.x).
 A contract deployed before then has no emitting circuit, but it does not need redeployment: its maintenance authority can add one.
+Note: a valid maintenance authority is required.
 
 1. Compile a `publishMetadata()` circuit (and optionally `setMetadata(...)`) against the contract's existing ledger layout. It reads the existing `domain` from state and emits it as `domainSep`.
 2. Add its verifier key with a `VerifierKeyInsert` maintenance update signed by the maintenance authority.
@@ -368,7 +373,7 @@ The reference implementation (libraries, examples and tests) lives in [midnight-
 
 ### Dependencies
 
-- [MIP-0002](./mip-0002-public-contract-log-emission.md) `Misc` events: Compact 0.34.0 / language 0.26.0 / runtime 0.19.0, Midnight ledger v9.
+- [MIP-0002](./mip-0002-public-contract-log-emission.md) `Misc` events: Compact 0.34.0 or later (language 0.26.0, runtime 0.19.0 or later), Midnight ledger v9.
 
 ## Testing
 
@@ -403,8 +408,8 @@ Unless stated otherwise, the header is `domainSep = 0x11` repeated 32 times and 
 - **S5. Unusable fields.** After usable values, an empty `name`, a type-1 `decimals` of `"6"`, or `standards = "mip-0004  mip-0011"` (two spaces) is accepted, makes that field unusable and does not fall back to the earlier value.
 - **S6. Separate identities.** The same records under kinds 1, 2 and 3 create three identities, and the same payload from two contracts creates separate identities. Updating one leaves the others unchanged. No color is computed for kind 3.
 - **S7. Independent events.** Of two events in one transaction, a malformed one is rejected and the other applies normally.
-- **S8. Display.** With `decimals = 2`, the raw amount `123456` displays as `1234.56`.
-- **S9. Symbol grouping.** Kinds 1 and 3 of one contract with `symbol = "ACME"` form one group, and an identity of the same contract under another `domainSep` with `symbol = "ACME"` joins it. An identity with `symbol = "ACME"` from another contract, or on another network, does not. Neither do `acme`, ` ACME`, a type-0 value `ACME`, the key `SYMBOL`, or a missing `symbol`. Updating one member's `name` changes no other member; changing one member's `symbol` moves only that member; a tombstone removes it from the group.
+- **S8. Display.** A consumer that displays amounts shows the raw amount `123456` with `decimals = 2` as `1234.56`.
+- **S9. Symbol grouping.** Grouping is a SHOULD, so two outcomes are valid: no groups at all, or exactly the following groups. Kinds 1 and 3 of one contract with `symbol = "ACME"` form one group, and an identity of the same contract under another `domainSep` with `symbol = "ACME"` joins it. An identity with `symbol = "ACME"` from another contract, or on another network, does not. Neither do `acme`, ` ACME`, a type-0 value `ACME`, the key `SYMBOL`, or a missing `symbol`. Updating one member's `name` changes no other member; changing one member's `symbol` moves only that member; a tombstone removes it from the group.
 
 ## References
 
