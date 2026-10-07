@@ -2,7 +2,7 @@
 MPS: "0001"
 Title: Midnight Problem Statement Process
 Authors: Nick Stanford @nstanford5
-Status: Draft
+Status: Proposed
 Category: Governance
 Created: 18-JUN-2026
 Requires: none
@@ -70,12 +70,13 @@ flowchart TD
     Draft[Draft]:::status -->|Editor assigned| C{Editor Review<br/>for Numbering}
     C -->|Not ready<br/>feedback sent| Draft
     C -->|Not suitable<br/>as an MPS| Closed([PR Closed]):::rejected
-    C -->|Number assigned<br/>PR merged| D[Discussion & Update<br/>Authors refine, community contributes]
-    D -->|Authors file issue<br/>requesting consideration| Proposed
+    C -->|Number assigned<br/>PR merged| Proposed
+    C -.->|Required sections empty<br/>merged as Draft| D[Authors complete sections<br/>Path to Proposed]
+    D -->|Status PR| Proposed
 
     %% Status: Proposed
-    Proposed[Proposed]:::status --> E["Community Commentary (≥ 2 weeks)"]
-    E --> F{Editor Vote}
+    Proposed[Proposed]:::status --> E["GitHub Discussion<br/>Community Commentary (≥ 2 weeks)"]
+    E --> F{"Editor Vote<br/>(Discussions poll)"}
     F --> Rejected[Rejected]:::rejected
     F --> Accepted
 
@@ -121,28 +122,25 @@ The Midnight Problem Statement (MPS) process consists of the following stages:
    The editors will be generally lenient at this stage with the understanding that problems can be refined before the MPS is eventually proposed.
    If the editors deem the MPS is not yet ready for numbering, it will be sent back to the authors with specific feedback.
    The editors may also close the PR if the proposal is fundamentally not suitable as an MPS (e.g., it is a duplicate of an existing MPS, out of scope, or already adequately addressed elsewhere).
-   If the editors approve numbering the MPS, they will assign it a number from `NUMBERS_INDEX.md`, update the filename and the number in the document, add the MPS to the index, and merge the PR.
+   If the editors approve numbering the MPS, they will assign it a number from `NUMBERS_INDEX.md`, update the filename and the number in the document, set its status to **Proposed**, and merge the PR.
+   The MPS index (`mps/index.md`) is generated from the front matter; the editors add the number to `NUMBERS_INDEX.md` in a follow-up PR.
+   If required sections of the template are still empty, the editors may instead merge the MPS as **Draft** (see [Draft Phase Clarifications](#draft-phase-clarifications)).
 
-1. **Discussion and update:** The MPS authors finish the draft and address feedback to get it in shape for proposal.
-   Discussion should happen in some public forum, such as the GitHub Discussion forum of this repository.
-   The relevant issue tracker can be used to raise and track issues with the MPS.
-   Contributors can send pull requests to improve the draft MPS.
+1. **Discussion:** After merging, the MPS Editors open a [GitHub Discussion](https://github.com/midnightntwrk/midnight-improvement-proposals/discussions) for the MPS, titled `MPS-NNNN: <Title>` and labelled `MPS Proposal`.
+   Unanswered review comments from the PR are carried over to the Discussion so they are not lost when the PR closes.
    This phase is especially important for MPSs, because the framing of the problem materially affects which solutions will be considered downstream.
-
-1. **Proposal:** When ready, the MPS authors formally propose it to the MPS Editors for consideration.
-   The MPS authors do this by filing an issue in the MPSs repository, asking for the editors to consider the MPS for acceptance.
-   The editors will set the status of the MPS to **Proposed** and mark it as proposed in the index.
-   There should be no more substantive modifications to the document
+   Once an MPS is **Proposed** there should be no more substantive modifications to the document
    (small changes like spelling and punctuation fixes are OK; appending to the *Recommended MIPs* section as MIPs are written is also OK).
+   If the discussion shows that the problem framing needs to change substantially, a new MPS should be authored (see [Versioning](#versioning)).
 
-1. **Review and discussion:** The community and MPS Editors review and discuss the MPS.
-   The MPS Editors will announce a period of community commentary, which usually will last at least two weeks.
-   They will announce by posting in the proposal issue that they will discuss the MPS at a specific regularly scheduled editors meeting after the commentary period has passed.
+1. **Review and community commentary:** The community and MPS Editors review and discuss the MPS in its GitHub Discussion.
+   The commentary period lasts at least two weeks from the later of the MPS becoming **Proposed** and its Discussion being opened.
 
-1. **Editor decision:** The MPS Editors decide to accept the MPS or not.
-   The editors will vote to accept (status **Accepted**) or reject (status **Rejected**) the MPS.
+1. **Editor decision:** When the commentary period has passed and the discussion has settled, the MPS Editors decide to accept the MPS or not.
+   An editor posts in the MPS's Discussion that the MPS is moving to a vote, opens a poll in the **Polls** category of GitHub Discussions (labelled `MPS Vote`) asking whether to move the MPS from Proposed to Accepted, and adds the vote to the [rolling agenda](../ROLLING_AGENDA.md) for a regularly scheduled editors meeting.
+   The poll closes at that meeting, and the editors record the result: accept (status **Accepted**) or reject (status **Rejected**).
    Acceptance signals that the editors recognise the problem as real, well-scoped, and worth the community's attention — it does not commit any team to a specific solution.
-   The editors will update the MPS document and the index to reflect the status.
+   The editors update the status in the MPS document through a status PR that links the poll.
 
 1. **Recommended MIPs:** Accepted MPSs become inputs to the MIP process.
    The *Recommended MIPs* section of the MPS catalogues the proposals that are expected to address parts of the problem domain.
@@ -160,11 +158,13 @@ The draft phase of the MPS process is designed for open collaboration. The follo
 
 **Drafts live in the repository from the start.** An MPS enters the repository as a PR when the author has a draft document (even if incomplete). This ensures that all discussion, revision history, and collaboration happens publicly in the repository from day one. There is no requirement to perfect an MPS outside the repository before creating the PR.
 
-**Numbers are assigned at draft time, not at acceptance.** When an MPS Editor numbers a draft MPS and merges its PR, the number is immediately assigned. This means an MPS has a stable identifier even while still in Draft status. See the [Status Transition Gates](#status-transition-gates) table for the full lifecycle. Numbers may have gaps in the sequence due to rejected or withdrawn proposals — this is expected and unavoidable.
+**Numbers are assigned at numbering time, not at acceptance.** When an MPS Editor numbers an MPS and merges its PR, the number is immediately assigned. This means an MPS has a stable identifier before it is accepted. See the [Status Transition Gates](#status-transition-gates) table for the full lifecycle. Numbers may have gaps in the sequence due to rejected or withdrawn proposals — this is expected and unavoidable.
 
-**Formal submission is separate from the initial PR.** Creating the PR to add a draft MPS does not automatically submit it for editor consideration. To formally propose an MPS for acceptance, the authors must file a separate issue in the repository explicitly asking the MPS Editors to review it. The editors will then begin the community commentary period and schedule a vote.
+**Merging normally makes an MPS Proposed.** Authors submit their PR with `Status: Draft`; when the editors number and merge it, they set the status to **Proposed**. No separate submission issue is needed: the editors open the GitHub Discussion, and the commentary period starts.
 
-**Community refinement happens in GitHub Discussions.** Once a draft MPS has been merged into the repository, public discussion and refinement should take place in a [GitHub Discussion](https://github.com/midnightntwrk/midnight-improvement-proposals/discussions). When discussion produces meaningful changes that require updates to the MPS document, the GitHub Discussion can be converted to an Issue, and the Issue can inform a follow-up Pull Request.
+**Incomplete MPSs can be merged as Draft.** If required sections of the template are still empty, the editors may merge the MPS as **Draft** rather than hold the PR. Its Discussion then lists the missing sections as a *Path to Proposed* checklist. When the sections are complete, the authors ask in the Discussion (or open a PR), and the editors move the MPS to **Proposed** with a status PR; the commentary period starts then.
+
+**Community refinement happens in GitHub Discussions.** Once an MPS has been merged into the repository, public discussion and refinement should take place in its [GitHub Discussion](https://github.com/midnightntwrk/midnight-improvement-proposals/discussions). When discussion produces meaningful changes that require updates to the MPS document, the GitHub Discussion can be converted to an Issue, and the Issue can inform a follow-up Pull Request.
 
 ### MPS Categories
 
@@ -181,8 +181,8 @@ MPSs are categorized to help organize and manage the different types of problem 
 
 MPSs can have the following statuses mentioned in the Process Overview above:
 
-- **Draft:** The MPS has been submitted as a PR to the MPSs repository and is undergoing writing and revision.
-- **Proposed:** A draft MPS has been formally proposed to the MPS Editors for consideration.
+- **Draft:** The MPS has been submitted as a PR to the MPSs repository and is undergoing writing and revision, or it was merged with required sections still to be written.
+- **Proposed:** The MPS has been numbered and merged with all required sections, and is open for community commentary ahead of an editor vote.
   Writing and revision are done.
 - **Accepted:** The MPS Editors have voted to accept a proposed MPS.
   The problem is recognised; the *Recommended MIPs* section becomes the tracking surface for ongoing work.
@@ -205,10 +205,10 @@ The following table describes the criteria that must be met to transition betwee
 
 | From | To | Gate / Criteria |
 |---|---|---|
-| — | **Draft** | PR submitted to the MPSs repository; editor assigns a number and merges |
-| **Draft** | **Proposed** | Authors file an issue requesting editor consideration; document is complete |
-| **Proposed** | **Accepted** | Editor vote after community commentary period (≥ 2 weeks) |
-| **Proposed** | **Rejected** | Editor vote after community commentary period |
+| — | **Draft** | PR submitted to the MPSs repository with `Status: Draft` |
+| **Draft** | **Proposed** | Editor numbers and merges a complete MPS; or, for an MPS merged as Draft, the missing sections are written and a status PR is merged |
+| **Proposed** | **Accepted** | Editor vote (Discussions poll, `MPS Vote`) after the community commentary period (≥ 2 weeks); status PR links the poll |
+| **Proposed** | **Rejected** | Editor vote (Discussions poll, `MPS Vote`) after the community commentary period; status PR links the poll |
 | **Accepted** | **Resolved** | Editors confirm Recommended MIPs have addressed the problem; goals have been met |
 | Any (pre-vote) | **Withdrawn** | Author(s) withdraw the MPS |
 | Any (post-accept) | **Superseded** | A newer accepted MPS explicitly replaces this one |
@@ -216,10 +216,10 @@ The following table describes the criteria that must be met to transition betwee
 
 #### Submission
 
-When a draft MPS is "finished" to the authors' satisfaction, it should be proposed by filing an issue in the [Midnight Improvement Proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) repository.
-The issue should specify the MPS number and ask the MPS Editors to formally consider it for acceptance.
-The MPS Editors will announce the commentary period and when they will vote on the proposal.
-After proposing for editor consideration, the MPS should not be substantially altered.
+An MPS is submitted by opening a PR in the [Midnight Improvement Proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) repository, as described in the process overview.
+When the editors number and merge it as **Proposed**, they open its GitHub Discussion, and the commentary period begins.
+An MPS merged as **Draft** is proposed later: when its missing sections are written, the authors ask in the Discussion and the editors move it to **Proposed** with a status PR.
+Once Proposed, the MPS should not be substantially altered.
 
 Note: Pull requests should not include implementation code or detailed designs — those belong in MIPs.
 An MPS that prescribes a particular implementation is unlikely to be accepted; if the authors have a specific solution in mind, they should accompany the MPS with a corresponding MIP.
@@ -230,8 +230,11 @@ Note: Proposals addressing a specific MPS should be listed in that MPS's *Recomm
 
 Once an MPS is proposed, it enters a period of public review and discussion.
 Feedback is encouraged from all Midnight community members.
-Discussion should take place on the GitHub issue or by attending an MPS Editors meeting.
+Discussion should take place in the MPS's GitHub Discussion or by attending an MPS Editors meeting.
 Technical experts may be consulted for specific aspects of the problem domain.
+
+When the commentary period has passed, an editor announces the vote in the Discussion, opens the poll in the **Polls** category with the `MPS Vote` label, and adds it to the [rolling agenda](../ROLLING_AGENDA.md).
+The result is posted in the poll and the Discussion, and recorded in the MPS document by a status PR.
 
 #### Recommended MIPs
 
@@ -246,7 +249,7 @@ Engineering teams (Shielded Architects & Engineers, community developers) implem
 - **GitHub Repository:** The `mps` subdirectory (in the MIPs repository) on GitHub will be used to:
     - Store all MPS documents.
     - Track the status of each MPS.
-    - Facilitate discussion through PRs and issues.
+    - Facilitate discussion through PRs, issues and GitHub Discussions (including vote polls).
 - **Numbers Index:** [`NUMBERS_INDEX.md`](../NUMBERS_INDEX.md) is the canonical index of assigned MPS and MIP numbers.
 - **Discussion Forums:** The Midnight Governance Hub (future state) and Discord server should be used for broader discussions and early-stage idea sharing.
 - **Meeting Notes:** Notes from any meetings related to MPS discussions should be publicly available in this GitHub repository or linked from it.
@@ -344,6 +347,7 @@ The body of an MPS should contain the following sections (see `mps-template.md` 
 This MPS introduces a process that runs alongside the existing MIP process; it does not modify MIP-0001.
 Existing MPS documents in the `mps/` directory predate this process document and use a mix of statuses (predominantly **Proposed** and **Accepted**).
 Those MPSs should be treated as grandfathered: their current statuses remain valid, and editors may update them to align with the statuses defined here as a housekeeping pass.
+MPSs that are already **Proposed** enter the vote described in this document as part of that pass; any that do not yet have a GitHub Discussion get one first, and their commentary period runs from when it opens.
 
 ## Security Considerations
 

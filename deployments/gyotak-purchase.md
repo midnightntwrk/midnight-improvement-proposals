@@ -197,8 +197,20 @@ Preprod  e413ff91958079d1ee2e4c792fe19a9c14a5d4ed7eb7966d3526308a3ea2f846
 Owner    20fc1d0d5c405e95c669158a3db32217e2be65247dbea06e243745832af2e1be
 ```
 
-The Mainnet ledger is empty at the time of writing; the records below are from the
-Preprod rehearsal.
+Mainnet address: `d11d52bd5875ecc2e89e97149e0237db20a91c989f30268950e892655a2a2a57` (deployed 2026-09-18, block 2,636,444, tx `00d4ff9f46f867966e1fcdd52d1da3e01a51311fe514dd63bae76034d2a1aa8db9`, owner verified on the Mainnet indexer). After authorization the Foundation left the choice to us, and we kept the existing address rather than redeploy.
+
+The Mainnet ledger holds one purchase and one binding, both written by the mirror on
+2026-09-19. They are the operator's own test order, not a customer's: purchase
+`PB-20260919-6d6c9130`, bound to the operator's handle `gyotaku_proto`. Read back from
+the Mainnet indexer: `purchases.size` and `bindings.size` are both 1, and the owner is
+unchanged since deploy.
+
+| Record | Identifier (SDK txId) | On-chain hash | Block | Time (UTC) |
+|---|---|---|---|---|
+| `recordPurchase` | `00f3755ede34f9253839a6e0c65c9fa314bb7adc8f7f240739f37d1567536faf6f` | `a51813327f93523ec7591e35cbe953f0ec3fcc6a19ff321756da49ea7f5240d0` | 2,645,188 | 2026-09-19 03:57:36 |
+| `recordXBinding` | `0000bbca0593b818c6e877c7de073166a1b57bc05c048a01afa18ec5222fbe5489` | `516744e69c4075887ea8953f893fa73ced4f0b3701e42a5cc42aafee5898a66d` | 2,645,203 | 2026-09-19 03:59:06 |
+
+The records in §§ 5.1–5.2 are from the Preprod rehearsal.
 
 ### 5.1 The commitment identity, measured
 
@@ -415,6 +427,7 @@ holds. Submission processes for the three contracts are serialised through a sha
   covers a new contract address and therefore requires its own authorization, as Circuit
   Hub approval is per-contract. v2 remains deployed and frozen (§ 2.2).
 - The v3 Mainnet contract was deployed on 2026-09-18 ahead of this request. We record that
-  plainly rather than omit it: the deploy transaction is in § 5.2, the ledger is empty, and
-  no record has been written to it. If the Foundation would prefer the address retired and
-  redeployed after authorization, we will do so.
+  plainly rather than omit it: the deploy transaction is in § 5.2. The ledger was empty
+  when this request was opened; the mirror wrote one test purchase and its binding on
+  2026-09-19, before authorization (§ 5). After authorization the Foundation left the
+  choice to us, and we kept the existing address rather than redeploy.
