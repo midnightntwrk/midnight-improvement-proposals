@@ -1327,35 +1327,38 @@ as an empty committee (check 28) (`docs/preprod-run-5oct.md`).
 
 ### Mainnet deployment
 
-This revision is filed before either contract is deployed, as the 16 September correction
-promised. **Every line marked [AFTER THE MAINNET DEPLOY] is blank on purpose.** They are
-filled in after the deploy and published in an addendum to this revision, together with the
-commit that pins both addresses in `api/src/deploy-guard.ts`
-(`MAINNET_VEILCORE_ADDRESS` and `MAINNET_CLAIMS_ADDRESS`, both empty in the code today).
-Until then, joining either contract on mainnet is refused.
+This revision was filed on 7 October 2026 (midnight-improvement-proposals pull request
+#373), before either contract was deployed, as the 16 September correction promised. The
+details below were added on 8 October 2026, after the deploy, as an addendum to this
+revision, together with the commit that pins both addresses in `api/src/deploy-guard.ts`
+(`MAINNET_VEILCORE_ADDRESS` and `MAINNET_CLAIMS_ADDRESS`). Joining either contract on
+mainnet accepts only these addresses.
 
 **Main contract (`veilcore`, source `ceb3a16`, fingerprints in `e89a387`):**
 
-- **Contract address:** [AFTER THE MAINNET DEPLOY]
-- **Deploy transaction id:** [AFTER THE MAINNET DEPLOY]
-- **Circuit keys in the deploy transaction:** [AFTER THE MAINNET DEPLOY: 8, or fewer if
-  halved]; the rest added in [AFTER THE MAINNET DEPLOY: n] maintenance transactions; all 24
-  on chain at [AFTER THE MAINNET DEPLOY: date, time]
+- **Contract address:** `a04de0a2684f3713276325649540c7278ffd07cba8b014e7489844f319a02347`
+- **Deploy transaction id:** `007553ba3c32d93d305ec8b828bb3481d3f9c79d9e6644fa12f19e623557141c70`
+  (block 2922687, 8 October 2026, 06:44 EDT)
+- **Circuit keys in the deploy transaction:** 8; the rest added in 16 maintenance
+  transactions; all 24 on chain at 06:50 EDT, 8 October 2026. The tool then checked that the
+  deploy transaction carries the VeilCore constructor's starting state.
 - **Maintenance authority:** one signing key, on paper, two copies, as under *The
   maintenance authority*
 
 **Claims contract (`veilcore-claims`, source `cd30c11`, built at `c75c155`, fingerprints in
 `765cab1`):**
 
-- **Contract address:** [AFTER THE MAINNET DEPLOY]
-- **Deploy transaction id:** [AFTER THE MAINNET DEPLOY]
-- **Retirement (empty committee) transaction:** [AFTER THE MAINNET DEPLOY]
-- **Deployed:** [AFTER THE MAINNET DEPLOY: date, time]
+- **Contract address:** `ef763eb4ad1846b716dbfa90c00560a9a943ffb4d1fc638b0707df5adefd070d`
+- **Deploy transaction id:** `0023acc5850b4fc87f97e12cee605d22e80570f40731e38d8574083984e7868f80`
+  (all 5 circuit keys in the deploy transaction; block 2922871)
+- **Retirement (empty committee) transaction:**
+  `0091979012d160ff9e4cb1162b8e29f18dfccdeb00068357a40913fccfe658335f` (block 2922874)
+- **Deployed:** 8 October 2026, 07:03 EDT
 
 **Both:**
 
 - **Pin commit** (`MAINNET_VEILCORE_ADDRESS` and `MAINNET_CLAIMS_ADDRESS` in
-  `api/src/deploy-guard.ts`): [AFTER THE MAINNET DEPLOY]
+  `api/src/deploy-guard.ts`): `5722fdb` (8 October 2026)
 
 ### Testing and deployment status
 
@@ -1426,8 +1429,8 @@ Until then, joining either contract on mainnet is refused.
   September; the provenance contract on Preview at
   `f75d42dc1e4ec5a2cdcc50509f2d432ad60fb5c64b5da921a0ec22a0e287f939` (27 September,
   before the merge).
-- **Nothing is deployed to mainnet. The deploy key issued on 8 September has not been
-  used.** Neither contract is on mainnet.
+- **Both contracts were deployed to mainnet on 8 October 2026** (*Mainnet deployment*
+  above). The steps before it are listed here as they stood at filing.
 - **Zero-spend mainnet rehearsal (7 October 2026):** passed. The operator tool on mainnet
   through Blockfrost: indexer, node and local proof server connected; the deploy wallet
   restored from its recovery phrase, its DUST address matching the wallet app's; synced in
