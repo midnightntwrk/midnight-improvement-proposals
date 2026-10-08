@@ -8,7 +8,7 @@ This repository is the canonical home for Midnight's open development documents.
 
 - **[`mips/`](./mips)** — **Midnight Improvement Proposals**. Concrete, technically-precise proposals to change the Midnight ecosystem. See [`mips/mip-template.md`](./mips/mip-template.md) and [MIP-0001](./mips/mip-0001-mip-process.md) for the full process.
 - **[`mps/`](./mps)** — **Midnight Problem Statements**. Solution-agnostic descriptions of friction, gaps, or opportunities in the ecosystem. MPS documents define *what* needs solving; MIPs propose *how*. See [`mps/mps-template.md`](./mps/mps-template.md).
-- **[`deployments/`](./deployments)** — Records of contracts and applications deployed on Midnight, contributed by ecosystem teams. This is a temporary process for MNF internal review of the [contract-deploy-rubric](./deployments/contract-deployment-rubric.md) -- no community review is required. *Contract deploy requests are **not** audits!*
+- **[`deployments/`](./deployments)** — Archive of the contract deploy requests MNF reviewed while mainnet contract deployment was permissioned. Contract deployment on mainnet is now permissionless, so deploy requests are no longer needed. The records are kept as a historical record and are no longer updated or added to. The [contract deployment rubric](./deployments/contract-deployment-rubric.md) remains available as optional self-assessment guidance. *These reviews were **not** audits.*
 - **[`NUMBERS_INDEX.md`](./NUMBERS_INDEX.md)** — Canonical index of assigned MIP and MPS numbers. Maintainers of this repository should reference this index for the next available number
 
 ## How to contribute
