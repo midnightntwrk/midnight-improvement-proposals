@@ -1,0 +1,935 @@
+<title>Source of Funds by Construction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+
+<style>
+  :root {
+    --paper:      #EDEFF4;
+    --surface:    #F9FAFC;
+    --surface-2:  #E3E7EF;
+    --ink:        #14171F;
+    --ink-soft:   #3A4152;
+    --muted:      #6A7183;
+    --rule:       #C9CEDA;
+    --rule-soft:  #DDE1E9;
+    --accent:     #33468C;
+    --accent-2:   #6274BE;
+    --accent-wash:#DFE4F4;
+    --ember:      #A8442B;
+    --ember-wash: #F3E1DB;
+    --shadow:     0 1px 2px rgba(20, 23, 31, .05), 0 8px 24px -16px rgba(20, 23, 31, .25);
+
+    --display: "Newsreader", Georgia, "Times New Roman", serif;
+    --body:    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    --measure: 68ch;
+    --gutter: clamp(1.25rem, 4vw, 3rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #0E1118;
+      --surface:    #161A23;
+      --surface-2:  #1E2430;
+      --ink:        #E7EAF1;
+      --ink-soft:   #BCC3D2;
+      --muted:      #8B93A5;
+      --rule:       #2C3342;
+      --rule-soft:  #232936;
+      --accent:     #97A7EC;
+      --accent-2:   #7C8DD6;
+      --accent-wash:#1C2338;
+      --ember:      #E29173;
+      --ember-wash: #33211B;
+      --shadow:     0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #0E1118;
+    --surface:    #161A23;
+    --surface-2:  #1E2430;
+    --ink:        #E7EAF1;
+    --ink-soft:   #BCC3D2;
+    --muted:      #8B93A5;
+    --rule:       #2C3342;
+    --rule-soft:  #232936;
+    --accent:     #97A7EC;
+    --accent-2:   #7C8DD6;
+    --accent-wash:#1C2338;
+    --ember:      #E29173;
+    --ember-wash: #33211B;
+    --shadow:     0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 78rem;
+    margin: 0 auto;
+    padding: 0 var(--gutter) 6rem;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    padding: clamp(3rem, 8vw, 5.5rem) 0 2.25rem;
+    display: grid;
+    gap: 1.75rem;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-size: clamp(2.5rem, 6.5vw, 4.4rem);
+    line-height: 1.02;
+    letter-spacing: -.022em;
+    margin: 0;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .standfirst {
+    font-family: var(--display);
+    font-size: clamp(1.1rem, 2vw, 1.32rem);
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 56ch;
+    margin: 0;
+  }
+
+  .frontmatter {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 1rem 2rem;
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 1.5rem;
+    font-family: var(--mono);
+    font-size: .78rem;
+  }
+
+  .frontmatter div { display: grid; gap: .3rem; }
+  .frontmatter dt { color: var(--muted); letter-spacing: .09em; text-transform: uppercase; font-size: .66rem; margin: 0; }
+  .frontmatter dd { margin: 0; color: var(--ink-soft); }
+
+  /* ---------- sections ---------- */
+
+  section { padding-top: clamp(3rem, 6vw, 4.75rem); }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: .9rem;
+    margin-bottom: 1.5rem;
+    border-top: 2px solid var(--ink);
+    padding-top: .75rem;
+  }
+
+  .sec-num {
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: var(--accent);
+    letter-spacing: .1em;
+    flex: none;
+    padding-top: .35rem;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: clamp(1.6rem, 3.2vw, 2.15rem);
+    line-height: 1.14;
+    letter-spacing: -.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--body);
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: -.005em;
+    margin: 0 0 .5rem;
+  }
+
+  p { max-width: var(--measure); margin: 0 0 1.1rem; }
+  p:last-child { margin-bottom: 0; }
+  .lede { font-size: 1.06rem; color: var(--ink-soft); }
+
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+
+  code, .tt {
+    font-family: var(--mono);
+    font-size: .85em;
+    background: var(--surface-2);
+    padding: .1em .35em;
+    border-radius: 3px;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  /* ---------- two-column framing plate ---------- */
+
+  .split {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 1.75rem;
+  }
+
+  .split > div {
+    background: var(--surface);
+    padding: 1.6rem 1.5rem;
+    display: grid;
+    gap: .7rem;
+    align-content: start;
+  }
+
+  .split .kicker {
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .split h3 { font-size: 1.12rem; font-family: var(--display); font-weight: 600; margin: 0; }
+  .split p { font-size: .93rem; margin: 0; max-width: none; }
+  .split ul { margin: 0; padding-left: 1.1rem; font-size: .9rem; color: var(--ink-soft); display: grid; gap: .35rem; }
+  .split .verdict {
+    font-family: var(--mono);
+    font-size: .74rem;
+    padding: .45rem .6rem;
+    border-radius: 3px;
+    background: var(--surface-2);
+    color: var(--ink-soft);
+  }
+  .split .this-one { background: var(--accent-wash); }
+  .split .this-one .kicker { color: var(--accent); }
+  .split .this-one .verdict { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+
+  /* ---------- mechanism figure ---------- */
+
+  figure { margin: 2rem 0 0; }
+
+  .flow {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 60rem) {
+    .flow { grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; }
+  }
+
+  .stage {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1.15rem 1.15rem 1.25rem;
+    display: grid;
+    gap: .6rem;
+    align-content: start;
+  }
+
+  .stage .when {
+    font-family: var(--mono);
+    font-size: .66rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .stage .what { font-family: var(--display); font-size: 1.05rem; font-weight: 600; line-height: 1.25; }
+  .stage p { font-size: .87rem; color: var(--ink-soft); margin: 0; max-width: none; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .chip {
+    font-family: var(--mono);
+    font-size: .72rem;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    border-radius: 3px;
+    padding: .18rem .45rem;
+    color: var(--ink-soft);
+  }
+  .chip.hot { border-color: var(--accent-2); color: var(--accent); background: var(--accent-wash); }
+
+  .arrow {
+    display: grid;
+    place-items: center;
+    color: var(--accent-2);
+  }
+  .arrow svg { display: block; }
+  @media (max-width: 59.99rem) {
+    .arrow svg { transform: rotate(90deg); }
+  }
+
+  figcaption {
+    font-size: .85rem;
+    color: var(--muted);
+    margin-top: .9rem;
+    max-width: var(--measure);
+    font-style: italic;
+    font-family: var(--display);
+  }
+
+  /* ---------- coverage list ---------- */
+
+  .reqs { display: grid; gap: 1px; background: var(--rule); border-block: 1px solid var(--rule); margin-top: 1.75rem; }
+
+  .req {
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: 2.4rem 1fr;
+    gap: 0 1rem;
+    padding: 1.15rem 1rem 1.25rem;
+  }
+
+  @media (min-width: 52rem) {
+    .req { grid-template-columns: 2.4rem minmax(0, 1fr) 10.5rem; align-items: start; }
+  }
+
+  .req-n {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: .85rem;
+    color: var(--muted);
+    padding-top: .1rem;
+  }
+
+  .req-body h3 { margin-bottom: .3rem; }
+  .req-body p { font-size: .91rem; margin: 0; color: var(--ink-soft); max-width: 62ch; }
+
+  .meter {
+    grid-column: 2;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-top: .7rem;
+  }
+  @media (min-width: 52rem) {
+    .meter { grid-column: 3; grid-row: 1; margin-top: .15rem; justify-content: flex-end; }
+  }
+
+  .pips { display: flex; gap: 3px; flex: none; }
+  .pip { width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--accent-2); }
+  .pip.on { background: var(--accent); border-color: var(--accent); }
+  .pip.gap { border-color: var(--ember); }
+  .pip.gap.on { background: var(--ember); border-color: var(--ember); }
+
+  .meter-label {
+    font-family: var(--mono);
+    font-size: .67rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-align: right;
+  }
+  .meter.is-gap .meter-label { color: var(--ember); }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem 1.4rem;
+    font-family: var(--mono);
+    font-size: .7rem;
+    color: var(--muted);
+    margin-top: 1rem;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: .45rem; }
+
+  /* ---------- mode cards ---------- */
+
+  .modes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+    gap: 1rem;
+    margin-top: 1.75rem;
+  }
+
+  .mode {
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--surface);
+    padding: 1.3rem 1.25rem 1.4rem;
+    display: grid;
+    gap: .75rem;
+    align-content: start;
+    box-shadow: var(--shadow);
+  }
+
+  .mode-id {
+    font-family: var(--mono);
+    font-size: .66rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .mode-id b { color: var(--accent); font-weight: 500; }
+
+  .mode h3 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; margin: 0; line-height: 1.2; }
+  .mode p { font-size: .89rem; margin: 0; max-width: none; color: var(--ink-soft); }
+
+  .mode dl { margin: .2rem 0 0; display: grid; gap: .55rem; font-size: .84rem; }
+  .mode dt { font-family: var(--mono); font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .mode dd { margin: .1rem 0 0; }
+  .mode dd.cost { color: var(--ember); }
+
+  /* ---------- q&a ---------- */
+
+  .qa { margin-top: 1.75rem; display: grid; gap: 1px; background: var(--rule); border-block: 1px solid var(--rule); }
+
+  details {
+    background: var(--surface);
+    padding: 0;
+  }
+  summary {
+    cursor: pointer;
+    list-style: none;
+    padding: .95rem 1rem;
+    display: grid;
+    grid-template-columns: 2.4rem 1fr auto;
+    gap: 1rem;
+    align-items: baseline;
+    font-size: .95rem;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after {
+    content: "+";
+    font-family: var(--mono);
+    color: var(--accent);
+    font-size: 1rem;
+    line-height: 1;
+  }
+  details[open] summary::after { content: "\2212"; }
+  summary .q-n { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: .82rem; color: var(--muted); }
+  summary:hover { background: var(--surface-2); }
+  .answer { padding: 0 1rem 1.2rem 3.4rem; }
+  .answer p { font-size: .91rem; color: var(--ink-soft); margin: 0 0 .7rem; }
+  .answer p:last-child { margin: 0; }
+  .verdict-tag {
+    font-family: var(--mono);
+    font-size: .64rem;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: .45rem;
+  }
+  .verdict-tag.open { color: var(--ember); }
+
+  /* ---------- open points ---------- */
+
+  .openbits {
+    margin-top: 1.5rem;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--surface);
+    padding: 1.3rem 1.4rem;
+    display: grid;
+    gap: 1rem;
+  }
+  .openbits > .ob-head {
+    font-family: var(--mono);
+    font-size: .66rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--ember);
+  }
+  .openbits dl { margin: 0; display: grid; gap: .9rem; }
+  .openbits dt { font-family: var(--body); font-weight: 600; font-size: .92rem; margin-bottom: .2rem; }
+  .openbits dd { margin: 0; font-size: .89rem; color: var(--ink-soft); max-width: 70ch; }
+
+  .unlocks { margin: 1.2rem 0 0; padding: 0; list-style: none; display: grid; gap: .8rem; }
+  .unlocks li {
+    display: grid;
+    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+    gap: .2rem 1.25rem;
+    border-top: 1px solid var(--rule-soft);
+    padding-top: .8rem;
+  }
+  @media (max-width: 40rem) { .unlocks li { grid-template-columns: 1fr; } }
+  .unlocks b {
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+    padding-top: .18rem;
+  }
+  .unlocks span { font-size: .92rem; color: var(--ink-soft); }
+
+  /* ---------- gaps ---------- */
+
+  .gaps { display: grid; gap: 1rem; margin-top: 1.75rem; }
+
+  .gap-item {
+    border-left: 2px solid var(--ember);
+    background: var(--ember-wash);
+    border-radius: 0 4px 4px 0;
+    padding: 1.1rem 1.25rem;
+    display: grid;
+    gap: .4rem;
+  }
+  .gap-item h3 { font-size: .98rem; }
+  .gap-item p { font-size: .9rem; margin: 0; color: var(--ink-soft); max-width: 70ch; }
+
+  /* ---------- closing ---------- */
+
+  .closing {
+    margin-top: 1.75rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: 1.5rem 2.5rem;
+  }
+  .closing > div { display: grid; gap: .45rem; align-content: start; border-top: 1px solid var(--rule); padding-top: .9rem; }
+  .closing .shift { font-family: var(--mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .closing h3 { font-family: var(--display); font-size: 1.08rem; font-weight: 600; }
+  .closing p { font-size: .9rem; margin: 0; color: var(--ink-soft); max-width: none; }
+
+  footer {
+    margin-top: clamp(3.5rem, 7vw, 5rem);
+    border-top: 1px solid var(--rule);
+    padding-top: 1.25rem;
+    font-family: var(--mono);
+    font-size: .73rem;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem 1.5rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Relevance note &middot; custom spend logic &rarr; MPS-0025</div>
+    <h1>Source of funds, <em>by construction</em></h1>
+    <p class="standfirst">MPS-0025 asks how a custodian can obtain provenance evidence for an incoming shielded asset. Custom spend logic answers upstream of that: the chain proves compliance since mint, and the custodian's job becomes choosing which token types are guarded by contracts its lawyers accept.</p>
+    <dl class="frontmatter">
+      <div><dt>Reads against</dt><dd><a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0025-shielded-source-of-funds.md">MPS-0025</a> — Source-of-Funds Evidence for Incoming Shielded Assets</dd></div>
+      <div><dt>Source design</dt><dd>Custom spend logic — early MIP draft, direction only</dd></div>
+      <div><dt>Also touches</dt><dd><a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0013-zswap-business-logic.md">MPS-0013</a>, <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0024-custodian-safe-shielded-spends.md">MPS-0024</a>, <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0021-phase2-contract-to-contract.md">MPS-0021</a>, <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0014-proof-verification-recursion.md">MPS-0014</a>, <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0029-compact-caller-identity.md">MPS-0029</a></dd></div>
+      <div><dt>Status</dt><dd>Draft assessment, September 2026</dd></div>
+    </dl>
+  </header>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>The gap MPS-0025 names</h2></div>
+    <p class="lede"><a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0025-shielded-source-of-funds.md">MPS-0025</a> separates three things that a transparent chain lets a custodian conflate. <strong>Receipt</strong> — the asset arrived, and the ledger will confirm it. <strong>Attribution</strong> — where the asset came from, which the shielded ledger deliberately does not say. <strong>Acceptance</strong> — whether the asset can be credited, redeemed, passed on, quarantined or rejected, which is the decision the custodian actually has to make and cannot make from receipt alone.</p>
+    <p>Every mechanism proposed against that gap so far has tried to supply the missing middle term. Reconstruct attribution — through an attestation, an encrypted transfer context, a selective disclosure, a viewing capability — and acceptance follows from it. That framing is what MPS-0025's seven open questions are all shaped around: who attests, in what envelope, verified how, bound to which asset.</p>
+    <p>Custom spend logic makes acceptance decidable without attribution — and then, where a custodian does need attribution, lets the rule demand it as a condition of the spend. Either way the decision moves off the arriving asset and onto the asset class, taken once, in advance, by the people qualified to take it.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Two kinds of evidence</h2></div>
+    <p>The two families have different failure modes, and <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0025-shielded-source-of-funds.md">MPS-0025</a>'s requirements land very differently on each.</p>
+
+    <div class="split">
+      <div>
+        <div class="kicker">Family A</div>
+        <h3>Evidence <em>about</em> a transfer</h3>
+        <p>Something is produced alongside the asset and travels with it: an attestation, an encrypted envelope, a disclosed viewing capability, a bilateral message between institutions.</p>
+        <ul>
+          <li>Depends on the sender producing it honestly and completely.</li>
+          <li>Needs a binding argument — that <em>this</em> evidence describes <em>this</em> coin.</li>
+          <li>Says nothing about hops before the one it describes.</li>
+          <li>Nothing prevents the non-compliant transfer; it is visible afterwards, if at all.</li>
+        </ul>
+        <p class="verdict">Answers "what do I know about where this came from?"</p>
+      </div>
+      <div class="this-one">
+        <div class="kicker">Family B — this design</div>
+        <h3>Evidence <em>by</em> construction</h3>
+        <p>A rule is bound into the token type at mint. The Zswap <code>spend</code> circuit re-derives the type from the rule on every spend and refuses to produce a valid input unless the rule holds. A coin of that type therefore cannot exist unless the rule held on every hop that led to it.</p>
+        <ul>
+          <li>Independent of sender cooperation, honesty, or availability.</li>
+          <li>No binding problem — the evidence <em>is</em> the coin.</li>
+          <li>Covers the entire history, not one hop.</li>
+          <li>The non-compliant transfer never happens; there is nothing to detect.</li>
+        </ul>
+        <p class="verdict">Answers "could this have reached me any other way?"</p>
+      </div>
+    </div>
+
+    <p style="margin-top:1.5rem">The apparent trade is that Family B says nothing specific. It does not name a sender, an institution, or a customer; it certifies that a stated rule was enforced, and the rule is whatever the issuer wrote at mint. That reads as a hard limit — a custodian needing an actual fact about an actual counterparty would seem to be back in Family A.</p>
+    <p>A rule can <em>compel</em> Family A evidence, and compelled evidence is worth more than volunteered evidence.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>Where the guarantee comes from</h2></div>
+    <p>The whole property rests on one move: the spend rule is an operand of the token type's preimage, so it cannot be detached from the asset without producing a different asset.</p>
+
+    <figure>
+      <div class="flow">
+        <div class="stage">
+          <div class="when">At mint</div>
+          <div class="what">The rule becomes part of the type</div>
+          <div class="chips">
+            <span class="chip">contract address</span>
+            <span class="chip">domain separator</span>
+            <span class="chip hot">spend rule</span>
+          </div>
+          <p>Today a token type is <code>SHA256("midnight:derive_token" &#8214; domain_sep &#8214; contract address)</code>: the mint effect publishes the raw, contract-chosen <code>domain_sep</code> and the ledger derives the type at validation. The design extends that preimage with a third operand, the spend rule descriptor, encoded empty for an unguarded type so existing types derive to the same value. Address and separator are already public, so an indexer can build type&rarr;(contract, separator) today; the type&rarr;rule mapping awaits the published descriptor, a real ledger change.</p>
+        </div>
+
+        <div class="arrow" aria-hidden="true">
+          <svg width="30" height="14" viewBox="0 0 30 14" fill="none"><path d="M0 7h26M21 2l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <div class="stage">
+          <div class="when">At every spend</div>
+          <div class="what">The circuit re-derives and enforces</div>
+          <div class="chips">
+            <span class="chip">witness descriptor</span>
+            <span class="chip">re-derive type</span>
+            <span class="chip hot">enforce rule</span>
+          </div>
+          <p>The Zswap <code>spend</code> circuit takes the descriptor as a private witness, recomputes the type, asserts it matches the coin, then enforces the rule. That assert runs on every shielded spend, so a guarded coin is reachable only through its rule. Where the descriptor commits to the rule's own logic — a mode-2 verifying key — substituting the rule substitutes the asset. A mode-3 descriptor names an address, and pins only that it was consulted.</p>
+        </div>
+
+        <div class="arrow" aria-hidden="true">
+          <svg width="30" height="14" viewBox="0 0 30 14" fill="none"><path d="M0 7h26M21 2l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <div class="stage">
+          <div class="when">At receipt</div>
+          <div class="what">The coin's existence is the evidence</div>
+          <div class="chips">
+            <span class="chip hot">coin of type T</span>
+          </div>
+          <p>A custodian holding a coin of type <span class="tt">T</span> checks <span class="tt">T</span> against the types it has approved. The guarantee runs unbroken back to the mint — there is no hop at which the rule could have lapsed, because a coin that skipped it would not be a coin of this type. Under mode 3 what runs unbroken is the consultation, not a fixed verdict.</p>
+        </div>
+      </div>
+      <figcaption>Everything expensive happens on the spend path, and it happens to the sender. What is left for the receiver is a hash comparison.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2>Three modes, three postures toward a custodian</h2></div>
+    <p>From <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0025-shielded-source-of-funds.md">MPS-0025</a>'s side the design's three authorisation modes are three different bargains between how much a rule can check and how much the transfer discloses.</p>
+
+    <div class="modes">
+      <div class="mode">
+        <div class="mode-id"><span>Mode 1</span><b>today</b></div>
+        <h3>No rule</h3>
+        <p>The current behaviour, with nothing added: the spend is authorised exactly as it is today. Every token type in existence resolves here.</p>
+        <dl>
+          <div><dt>What a custodian gets</dt><dd>Nothing beyond today. Receipt without attribution — this is the state MPS-0025 describes.</dd></div>
+          <div><dt>Cost</dt><dd class="cost">None. It is the baseline.</dd></div>
+        </dl>
+      </div>
+
+      <div class="mode">
+        <div class="mode-id"><span>Mode 2</span><b>needs <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0014-proof-verification-recursion.md">MPS-0014</a></b></div>
+        <h3>Recursive verification of a pure circuit</h3>
+        <p>The type names a gate circuit's verifying key; the <code>spend</code> proof recursively verifies a proof against it. Nothing becomes public.</p>
+        <dl>
+          <div><dt>What a custodian gets</dt><dd>Enforced statements the spender can prove from what they already hold — an attested credential, a verified counterparty, a jurisdiction claim — and a disclosure envelope the spender must produce and bind before the spend is valid.</dd></div>
+          <div><dt>Cost</dt><dd class="cost">Blind to chain state. Cannot consult a freeze list, a denylist, or a sanctions set until the ledger exposes a provable state root.</dd></div>
+        </dl>
+      </div>
+
+      <div class="mode">
+        <div class="mode-id"><span>Mode 3</span><b>general form</b></div>
+        <h3>A contract call bound to the spend</h3>
+        <p>The type names a contract address and entry point; the spend is well-formed only if the same transaction carries a call to it — the authorising call lives in an intent — bound by a new field analogous to the communication commitment, which the <code>spend</code> proof opens: the caller/callee binding contract-to-contract calls already use, with the spend in the caller position.</p>
+        <dl>
+          <div><dt>What a custodian gets</dt><dd>Everything an AML programme actually asks for — live list checks, threshold authorisation, public auditable events, rules the issuer can upgrade behind a governed pointer without reissuing the token, an upgradeability that cuts both ways — and an <em>attested</em> spender. The <code>spend</code> proof already witnesses the spending secret key, so it can prove the <code>ZswapCoinPublicKey</code> it asserts is the one behind this nullifier; the gate reads a proved caller rather than a forgeable <code>ownPublicKey()</code> witness.</dd></div>
+          <div><dt>Cost</dt><dd class="cost">The contract call is public, so the asset's token type is visible on every spend, and free merging of offers is likely lost with it. The same pointer that makes a rule upgradeable means the type pins which contract is consulted, not what it will decide: the no-substitution guarantee is mode 2's. The binding needs no new cryptography — it reuses the primitive contract-to-contract calls run on today — but the fields and checks it needs do not exist yet.</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <p style="margin-top:1.5rem">For MPS-0025's representative use cases the split is clean. A rule that must consult an issuer's list — the sanctions and eligibility checks behind Use Case 1 and Use Case 5 — needs mode 3, because only a contract can read live state the spender must not see. A rule that only has to bind the sender's own credentials to the spend — Use Case 2's institution-to-institution attribution — fits mode 2, though the receiving institution still needs a channel for the disclosed identity itself; the rule can make the envelope mandatory but does not transport it. Each needs the spending wallet to obtain and run a gate it has never held, for whatever type it happens to hold. Mode 3's gate is a contract whose local state the spender must not see, so it rests on the capsule runtime; mode 2's gate is a bare circuit, so what it needs instead is a chain-resolvable source for the gate's proving artefacts — plausibly the ZKIR slot beside an entry point's verifier keys, itself unsettled.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2>Attribution, when the rule asks for it</h2></div>
+    <p class="lede">The two families compose. A spend rule is a predicate over the spend, and one of the things a predicate can demand is that the spender <em>produce</em> something — so a rule can require a ciphertext to be created and bound to the spend before the spend is valid at all.</p>
+    <p>That does not replace Family A evidence; it changes its character. Today an attestation or an encrypted transfer context is voluntary. The sender produces it because a bilateral agreement, an internal policy, or goodwill says so, and a recipient who does not get one has no recourse beyond rejecting the asset after it has already arrived. Under a rule, producing it is a condition of the coin moving at all. A sender who omits the envelope has not made a non-compliant transfer — they have failed to transfer.</p>
+
+    <ul class="unlocks">
+      <li><b>Graded decisions</b><span>Quarantine and escalate need something to score, which a binary rule-held-or-not guarantee cannot give them. A mandated envelope can carry exactly the fields a custodian's risk model reads.</span></li>
+      <li><b>Audit retention</b><span>The envelope is the per-asset record a custodian has to keep, and under a rule it exists for every transfer rather than only the ones a counterparty chose to document.</span></li>
+      <li><b>Named counterparties</b><span>Institution-to-institution attribution needs the sender's identity <em>delivered</em>, not merely enforced, and a rule can compel that delivery. What a mode-3 gate adds is the harder half: a sender identity <em>proved</em> against the nullifier rather than self-asserted.</span></li>
+    </ul>
+
+    <div class="openbits">
+      <div class="ob-head">Undecided in the draft</div>
+      <dl>
+        <div>
+          <dt>Where the ciphertext is published</dt>
+          <dd>One candidate already exists in the protocol: each Zswap circuit accepts an arbitrary bound input, whose exact value the proof verifies against. That is how the <code>output</code> circuit binds its ciphertext today, and the slot has no use yet in the <code>spend</code> circuit. Whether that, a mode-3 contract's public state, or an off-chain carrier with only a commitment on the spend path is the right answer is open.</dd>
+        </div>
+        <div>
+          <dt>Who can open it</dt>
+          <dd>The recipient, the issuer, a designated authority, or several parties in one envelope — an issuer's choice, expressed in the rule, with a materially different privacy consequence each way. Key rotation over the life of a token type is its own unanswered question.</dd>
+        </div>
+        <div>
+          <dt>What it costs</dt>
+          <dd>Anything published per spend is a per-spend artefact that an observer can count, size, and correlate even when they cannot read it. Mandatory disclosure buys attribution with metadata, and the price is paid on every transfer of the asset, not only the ones anyone examines.</dd>
+        </div>
+      </dl>
+    </div>
+
+    <p style="margin-top:1.5rem">The point for <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0025-shielded-source-of-funds.md">MPS-0025</a> is the ordering. Attribution stops being the mechanism and becomes a payload the mechanism can require — which means the questions MPS-0025 asks about envelopes, attestors and binding do not go away, but they stop being the load-bearing part of the design and become parameters an issuer sets per token type.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">06</span><h2>Against MPS-0025's core requirements</h2></div>
+    <p><a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0025-shielded-source-of-funds.md">MPS-0025</a> lists eight properties a source-of-funds model should preserve. Assessed against the design as drafted, with its open questions unresolved.</p>
+
+    <div class="reqs">
+
+      <div class="req">
+        <div class="req-n">R1</div>
+        <div class="req-body">
+          <h3>Sufficient provenance evidence for an incoming asset</h3>
+          <p>Met, in a different currency than MPS-0025 assumes. The custodian gets a guarantee that a specific rule was enforced on every hop since the mint, not a description of the origin. Sufficiency therefore stops being a per-asset judgement and becomes a legal reading of the guarding contract: it holds exactly when that contract encodes what the custodian's own obligations require — and for a mode-3 contract that reading has to cover who may change it, since the type fixes the address and not the logic behind it.</p>
+        </div>
+        <div class="meter"><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip on"></i></span><span class="meter-label">Met by<br>construction</span></div>
+      </div>
+
+      <div class="req">
+        <div class="req-n">R2</div>
+        <div class="req-body">
+          <h3>Supports accept / reject / quarantine / escalate</h3>
+          <p>Partial. Accept and reject fall straight out of the binary guarantee — the rule held or the coin does not exist. Quarantine and escalate need something to grade, which a rule can supply by mandating a disclosure envelope; the mechanism is there, but what the envelope carries and where it is published are undecided, so the graded half of R2 is a direction rather than a result.</p>
+        </div>
+        <div class="meter"><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip"></i></span><span class="meter-label">Partial</span></div>
+      </div>
+
+      <div class="req">
+        <div class="req-n">R3</div>
+        <div class="req-body">
+          <h3>Does not make all shielded transfers publicly traceable</h3>
+          <p>Met. Nothing becomes traceable. Modes 1 and 2 add no public data at all; mode 3 publicly attaches a gate call to a spend, which reveals the token type of that spend but never the recipient, amount, or transfer graph. Rules are opted into per token type by the issuer.</p>
+        </div>
+        <div class="meter"><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip on"></i></span><span class="meter-label">Met</span></div>
+      </div>
+
+      <div class="req">
+        <div class="req-n">R4</div>
+        <div class="req-body">
+          <h3>Sender, recipient, amount, graph remain shielded by default</h3>
+          <p>Met under modes 1 and 2; degraded under mode 3, where the visible contract call narrows the anonymity set for that asset to holders of token types sharing the rule, and where whether the sender identity the gate is handed is published or opened only to the gate is undecided. This is the design's sharpest privacy cost and it is a per-issuer choice, not a protocol default.</p>
+        </div>
+        <div class="meter"><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip"></i></span><span class="meter-label">Met, mode-<br>dependent</span></div>
+      </div>
+
+      <div class="req">
+        <div class="req-n">R5</div>
+        <div class="req-body">
+          <h3>Disclosure limited to the parties that require it</h3>
+          <p>Met, and arguably the strongest fit. Nothing is disclosed to anyone. There is no envelope to scope, no key to hand over, no recipient list to get wrong, and no way for the evidence to be over-shared because the evidence never leaves the coin.</p>
+        </div>
+        <div class="meter"><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip on"></i></span><span class="meter-label">Met</span></div>
+      </div>
+
+      <div class="req">
+        <div class="req-n">R6</div>
+        <div class="req-body">
+          <h3>Custodian can retain audit evidence</h3>
+          <p>Partial. What is retainable and independently reproducible is strong: the token type, the public mint effect that fixed its preimage, and the rule's own source. The per-asset record of why <em>this</em> asset was accepted can come from a rule-mandated envelope — and unlike a voluntary one it would exist for every transfer — but the carrier is unspecified. Mode 3's public event is available to anchor it in the meantime.</p>
+        </div>
+        <div class="meter"><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip"></i></span><span class="meter-label">Partial</span></div>
+      </div>
+
+      <div class="req">
+        <div class="req-n">R7</div>
+        <div class="req-body">
+          <h3>No bespoke manual agreement per inbound transfer</h3>
+          <p>Met, and this is the operational payoff. Diligence moves from per-transfer to per-token-type: a custodian reviews an asset's rule once, at onboarding, and every subsequent inbound coin of that type is decided by a type comparison. No counterparty coordination, no bilateral evidence protocol. Once is literal only where the rule is immutable; a governed mode-3 contract has to be watched, not merely read.</p>
+        </div>
+        <div class="meter"><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip on"></i></span><span class="meter-label">Met</span></div>
+      </div>
+
+      <div class="req">
+        <div class="req-n">R8</div>
+        <div class="req-body">
+          <h3>Permissionless shielded transfer stays usable</h3>
+          <p>Met by construction. Mode 1 is today's behaviour, and every existing token type is a mode-1 type that recomputes unchanged under the extended derivation. A token acquires a rule only because its issuer chose one at mint; nothing is imposed on the unregulated ecosystem.</p>
+        </div>
+        <div class="meter"><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip on"></i></span><span class="meter-label">Met</span></div>
+      </div>
+
+    </div>
+
+    <div class="legend">
+      <span><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip on"></i></span> the design delivers this as specified</span>
+      <span><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip"></i></span> delivered with a stated condition or cost</span>
+      <span><span class="pips"><i class="pip gap"></i><i class="pip gap"></i><i class="pip gap"></i></span> outside what this mechanism reaches</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">07</span><h2>Against MPS-0025's open questions</h2></div>
+    <p>Several of the seven are answered. Several are dissolved rather than answered — the design makes the question stop applying, which is a different thing from solving it.</p>
+
+    <div class="qa">
+      <details open>
+        <summary><span class="q-n">Q1</span><span>What mechanism yields evidence without making transfers traceable?</span></summary>
+        <div class="answer">
+          <span class="verdict-tag">Answered</span>
+          <p>Bind the rule into the token type and enforce it on the spend path. Nothing about the transfer becomes traceable because nothing about the transfer is published — the evidence is structural, carried by the fact that a coin of that type exists at all.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-n">Q2</span><span>Embedded, encrypted, out-of-band, selectively disclosed, or attested?</span></summary>
+        <div class="answer">
+          <span class="verdict-tag">Reframed — the question becomes a parameter</span>
+          <p>Any of the five, chosen per token type by the issuer. The mechanism itself carries no payload; the guarantee it produces needs none. But a rule can require that a payload be produced and bound to the spend, and that is what makes the choice among the five an issuer's setting rather than a protocol decision.</p>
+          <p>What changes is the enforcement, not the format. A travel-rule envelope encrypted to the recipient is the same artefact whether it is mandated or merely agreed — except that when it is mandated, a sender who omits it cannot transfer at all.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-n">Q3</span><span>How does the custodian verify the evidence corresponds to this specific asset?</span></summary>
+        <div class="answer">
+          <span class="verdict-tag">Dissolved</span>
+          <p>The correspondence problem does not arise. The evidence is not attached to the coin, it <em>is</em> the coin's type, and the custodian holds the coin. This removes what is usually the hardest part of a selective-disclosure design.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-n">Q4</span><span>Which party produces or attests to the evidence?</span></summary>
+        <div class="answer">
+          <span class="verdict-tag">Answered — with a trust shift worth naming</span>
+          <p>Nobody attests. The issuer authored the rule at mint and the protocol enforces it thereafter. Trust moves off the sender and the attestor entirely, and onto two new things: the issuer's judgement in choosing the rule, and the correctness of the gate circuit or contract that implements it.</p>
+          <p>That is a better place for it — both are public and reviewable before a custodian ever accepts the asset, and fixed once unless a mode-3 pointer is governed — but it is a different assurance argument than a compliance team will have seen before.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-n">Q5</span><span>What protocol, SDK, wallet, indexer and custody support is required?</span></summary>
+        <div class="answer">
+          <span class="verdict-tag">Partly answered</span>
+          <p>The protocol side is settled in outline: the rule descriptor is a third operand to token type derivation, re-derived on every shielded spend. Publishing the descriptor at mint is a real ledger change — widening <code>Effects</code> breaks its serialization tag and pulls in both VM paths, the compiler's mint fragment and the cost model. The indexer builds type&rarr;(contract, separator) today and exposes the type&rarr;rule mapping once that lands; the wallet must resolve gate circuits, construct mode-2 and mode-3 spends, and resolve a token type's separator and minting address to spend any user-defined shielded coin at all — a data-availability requirement on the indexer.</p>
+          <p>The custody-integration half — how a custodian ingests the mapping, sets policy per token type, and records the decision — is untouched by the design and is where the remaining <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0025-shielded-source-of-funds.md">MPS-0025</a> work sits.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-n">Q6</span><span>How to support regulated inbound flows without breaking permissionless ones?</span></summary>
+        <div class="answer">
+          <span class="verdict-tag">Answered</span>
+          <p>Per-token-type opt-in at mint, with mode 1 as the default that every existing type resolves to. Regulated and permissionless assets share one ledger, one anonymity pool and one wallet stack, and differ only in what their issuer bound at mint.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-n">Q7</span><span>What is the minimum viable flow a compliance team could approve?</span></summary>
+        <div class="answer">
+          <span class="verdict-tag open">Not answered</span>
+          <p>This is the question the design is furthest from. A reviewable flow needs the mode choice settled for a concrete asset, a retrofit story for anything already issued, and mode 3's binding specified, since the attested sender a risk team would want rests on machinery that does not exist yet. The design leaves the coin commitment and the nullifier untouched, so it introduces no party able to move coins it does not own.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">08</span><h2>Where it does not reach</h2></div>
+    <p>Five limits are structural, and each is a reason <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0025-shielded-source-of-funds.md">MPS-0025</a> does not close on this design alone.</p>
+
+    <div class="gaps">
+      <div class="gap-item">
+        <h3>It cannot be retrofitted onto an issued asset</h3>
+        <p>Because the rule is part of the type, an asset already in circulation cannot acquire controls. The issuer must mint a new type and migrate holders — and migration needs the very controls the old type lacks, since nobody can compel a holder to move. Any asset that may ever face a source-of-funds requirement has to be issued with a rule from the outset, even a permissive one a governed contract can later tighten.</p>
+      </div>
+
+      <div class="gap-item">
+        <h3>The disclosure carrier is named as a need, not designed</h3>
+        <p>A rule can make attribution mandatory, which is the hard half. What the draft does not settle is where the ciphertext lives, who holds the keys, how they rotate over a token type's life, and what the per-spend artefact costs in metadata. Until those are answered, every MPS-0025 requirement that leans on a delivered payload — the graded decisions, the retained record, named counterparties — is supported in principle and unbuilt in practice.</p>
+      </div>
+
+      <div class="gap-item">
+        <h3>It has nothing to say about uncontrolled assets</h3>
+        <p>Use Case 3 — an asset arriving with insufficient evidence — is not solved, it is bifurcated. For a controlled token type the situation cannot occur. For everything else the custodian is exactly where MPS-0025 found it, and the quarantine workflow is still needed. A custodian's inbound policy therefore becomes two policies, not one.</p>
+      </div>
+
+      <div class="gap-item">
+        <h3>The strongest mode costs the asset's type privacy</h3>
+        <p>Mode 3 is where the AML-grade rules live, and it attaches a publicly visible gate call to every spend. Holders of a mode-3 asset should understand that they are trading that asset's transaction-graph privacy for its acceptability, permanently and for every transfer. Closing that gap is what the merklized state root sketched late in the specification is for, and it is not yet designed.</p>
+      </div>
+
+      <div class="gap-item">
+        <h3>Mode 3's binding is sketched, not specified</h3>
+        <p>A gate that only observes the nullifier through effects establishes co-presence and nothing about who spent — over a wallet-held coin it cannot derive that nullifier itself — so the binding must originate in the Zswap <code>spend</code> circuit. That binding needs no new cryptography, but it needs parts that do not exist: a proved field on the shielded <code>Input</code> and a position for it in the spend proof, a public-address shape for a shielded caller, a shielded branch in the <code>caller</code> derivation — a shielded-only intent yields no caller at all today, which <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0029-compact-caller-identity.md">MPS-0029</a> already lists as open — and a ledger check strong enough to make a spend malformed <em>without</em> its authorisation, where the existing claimed-call test is only a subset. The routing is unresolved too: binding a call to a spend means naming publicly which rule to run, while the shielded input's type is deliberately never disclosed — mode 2, fully in-circuit, is unaffected. New public inputs also move the <code>spend</code> circuit's verifier keys, which is hard-fork-scale.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">09</span><h2>What changes if this is the answer</h2></div>
+    <p>Adopting this as <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0025-shielded-source-of-funds.md">MPS-0025</a>'s direction moves work, rather than adding it. Three consequences are worth putting in front of whoever decides.</p>
+
+    <div class="closing">
+      <div>
+        <div class="shift">Diligence shifts</div>
+        <h3>From per transfer to per token type</h3>
+        <p>The object of review becomes the contract guarding a token type — a public, readable artefact that a legal and compliance team can assess the way it assesses any other control, before any exposure. It is fixed if the type commits to a mode-2 circuit; a mode-3 address makes that review standing rather than one-off. What the assessment produces is an allowlist of token types. Inbound coins are then decided by a hash comparison, with no evidence protocol running on arrival at all.</p>
+      </div>
+      <div>
+        <div class="shift">Timing shifts</div>
+        <h3>From acceptance time to issuance time</h3>
+        <p>Whether an asset is acceptable to regulated holders becomes a property fixed when it is minted. That is a real constraint on issuers: the decision is irreversible and its consequences land on holders years later. What mint fixes under mode 3 is the address consulted, not the rule it runs — irreversible and mutable at once.</p>
+      </div>
+      <div>
+        <div class="shift">Dependency shifts</div>
+        <h3>Onto resolving gate code</h3>
+        <p>A spender's wallet has to obtain and run a gate it has never held, for an arbitrary token type; without a chain-resolvable source that means out-of-band delivery of gate code and keys. The rules custodians actually need read state the spender must not see, so a mode-3 gate is a contract, and the Capsule Runtime MIP — which answers <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0021-phase2-contract-to-contract.md">MPS-0021</a> with encapsulated contract execution and local state — resolves it through its executable registry. A mode-2 gate is a bare circuit, and what it needs is a chain-resolvable source for its proving artefacts. Neither supplies the attested sender: a capsule's secret is a per-contract witness, not a coin key. That gap is <a href="https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0029-compact-caller-identity.md">MPS-0029</a>'s.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Reads an early, direction-only design draft against a proposed MPS</span>
+    <span>Only the draft's Specification is worked; everything else in it is still template</span>
+    <span>Every verdict here will move as either document changes</span>
+  </footer>
+
+</div>
