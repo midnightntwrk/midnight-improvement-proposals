@@ -56,14 +56,22 @@ In the ideal user experience, users do not think about the compatibility of a ne
 
 ## Goals
 
-- Deliver a release infrastructure for the Compact compiler and devtools that allows users to pick a compatible Compact compiler for any of the available Midnight environments without having to know which versions of the Compact compiler are compatible with their desired environment.
-- Deliver the first release of the Compact compiler that supports multiple configurations.
+A developer should be able to download the current release of the Compact
+toolchain and use the `compact` tool to compile a Compact program for a
+specific target environment, such as Stagenet or Mainnet.
 
 ## Expected Outcomes
 
 Partners and users won't have to wait for an environment promotion to access off-chain features of the Compact compiler. They also won't have to carry the burden of figuring out what version of the Compact compiler they need to compile their contract for a specific environment. This makes developing for the Midnight Network more accessible and attractive.
 
-## Recommended MIPs
+## Acceptance Criteria
+
+- A release of the Compact compiler supporting multiple configurations is available for developers, allowing
+  a developer to use the `compact` tool to compile a compact program for any environment supported
+  by the release.
+- The process for producing future releases supporting multiple configurations is documented in the Compact repo.
+
+## Recommended COIP
 
 A potential solution is described in [CoIP-0005](https://github.com/LFDT-Minokawa/compact/blob/main/coips/coip-0005.md) (Compact Improvement Process).
 
