@@ -68,5 +68,47 @@ The current Midnight architecture does not yet support the regulated requirement
 2. Lower cost and faster time-to-launch for compliant assets
 3. The broader builder ecosystem (developers who want to build non-privacy-preserving dapps) is unaffected
 
-## Acceptance Criteria: 
-A regulated issuer can perform mint, burn, freeze, force transfer (seize), holder eligibility, and updatable restrictions on a shielded asset without bespoke per asset cryptographic engineering
+## Recommended MIPs
+
+A single MIP is unlikely to address all the goals this MPS states. This MPS recommends a series of MIPs that lift the technical limitations one at a time and coordinate with solutions to related Problem Statements, such as [MPS-0035: Shielded Spend Authorization Requires Exposing the Spend Key](./mps-0035-shielded-spend-key-exposure.md).
+
+### Token-based custom spend logic
+
+Designs in full how custom logic is attached to a ZSwap spend through recursive proof verification, so a coin carries a spend rule that spending through ZSwap directly with the coin secret key cannot bypass. Addresses the second limitation stated in [Current Midnight Tech Stack Limitations](#current-midnight-tech-stack-limitations), and the first in part: freeze and updatable restrictions need issuer-maintained state, which is left to the stateful gate proof verification follow-up.
+
+It should also outline the further mechanisms this MPS needs to meet all its goals. Every network upgrade is a hard fork, which costs users and wallets an update. Outlining the later designs up front lets the first upgrade include placeholders that later upgrades make fully functional, so design and delivery can be staged while keeping the number and impact of hard forks low.
+
+The MIP should specify:
+
+- **The rule bound to the token type.** How a spend-rule descriptor is bound to the token type, with coins that carry no rule left unaffected.
+- **Pure-circuit rules in full.** How the spend circuit recursively verifies a gate proof (a proof that the coin's rule is satisfied) bound to the spend and enforces the rule bound to the coin's token type, so a spender cannot substitute a different rule.
+- **Contract-enforced rules as a future extension.** The extension's dependencies (a proved shielded spender, the Capsule Runtime MIP) and its privacy costs.
+- **A goal-by-goal table against this MPS.** For each gap, goal, and expected outcome: delivered by this MIP, or deferred to a named follow-up MIP with its dependencies.
+- **The ZSwap changes it needs.** The rule descriptor and spend-proof inputs, written so they can be bundled with the spend-authorization changes for MPS-0035 into one network upgrade.
+
+It should be accompanied by a working prototype, built on the midnight-zk recursion work, in a public repository with tests running in CI, showing:
+
+1. **Bypass prevented.** A coin with a rule cannot be spent without a valid gate proof: a negative test shows that such a spend fails verification.
+2. **Eligibility gate.** A spend succeeds only when the spender proves possession of a credential signed by the issuer's key; a spend without it fails.
+3. **Existing tokens unchanged.** For coins with no rule, the derived token type matches the one the current ledger implementation derives.
+4. **Benchmark report.** Proving time and circuit size for a spend with no rule and a spend with a rule, on stated reference hardware. The report has no pass/fail target; it informs the decision on that bundling.
+
+### Follow-ups and coordinated designs
+
+Once spend rules cannot be bypassed, the following designs can address the goals the Token-based custom spend logic MIP leaves open.
+
+Expected follow-ups and coordinated designs include:
+
+- Contract-enforced rules — lets a contract call guard token spends, making the expressiveness of contract calls available to spend rules, at some cost in privacy.
+- Stateful gate proof verification — lets gate proofs read issuer-maintained state such as freeze lists and updatable restrictions.
+- Spend authorization ([MPS-0035: Shielded Spend Authorization Requires Exposing the Spend Key](./mps-0035-shielded-spend-key-exposure.md)) — also changes how spends are authorized, so solutions to MPS-0035 and to this MPS need to take each other into account.
+- Sender-based spend logic — lets the wallet customize spend authorization for different styles of key management: multi-signature, single signature, or other means.
+
+## References
+
+- [MPS-0014: Proof Verification in Compact](./mps-0014-proof-verification-recursion.md) — the in-circuit proof verification the Token-based custom spend logic MIP builds on.
+- [MPS-0021: Phase 2- Contract 2 Contract](./mps-0021-phase2-contract-to-contract.md) — the contract-to-contract calls that contract-enforced rules build on.
+- [MPS-0023: Standard Interface for Privacy-Preserving Real World Assets](./mps-0023-rwa-standard-interface.md) — asks for the same issuer controls (freeze, clawback, identity verification), framed on ERC-7943.
+- [MPS-0035: Shielded Spend Authorization Requires Exposing the Spend Key](./mps-0035-shielded-spend-key-exposure.md) — spend authorization.
+- [MIP-0017: Signature-Authorized Shielded Spends with VRF Nullifiers](../mips/mip-0017-shielded-spend-auth/mip-0017-shielded-spend-auth.md) — designs the signature-authorized shielded spend and its note format.
+- [MIP-0011: Native Shielded Token Standard](../mips/mip-0011-native-shielded-token.md) — a shielded token standard that defers post-issuance controls to this MPS.
