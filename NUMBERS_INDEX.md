@@ -65,6 +65,7 @@ MPS-0017: governance-observability (in review)
 [MPS-0043: selective-disclosure](/mps/mps-0043-selective-disclosure.md)  
 [MPS-0044: consensus-performance](/mps/mps-0044-consensus-performance.md)  
 [MPS-0045: persistent-hash-to-field](/mps/mps-0045-persistent-hash-to-field.md)  
+[MPS-0046: non-contentive-message-numbering](/mps/mps-0046-non-contentive-message-numbering.md)  
 
 # MIPs
 
