@@ -1,10 +1,10 @@
 ---
-MPS: "xxxx"
+MPS: "0045"
 Title: Persistent Full-Range Hashing into the Native Field
 Authors:
-  - Iskander Andrews <0xisk>
+  - Iskander Andrews (0xisk)
 Status: Proposed
-Category: Core | Libraries and Tooling
+Category: Libraries and Tooling
 Created: 14-Oct-2026
 Requires: none
 Replaces: none
