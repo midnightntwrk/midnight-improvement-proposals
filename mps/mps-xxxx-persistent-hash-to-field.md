@@ -128,9 +128,6 @@ field arithmetic written in Compact.
 - **Reducing 32 bytes is not enough.** A 256-bit integer modulo a 255-bit
   prime has a visible bias. Uniform output needs a wider input, as in
   RFC 9380.
-- **Proving-system changes are unspecified.** The docs say which hashes
-  persist, not what happens to a deployed contract that depends on a
-  transient primitive when the proving system changes.
 
 ## Use Cases
 
@@ -168,10 +165,6 @@ field arithmetic written in Compact.
 2. A stable, named, circuit-cheap hash into `Field` that may derive state.
 3. Docs for every bytes-to-field path: what is kept, what is dropped, uniform
    or not, persistent or not.
-4. One cast rule for `Bytes` into field types, or a stated reason why the
-   native field differs.
-5. A stated rule for contracts that depend on transient primitives across a
-   proving-system change.
 
 ## Expected Outcomes
 
@@ -181,21 +174,11 @@ alone tell an author whether a conversion loses bits or has a bias.
 
 ## Open Questions
 
-- New circuit, a reducing cast from a wide `Bytes<n>` to `Field` like the
-  foreign-field casts, or both?
-- Which input width, and should it follow RFC 9380 `L` for a 255-bit
-  modulus?
-- Keep `degradeToTransient` with its truncation documented, or deprecate it
-  once a full-range map exists?
-- The ZKIR instructions that split a `Bytes<32>` into the limbs
-  `degradeToTransient` copies from are documented as a temporary bridge. When
-  they go, does `degradeToTransient` keep its output? It feeds the standard
-  library Merkle leaf hash, Dust commitments, and `evolveNonce`.
+- Should the full-range map be a new circuit, a reducing cast from a wide
+  `Bytes<n>` to `Field` like the foreign-field casts, or both? And which
+  input width: RFC 9380 `L` for a 255-bit modulus, or something else?
 - Can the ledger's Poseidon `hash_to_field` be the persistent circuit-cheap
   option, and under which guarantee?
-- Where does the persistence guarantee across proving-system changes live:
-  standard library docs, ledger spec, or its own MIP? Transition window or
-  hard cutover?
 
 ## Recommended MIPs
 
@@ -206,9 +189,8 @@ alone tell an author whether a conversion loses bits or has a bias.
   stated guarantees, `transientHash` and `persistentHash` kept as aliases,
   rename done in the on-chain runtime first
   ([compact#183](https://github.com/LFDT-Minokawa/compact/issues/183)).
-- **Conversion semantics and docs.** Document the truncation in
-  `degradeToTransient` and the range check in `Bytes<32> as Field`, and
-  settle the cast difference with the foreign field types.
+- **Conversion docs.** Document the truncation in `degradeToTransient` and
+  the range check in `Bytes<32> as Field`.
 
 ## References
 
