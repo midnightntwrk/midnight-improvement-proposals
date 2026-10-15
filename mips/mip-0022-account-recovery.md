@@ -597,8 +597,16 @@ nonce and the round counter (d).
    window and the pending record itself: the authorisation was
    verified at submission, and the pending record fixes everything
    finalisation does, so a permissionless finalising call can enact
-   only what the submitting party already proved. The epoch bump
-   invalidates every previously enrolled device in a single step.
+   only what the submitting party already proved. Finalisation MUST
+   atomically retire every existing device entry and install the
+   authorised successor's entry as the only active device entry. This
+   includes retirement of entries added while recovery was pending. As
+   required by MIP-0013 section 8, an implementation accepting opaque
+   entries without verifying the current epoch at enrolment MUST clear
+   the device set before inserting the successor, or enforce an
+   equivalent contract-assigned registration-epoch check. Advancing
+   the epoch alone is insufficient when an unchecked entry preimage
+   may name a future epoch.
 7. The wallet MUST retain `vk` (recovered at step 3) in the successor
    device's private state, and SHOULD run a fresh session promptly
    after finalisation. Until it does, the account has no recovery
@@ -715,9 +723,12 @@ future work.
   current `vk`, and with it the MIP-0012 inbox walk that rebuilds the
   coin store.
 - **REC-8 (Recovered account, recovered assets)**: after finalisation
-  the new device controls the account with all custodied assets and
-  their visibility intact. REC-8 presupposes the successor-key
-  validation of section 6.
+  the authorised successor's entry is the only active device entry. The
+  successor controls the account with all custodied assets and their
+  visibility intact.
+  REC-8 presupposes both the successor-key validation and the atomic
+  retirement of pre-existing entries in section 6. Subsequent device
+  enrolment remains subject to MIP-0013.
 - **REC-9 (Veto)**: a recovery cannot finalise while an enrolled device
   remains able to cancel within the window.
 - **REC-10 (Backup continuity)**: `vk` survives recovery: it is
@@ -991,6 +1002,15 @@ that publishes the identity or a small-order key produces an account
 that cannot be recovered through that key, never one that anyone can
 recover (section 6 step 4).
 
+For an existing recovery implementation, clearing the device set at
+finalisation need not change the ledger schema, signature recipes, or
+entry encodings. It does require a corrected recovery verifier and
+its compiled artefacts. Accounts with available maintenance authority
+may adopt that verifier after validation; accounts with retired
+authority require migration to a corrected deployment. Neither a
+specification amendment nor a verifier update retroactively clears
+entries in an account whose recovery has already finalised.
+
 The veto window relies on block-time comparators that are present in
 current toolchains, including the line the reference implementation
 pins, so the window introduces no new platform dependency. Normative
@@ -1200,6 +1220,17 @@ resubmission, finalisation after the window, and a post-recovery
 session from the successor device. The evidence record accompanies
 the reference implementation.
 
+**Entry-retirement correction.** [Passport #183](https://github.com/midnightntwrk/passport/pull/183),
+merged as [`0d7bb0b`](https://github.com/midnightntwrk/passport/commit/0d7bb0bc834f2d45d9fe2d84c4d022a30d648423),
+adds an atomic device-set reset before successor insertion. Its
+[recovery simulator](https://github.com/midnightntwrk/passport/blob/0d7bb0bc834f2d45d9fe2d84c4d022a30d648423/contract/src/tests/recovery-sim.ts)
+checks that the actual set contains exactly the authorised successor,
+independently of `device_count`. Compact 0.35 compilation with key
+generation skipped and the simulator passed. The earlier on-node
+receipts above predate this correction; regenerated keys, proof and
+node validation, deployment-wave sizing, and the additional retirement
+cases below remain separate validation work.
+
 The gate the reference contract carried before this tranche was the
 possession construction of an earlier draft, which witnessed `s` and
 derived the successor key in-circuit from a witnessed scalar; it was
@@ -1339,6 +1370,16 @@ A conforming implementation SHOULD provide:
   nonce and the round counter by one each, as well as bumping the
   epoch, setting the device count to one, rotating the commitment,
   and clearing the vector and the pending record.
+- **Entry retirement**: immediately after finalisation, inspect actual
+  device-entry membership or eligibility and confirm that only the
+  authorised successor is active; `device_count == 1` alone is
+  insufficient. For opaque-entry interfaces, cover entries for future
+  epochs and different use counters, enrolled both before submission
+  and while recovery is pending, across all supported device schemes.
+  Such entries must be rejected at enrolment or remain unusable after
+  finalisation. A later epoch bump must not reactivate retained entries
+  without fresh authorised enrolment. The successor must still be able
+  to authorise an operation and enrol another device.
 - **Veto and cancel**: finalisation blocked before the window elapses;
   cancel invalidates a pending recovery; cancel is itself not subject
   to the window; a cancelled attempt leaves the epoch unchanged; a
