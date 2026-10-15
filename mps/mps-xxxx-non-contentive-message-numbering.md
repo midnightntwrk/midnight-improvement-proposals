@@ -74,7 +74,7 @@ Developers want to combine these ledger ADTs in complex ways, but doing that in 
 
 The specific concrete problem in this MPS is that a contract developer wants a set-like abstraction that records the insertion order of elements.
 A standard trick to implement a set is to use a `Map` with the elements as keys.
-The desired set-like abstraction can be implemented in a contract's public ledger state using a the `Counter` ADT to count insertions and a `Map` ADT as a set,
+The desired set-like abstraction can be implemented in a contract's public ledger state using a `Counter` ADT to count insertions and a `Map` ADT as a set,
 where the set elements are the `Map` keys and counter values are the `Map` values.
 A pair of insertion transactions will contend with each other, since both transactions read and write to the counter.
 This contention is unnecessary.
@@ -119,7 +119,18 @@ This is purely a Compact programming language design issue.
 Compact runs off chain, and solving this issue is not expected to immediately require any changes to the Midnight Network.
 There are no expected MIPs needed at this time.
 
-## References (Optional)
+## Acceptance Criteria
+
+1. Design note or MIP choosing between a dedicated ADT and a general ADT-definition
+   mechanism, with the rationale. Submitted by 27 November 2026.
+2. Prototype on the ledger and compiler development branches.
+3. Test. At least 10 transactions in the same block each append to the same stream
+   without contention failures, and each receives a unique number, increasing in
+   application order.
+
+Not included in Q4 2026: release to a public network.
+
+## References
 
 A proof of concept implementation of a custom ledger ADT: https://github.com/LFDT-Minokawa/compact/pull/775
 
