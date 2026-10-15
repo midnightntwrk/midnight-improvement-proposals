@@ -18,7 +18,7 @@
 
 ## 1. Scope and Authority
 
-This document supports [mips/mip-0017-shielded-spend-auth.md](../mip-0017-shielded-spend-auth.md) and specifies the v2 reference
+This document supports [mips/mip-0017-shielded-spend-auth.md](mip-0017-shielded-spend-auth.md) and specifies the v2 reference
 construction, cryptographic relations, and validation behavior. It is self-contained at the
 relation level; it does not describe deployed v2 functionality.
 VRF-derived nullifiers, payment binding, and isolation of the spending key are required.
@@ -54,19 +54,23 @@ Ledger revision: `67f9f97246339539af0091c4d8c6bc5ab236a191`, corresponding to th
 | Field-to-persistent-hash upgrade copies the stored low bytes into a zero-initialized 32-byte array. The generic transient hash is upgradeable. | [Hash conversions](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/transient-crypto/src/hash.rs#L64) |
 | Input records expose a nullifier, value commitment, optional contract address, Merkle root, and proof, not plaintext coin data. Their equality and ordering include the proof. | [Input structure](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/structure.rs#L210) |
 | Transient input verification uses a root reconstructed from the transient's output commitment at index 0. | [Transient conversion](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/structure.rs#L421) |
-| Spend application rejects an input whose Merkle root is not retained. Each block inserts the current root and evicts entries older than the ledger's `global_ttl`, an on-chain parameter whose pinned crate default is 3600 seconds. | [Root check](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/ledger.rs#L73), [retention](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/ledger.rs#L241), [default](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/ledger/src/structure.rs#L1371) |
+| Spend application rejects an input whose Merkle root is not retained. Each block inserts the current root and evicts entries older than the ledger's `global_ttl`, an on-chain parameter whose pinned crate default is 3600 seconds. Every network configuration of the node in Section 2.1 sets 1,209,600 seconds (14 days); root retention, and so evidence lifetime, follows the deployed value. | [Root check](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/ledger.rs#L73), [retention](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/ledger.rs#L241), [default](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/ledger/src/structure.rs#L1371), [deployed](https://github.com/midnightntwrk/midnight-node/blob/e01e41f83e391b5d36d30b6d62eccc19dcf0fd16/res/mainnet/ledger-parameters-config.json#L176) |
 | Offer merge checks disjointness of complete records, not the proposed proof-erased scope identities. | [Offer merge](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/structure.rs#L584) |
 | Spend verification uses fixed built-in legacy material. Output verification binds ciphertext through its public statement. | [Verifier](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/verify.rs#L58) |
-| Both user circuits derive their value base with `hashToCurve`. The ledger evaluates that instruction natively through `transient_crypto::hash::hash_to_curve`, the CPU form of `HashToCurveGadget` from the locked `midnight-circuits` 7.2.4 crate, and synthesizes it in-circuit through the zk standard library's `hash_to_curve`. | [Circuit value base](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/zswap.compact#L62), [host hash-to-curve](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/transient-crypto/src/hash.rs#L91), [zkir dispatch](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zkir/src/ir_vm.rs#L812), [lock](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/Cargo.lock#L3015) |
+| Both user circuits derive their value base with `hashToCurve`. The ledger evaluates that instruction natively through `transient_crypto::hash::hash_to_curve`, the CPU form of `HashToCurveGadget` from the locked `midnight-circuits` 7.2.4 crate, and synthesizes it in-circuit through the zk standard library's `hash_to_curve`. The deployed Zswap static circuits carry the tag `midnight:ir-source[v2]`, load as IR V0, and are synthesized through the legacy pipeline with zk-stdlib 1.3.0 and `midnight-circuits` 6.3.0, whose relation is constraint-equivalent to 7.2.4 by source comparison; the linked dispatch serves IR V2 and later. | [Circuit value base](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/zswap.compact#L62), [host hash-to-curve](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/transient-crypto/src/hash.rs#L91), [zkir dispatch](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zkir/src/ir_vm.rs#L812), [legacy routing](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zkir/src/lib.rs#L88), [V0 synthesis](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zkir/src/ir_v1.rs#L467), [6.3.0 lock](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/Cargo.lock#L2992), [lock](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/Cargo.lock#L3015) |
 
 That gadget, read at midnight-zk `f0e786c5d55f92a29bbf4cc2d825060f3803e365` in
 [`htc_gadget.rs`](https://github.com/midnightntwrk/midnight-zk/blob/f0e786c5d55f92a29bbf4cc2d825060f3803e365/circuits/src/ecc/hash_to_curve/htc_gadget.rs#L99)
 and [`mtc.rs`](https://github.com/midnightntwrk/midnight-zk/blob/f0e786c5d55f92a29bbf4cc2d825060f3803e365/circuits/src/ecc/hash_to_curve/mtc.rs#L55),
-whose `hash_to_curve` sources are byte-identical to the locked crate, absorbs the input field
+whose `hash_to_curve` sources are byte-identical to the locked 7.2.4 crate, not to 6.3.0,
+absorbs the input field
 elements into a Poseidon sponge, squeezes two elements, maps each with a Shallue-van de
 Woestijne map whose square root and sign are constrained in-circuit, clears the cofactor by
 constrained multiplication by 8, and adds the two points. It takes no domain-separation
 parameter and does not assert a non-identity output.
+`Legacy` and `CompatV2` records in one transaction must agree on `hash_to_curve(type, segment)`,
+which the two constraint-equivalent gadgets do; validators host two Zswap proof backends while
+any `Legacy` kind remains accepted (Section 10, rule 8).
 
 Existing serialization tags such as `zswap-input[v2]` are record-format versions; they do not
 mean that these records already implement the proposed shielded note version 2. Likewise, a
@@ -129,6 +133,7 @@ cryptographic profile; their names are not runnable APIs or existing implementat
 | `Domain(label)` | ASCII domain label converted into the form consumed by `PoseidonV2`. | Exact conversion. |
 | `EncodeCoin(coin_info)` | Existing v1 shielded-coin binary hash layout inside SHA-256; existing field representation of the same struct inside Poseidon. | A byte-exact cross-language profile and vectors; tagged record serialization must not be assumed to equal binary hash representation. |
 | `Coords(P)` | Affine `(P.x, P.y)`, in that order. Coordinates enter hashes as field elements. | Point transport encoding; coordinate vectors use canonical 32-byte little-endian field encodings. |
+| `Compress(P)` | 32-byte encoding of a Jubjub point: canonical little-endian `P.y`, with the sign of `P.x` in the top bit. Decoding recovers `P.x` and rejects points that fail Section 3.3. | Exact sign convention and vectors (Section 13, Address). |
 | `EmbedScalar(s)` | Inject the canonical integer in `[0, r)` into the base field. | None at the logical level once the field profile is fixed. |
 | `EncodeDigest(D)` | Two field elements: bytes `0..16` and `16..32`, each interpreted as an unsigned little-endian 128-bit integer. | None at the logical level. |
 | `EncodeField32(f)` | Low 31 little-endian bytes of the canonical field integer followed by a zero byte. | Agreement with the selected existing upgrade conversion and vectors. |
@@ -166,7 +171,7 @@ preimage shape; it does not make a v2 hash equal to a v1 hash. Tagged serializat
 separately for records and scopes and must not be substituted for these hash representations.
 
 `EncodeField32` is a lossy 248-bit upgrade representation, not a canonical full-field encoding.
-Do not use it for the address's `pk_v2` encoding. This design uses it only inside the SHA-256
+Do not use it for the address encoding. This design uses it only inside the SHA-256
 commitment/nullifier preimages; the resulting persistent values, not the truncated field bytes,
 appear as commitments and nullifiers on chain. The truncation limits generic inner collision
 resistance to at most 124 bits (the birthday bound); the generic second-preimage bound against a
@@ -208,6 +213,11 @@ how its domain is incorporated. Input grammars must be domain-separated and fixe
 | Signing nonce | `midnight:zswap-spendsig-nonce[v2]` | Poseidon. |
 | DLEQ challenge | `midnight:zswap-spendsig[v2]` | Poseidon. |
 
+The `[v2]` suffix of the scoped-record, payment-scope, and digest-binding labels versions the
+scope format and may advance independently of the note version. Note-derivation labels change
+only with a new note version, and the DLEQ challenge label only with a changed authorization
+proof (Section 9).
+
 ### 3.3 Point and scalar constraints
 
 For the v2 relation, `pk_o`, `gamma`, `R_1`, and `R_2` MUST be canonically encoded, on-curve,
@@ -246,7 +256,7 @@ compiled circuit enforces the range.
 sk_o  = ScalarFromUniformBytes(SampleBytes(seed, 64, "midnight:osk[v2]"))
 pk_o  = sk_o * G
 pk_v2 = PoseidonV2(Domain("midnight:zswap-pk[v2]"), pk_o.x, pk_o.y)
-address = (pk_v2, epk)
+address = (Compress(pk_o), epk)
 ```
 
 The seed is the existing Zswap HD role seed, not a newly specified wallet root derivation.
@@ -256,9 +266,16 @@ unspecified retry counter or fallback derivation. DKG can instead establish a
 shared nonzero key, subject to the MPC requirements in Section 12.
 
 The reference address uses a distinct Bech32m address type containing exactly the canonical
-32-byte little-endian encoding of `pk_v2`, followed by the existing serialized 32-byte `epk`.
-Decoders check length, canonical field representation, and the address type. The type
+32-byte compressed encoding of `pk_o`, followed by the existing serialized 32-byte `epk`.
+Decoders check length, that `pk_o` is a canonical, non-identity, prime-order-subgroup point
+(Section 3.3), and the address type. The type
 discriminator and network-specific HRPs are unresolved. Unknown versions must fail closed.
+The sender derives `pk_v2` from `pk_o`; `coin_com_v2`, `vrf_input`, the incoming viewing key
+`(esk, pk_v2)`, and every circuit relation are unchanged. Carrying `pk_o` lets a later upgrade
+use a consumption marker that the issuer and the key holder can compute but the sender cannot
+(Section 5.1). The cost is that the address reveals `pk_o`, losing the hash layer that `pk_v2`
+gives over the spending key of never-spent coins; the VRF's security does not depend on hiding
+`pk_o`.
 
 The reference coin commitment is:
 
@@ -317,6 +334,40 @@ note and maintain a nullifier list. That list plus incoming viewing data support
 detection. Missing entries mean incomplete spend visibility, not proof that all receipts remain
 unspent. A transport or authenticated batching protocol for this list is outside this specification.
 
+### 5.1 Consumption markers and other key-holder operations
+
+No relation derives a second VRF output or nullifier for a v2 coin. A later upgrade may still
+require spends of some v2 coins to also insert a separate, deterministic, domain-separated
+consumption marker into a ledger uniqueness set, provided that:
+
+1. whether a coin needs the marker, and its value, are determined by data fixed when the coin
+   was created;
+2. the coin's VRF nullifier is unchanged; and
+3. every relation able to consume the coin inserts the same marker, so it cannot be consumed twice.
+
+Such a marker is not a second nullifier, and deriving it from `sk_o` is not a VRF evaluation.
+For example, with an issuer key `P_I = sk_I * G` registered with a proof of knowledge of `sk_I`,
+a marker keyed by the Diffie-Hellman value `K = sk_o * P_I = sk_I * pk_o` is computable by the
+key holder and the issuer but not by the sender. An issuer-authorized record kind may then insert
+only that marker; whichever consumption comes first blocks the other. The holder's proving
+services learn `K` and can recognize later spends of the holder's coins of that asset whose
+openings they have seen; a design using such a marker must declare this. A v1 coin public key is
+a hash with no algebraic structure, so v1 coins cannot support such a marker and share the
+pre-adoption limit below.
+
+Any use of `sk_o` on a point other than `G` and `H_x` requires the key holder, and each MPC
+participant, to authenticate that point against consensus state independently of the host, check
+it as in Section 3.3, and domain-separate the result from VRF outputs. Consensus state must
+accept such a point only with a proof of knowledge of its discrete logarithm, so it cannot be
+another coin's `H_x`. The prohibition on host-chosen points is unchanged: a host able to supply
+another coin's `H_x` would learn that coin's `gamma`.
+
+Spentness is recorded in a single nullifier set. A coin held under a user's key and created
+before its asset adopts controls carries no marker, so only its owner's key can derive the
+nullifier that consumes it, and no design can force-transfer it with a consensus guarantee.
+Validity conditions such as freeze still reach it (the main MIP, Interaction with Asset-Level
+Issuer Controls).
+
 ## 6. Payment Scope and Digest
 
 These are logical reference schemas, not deployed ledger structs or completed binary encodings.
@@ -360,6 +411,8 @@ Tags, discriminant values, nested framing, and byte-exact vectors for the new ty
 provided. Field names above correspond conceptually to proof-erased records; they are not
 an assertion that native field names are identical. `IntentHash` is the persistent hash of
 the existing per-segment intent signing envelope, not the final transaction hash.
+`circuit_kind` in a scoped record names the exact verification kind, so evidence issued for one
+kind is not valid for a successor kind (Section 9) and is re-issued when its kind retires.
 
 `ScopedInput` mirrors the proof-erased input record, so it names the Merkle root the input was
 proven against. The root adds no authorization over effects: it is public in the record and in
@@ -368,6 +421,16 @@ the other fields and references. Naming it ties the evidence to that root's rete
 `global_ttl` after the last block whose tree had it (Section 2). A path refreshed after the root
 ages out is therefore a changed protected item under Section 6.1 and needs new evidence; the
 benefit is a ledger-enforced bound on evidence reuse that needs no intent reference.
+[Transient application](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/ledger.rs#L126)
+does not consult retained roots, so a scope whose inputs are all transients gets no root-based
+expiry.
+
+More generally, a scoped record contains every public record field that a prover could vary and
+that encodes an effect, condition, or binding, plus the Merkle root as a coarse expiry anchor. It
+excludes proof bytes, values derived from a proof, and any other ledger-checked freshness anchor
+that a later upgrade adds, so re-proving against a newer anchor needs no new evidence. A field
+later added to input, output, or transient records is classified under this rule, and any change
+to a scoped record's field list is a new scope format.
 
 ### 6.1 Construction and coverage
 
@@ -476,6 +539,11 @@ Logical private inputs:
 
 The first four public values describe existing transcript effects: root check, nullifier
 insertion, segment read, and value-commitment write. They are not a literal flat verifier ABI.
+The existing statement also carries
+[`binding_input`](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/verify.rs#L193)
+(slot 0, fixed at 0 for spends) and the
+[owner-arm operation](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/zswap/src/verify.rs#L177-L184),
+a contract-address cell write or a `Noop`.
 The reference adds a read-only transcript cell for the two digest limbs and reads it in both
 branches. Its position, operation encoding, and compiled statement are not specified here.
 
@@ -515,10 +583,15 @@ compiled circuit and statement-mutation checks. The formula alone is not that ev
 | S7 | V2: recompute and match the public nullifier. |
 | S8 | Match the selected commitment to the path leaf and verify the path against the required root. |
 | S9 | Recompute the existing value commitment from value, asset type, segment, and `rc`. |
+| S10 | Decompose every field element entering a commitment or nullifier preimage through `EncodeField32` canonically in-circuit (integer < `p`), so its bytes are a function of the field value. |
+| S11 | Hard-code user discriminator `0x01` in the compatibility input and output circuits, with no contract arm. |
+| S12 | Select the commitment label, nullifier label, and owner-data encoding all by the single private branch bit. |
 
 S9 retains the existing value-base construction over asset type and segment; it does not
 substitute the v2 VRF curve map. The reference suggests sharing SHA-256 work across branches
 using selected preimage fields, but no constraint count or cost improvement is established.
+Negative tests must show that a compatibility proof for a `0x00` leaf, or with mixed labels,
+does not verify.
 
 ### 8.4 Outputs and transients
 
@@ -541,13 +614,20 @@ recipient commitment in-circuit with the standard library's `coinCommitment`, wh
 `midnight:zswap-cc[v1]` label and a 32-byte `ZswapCoinPublicKey`, and claims it through
 `kernel.claimZswapCoinSpend`; the
 [ledger requires](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/ledger/src/verify.rs#L1609)
-each claimed commitment to equal an output commitment in the same segment. No contract compiled
-against that library can produce or claim `coin_com_v2`. A dapp or wallet MUST NOT place
+each claimed commitment to equal an output commitment in the same segment. The library cannot
+produce `coin_com_v2`. A hand-written contract could compute and claim it, since the
+[claim](https://github.com/LFDT-Minokawa/compact/blob/56c3b7796f78de582bee907318737077fb6e210f/compiler/midnight-ledger.ss#L173)
+takes any 32-byte commitment; the real limits are the off-chain output witness and the absence
+of a v2 output verifier before this upgrade. A dapp or wallet MUST NOT place
 `EncodeField32(pk_v2)` in the `ZswapCoinPublicKey` slot as a workaround: the ledger accepts the
 resulting v1-relation output, but opening it under v1 requires a preimage of the v1 key
 derivation and the v2 branch recomputes the `[v2]` label, so the coin is unspendable. Paying a
-v2 recipient from a contract needs the recipient extension listed in Section 13 and redeployment
-of the contract. The output proof for such a coin is built by the wallet or dapp with the existing
+v2 recipient from a contract needs the recipient extension listed in Section 13 and an in-place
+circuit update through the contract's maintenance authority, which keeps its address and so its
+[token types](https://github.com/midnightntwrk/midnight-ledger/blob/67f9f97246339539af0091c4d8c6bc5ab236a191/coin-structure/src/contract.rs#L59-L61);
+only a contract whose authority cannot sign (the default has no committee) must redeploy, which
+changes an issuing contract's token types.
+The output proof for such a coin is built by the wallet or dapp with the existing
 output constructor, which emits only legacy proofs; after legacy-user-proof retirement (Section
 10, rule 7) that constructor must emit compatibility proofs for v1 user recipients as well, a
 wallet-side change that leaves the contract's claim unchanged. Until then a user who receives
@@ -562,15 +642,33 @@ The reference introduces `ZswapCircuitKind` with symbolic cases `Legacy` and `Co
   input/output views.
 - `Legacy` selects the existing static verifier material and backend; `CompatV2` selects the
   matching new compatibility material. The kind does not identify the private note branch.
+  For contract-owned records, `Legacy` is the initial version of the contract-owned kind.
 - This is not the existing contract-call proof-version enum.
 
 New tagged versions are required for affected records and enclosing transactions.
 Historical formats decode as legacy records with no scopes. Unknown kinds or versions fail
 closed. This specifies required decoder behavior, not an existing backward-decoder implementation.
 
+`ZswapCircuitKind` is an open, fail-closed set. A later upgrade may add successor kinds under
+these rules:
+
+- A successor owner-authorized user kind MUST enforce unchanged the v1 relation (S3), the v2
+  per-note derivations and nullifier (S5, S7), and the checks of S4 and S10-S12. It may extend
+  the authorization proof (S6), for example with a further DLEQ base, only under a new challenge
+  label.
+- A successor MAY add public statement cells that every branch reads or emits with presence,
+  length, and distribution independent of the note branch and the asset type.
+- Kind selection depends only on a record's ownership class, its authorizing party, and the
+  transition state, never on its asset type.
+- A successor activates, and its predecessor retires, at network-selected heights. A restriction
+  or consumption marker (Section 5.1) that a successor adds takes effect for a coin only once
+  every kind lacking it has retired for the records that could consume or create that coin.
+
 Numeric discriminants, tags, serialized proof type and size, verifier identifiers, and artifact
 hashes are unresolved. Names such as `spend_compat` are reference identifiers, not published
 resolver paths. Legacy size or public-input counts must not be assumed to describe new artifacts.
+Each kind has its own verifier identity and prover key location, which no successor reuses, so a
+stale prover fails loudly while two generations coexist.
 
 ## 10. Transaction-level Validation
 
@@ -580,15 +678,21 @@ For each guaranteed or fallible offer, after all offers and intents are availabl
 2. A scope's segment equals its carrying offer's segment.
 3. Every compatibility input or transient-input record appears in exactly one scope of that
    offer, and every listed input reference matches exactly one public record. Legacy input
-   proofs appear in no scope.
+   proofs, and records of kinds that a later upgrade gives their own authorization, appear in no
+   scope.
 4. Each output reference matches exactly one output or transient in the stated segment.
 5. Each intent reference matches the transaction's intent hash for the stated segment.
 6. The validator recomputes `auth_digest` from the transaction's network and scope, and supplies
    it as the public digest for each listed input proof.
-7. Scoped inputs use `CompatV2`. After legacy-user-proof retirement, user-owned inputs and
-   user-recipient outputs must use compatibility verification.
-8. Public `contract_address = Some(_)` requires legacy verification; compatibility records have
-   `None`. A contract transient uses legacy verification for both proofs.
+7. Scoped inputs use a compatibility kind (`CompatV2` at this upgrade). After legacy-user-proof
+   retirement, owner-authorized user-owned inputs and user-recipient outputs must use
+   compatibility verification. Record kinds added by later upgrades define their own verification.
+8. Public `contract_address = Some(_)` requires the contract-owned verification kind, which at
+   this upgrade is `Legacy`; compatibility records have `None`. A contract transient uses the
+   contract-owned kind for both proofs. A later contract-owned kind must keep the contract
+   ownership and nullifier relation (`midnight:zswap-cc[v1]` and `midnight:zswap-cn[v1]` with
+   discriminator `0x00` and the contract address) and bind the public contract address; a
+   contract arm hidden behind `contract_address = None` remains excluded.
 
 Input/transient double-spend rejection, root validity, balancing, binding commitments, TTL,
 replay protection, and actual segment execution remain ledger responsibilities. Passing DLEQ
@@ -613,7 +717,8 @@ Pedersen randomness are legitimate private proof inputs, unlike secret signing n
 
 The wallet verifies returned proofs before broadcast. It may retry an unchanged request with
 another prover while its scope and ledger prerequisites remain valid, including retention of the
-Merkle root named by each scoped input. Once that root has aged out, refreshing the path changes
+Merkle root named by each scoped input; other ledger-checked freshness anchors need only a new
+proof, not new evidence. Once that root has aged out, refreshing the path changes
 the scope and requires new evidence (Section 6). Changing a protected record, network, or segment
 requires new evidence. Refusal by a signer or prover does not justify exporting the spending key.
 
@@ -625,6 +730,7 @@ owner's evidence to it is not equivalent to authorizing that expiry.
 Because each scoped input names its Merkle root, evidence also expires when that root leaves the
 ledger's retention window. That bound is coarse and network-configured; it does not replace an
 intent TTL where a tighter or payment-specific expiry is required.
+A scope whose inputs are all transients has no such bound (Section 6).
 
 Wallets reconcile actual per-segment outcomes and canonical chain state. Proof completion,
 submission, and confirmation are distinct. Rebuilding after a state change can require new
@@ -640,8 +746,14 @@ the compatibility circuit still requires the v1 key.
 The reference uses a coordinated activation height or epoch. Before activation, compatibility
 proofs and scope-bearing offers are rejected. Legacy user proofs remain accepted during the
 transition, then retire at a network-selected height while v1 notes remain spendable through
-compatibility proofs. Contract-owned coins retain legacy relations. No concrete activation or
+compatibility proofs under their original ownership and nullifier relation. Contract-owned coins
+retain their contract ownership and nullifier relation; their verification kind is not fixed
+beyond this upgrade (Section 10, rule 8). No concrete activation or
 retirement value is supplied, and the main MIP leaves scheduling to the network upgrade.
+Retirement heights for legacy user inputs and legacy user-recipient outputs may differ.
+Under Section 9, a later upgrade that adds per-asset spend or output conditions must retire
+every kind that does not evaluate them, legacy user proofs included, before any asset can adopt
+those conditions.
 
 Both compatibility circuits are intended to fit the published, provenance-checked universal
 parameters without a new ceremony. Their fit, performance, equal branch-visible proof shape,
@@ -686,13 +798,15 @@ by each implementation.
 | Frozen field hash | The `PoseidonV2` abstraction and domain-separated uses. | Parameters, domain conversion, framing, padding, and full vectors. |
 | VRF curve map | Uniqueness, subgroup, identity, and hash-to-group requirements; an existing in-circuit gadget as candidate (Section 3.3). | Adoption of that candidate or another algorithm; exact algorithm, constants, root/sign conventions, domain and input framing, non-identity check, exceptional inputs, and review of the gadget for this relation. |
 | Canonical encodings | Native coin byte/field mapping and logical scalar/digest representations. | Complete frozen profile and vectors, including point transport and agreement across languages. |
-| Address | Bech32m with full-field `pk_v2` followed by serialized `epk`. | Address discriminator and network HRPs. |
+| Address | Bech32m with compressed `pk_o` followed by serialized `epk`; senders derive `pk_v2`. | Address discriminator, network HRPs, and point-compression profile. |
 | Scope serialization | Logical schemas and tagged serialization choice. | Tags, discriminants, framing, and byte-exact examples. |
 | Scope enforcement | Coverage rules, merge union, and rejection of overlapping public identities. | Concrete algorithms and resource limits; consistency under all supported segment/transient combinations. |
-| Circuit ABI | Logical witnesses, public effects, and branch-independent digest binding. | Transcript cell encoding, selector and dummy layout, compiled constraints, and statement vectors. |
+| Circuit ABI | Logical witnesses, public effects, and branch-independent digest binding. The compatibility statements reserve no cells for asset-level controls (Section 9). | Transcript cell encoding, selector and dummy layout, compiled constraints, and statement vectors. |
+| Asset-level controls | Marker conditions and key-holder points (Section 5.1), successor kinds (Section 9), and `pk_o` in the address (Section 4). | controls ship in the first compatibility generation or as successor kinds, and their statement cells; the network-upgrade plan decides. |
 | Proof artifacts | Legacy/compatibility dispatch and common branch shape. | Actual circuits, matching keys/backend, size/cost measurements, artifact hashes, and parameter fit. |
-| Migration | Activation plus possible retirement of legacy user proof formats. | Network scheduling and actual historical decoder implementations. |
-| Contract-created user outputs | Contract-created user outputs keep the existing v1 relation; the ledger's claimed-commitment check is unchanged. | A v2 user-recipient arm in the Compact standard library (`coinCommitment` and output creation) and a ledger output constructor that emits `coin_com_v2` under the `CompatV2` output kind, and that contract-created v1 user outputs also use after retirement. |
+| Migration | Activation plus retirement of legacy user proof formats, which any later asset-level control requires first (Sections 9 and 12). | Network scheduling and actual historical decoder implementations. |
+| Contract-created user outputs | Contract-created user outputs keep the existing v1 relation; the ledger's claimed-commitment check is unchanged. | A v2 user-recipient arm in the Compact standard library (`coinCommitment` and output creation) and a ledger output constructor that emits `coin_com_v2` under the `CompatV2` output kind, and that contract-created v1 user outputs also use after retirement. The arm's versioned recipient representation takes the v2 address key and is specified with any marker format that asset-level controls need, so contracts update once. |
+| Contract-owned kind | `Legacy` at this upgrade; rule 8 and the preserved contract relation (Section 10). | Whether and when a later upgrade adds a successor contract-owned kind or retires `Legacy` for contract-owned records. |
 | Threshold custody | Aggregate public-key/VRF/DLEQ relations. | A complete, analyzed DKG/signing/recovery protocol and device capabilities. |
 | Security evidence | Required properties, reference formulas, and algebraic completeness. | Independent analysis, native/circuit differential results, and verification of final serialized transactions. |
 
@@ -702,7 +816,9 @@ implementability of the design.
 
 ## References
 
-- [mips/mip-xxxx.md](../mip-xxxx.md): high-level requirements and design latitude.
+- [MIP-0017](mip-0017-shielded-spend-auth.md): high-level requirements and design latitude.
+- [MPS-0013: Zswap Business Logic](../../mps/mps-0013-zswap-business-logic.md): asset-level issuer
+  controls that later upgrades may add to the same relations (Sections 5.1 and 9).
 - [Pinned ledger source](https://github.com/midnightntwrk/midnight-ledger/tree/67f9f97246339539af0091c4d8c6bc5ab236a191): existing implementation baseline.
 - Chaum and Pedersen, "Wallet Databases with Observers," CRYPTO 1992: DLEQ background.
 - [RFC 9381](https://www.rfc-editor.org/rfc/rfc9381): VRF definitions, not wire compatibility
