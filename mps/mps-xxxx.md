@@ -1,7 +1,8 @@
 ---
-MPS: <Number> # assigned by editors  
+MPS: "0047"
 Title: Multi-environment Compact Releases  
-Authors: Parisa Ataei (@pataei) 
+Authors:
+  - Parisa Ataei (pataei)
 Status: Proposed  
 Category: Libraries and Tooling  
 Created: 05-Oct-2026  
