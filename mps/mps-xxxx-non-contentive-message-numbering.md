@@ -1,7 +1,8 @@
 ---
-MPS: X
+MPS: "0046"
 Title: Non-contentive Message Numbering
-Authors: Kevin Millikin (kmillikin)
+Authors:
+  - Kevin Millikin (kmillikin)
 Status: Proposed
 Category: Libraries and Tooling
 Created: 09-Oct-2026
