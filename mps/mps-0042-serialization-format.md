@@ -58,3 +58,5 @@ Cross-chain and other integrating teams build against a committed, reproducible 
 1. a MIP for MPS-0042 submitted to the MIP process with all template sections completed;
 2. a versioned serialization specification published in the midnightntwrk repositories with conformance test vectors;
 3. a tagged compiler release producing encodings that pass those vectors.
+
+Not included in Q4: migration of already-deployed contracts, efficient in-circuit encoding, and inclusion in a stable toolchain release.
