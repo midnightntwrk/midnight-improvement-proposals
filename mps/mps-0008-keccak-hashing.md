@@ -1,6 +1,14 @@
 ---
-This is a legacy MPS that pre-dates the defined process, the components within may not conform to the MPS template.
+MPS: "0008"
+Title: Native Keccak Hashing for Signature Verification
+Status: Proposed
+Category: Libraries and Tooling
+Requires: none
+Replaces: none
+MIP: none
 ---
+
+> **Note:** This is a legacy MPS that pre-dates the defined process; the components within may not conform to the MPS template.
 
 # Signature Verification - **Native Keccak Hashing**
 
