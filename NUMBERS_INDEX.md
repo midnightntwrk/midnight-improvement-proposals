@@ -64,6 +64,11 @@ MPS-0017: governance-observability (in review)
 [MPS-0042: serialization-format](/mps/mps-0042-serialization-format.md)  
 [MPS-0043: selective-disclosure](/mps/mps-0043-selective-disclosure.md)  
 [MPS-0044: consensus-performance](/mps/mps-0044-consensus-performance.md)  
+[MPS-0045: persistent-hash-to-field](/mps/mps-0045-persistent-hash-to-field.md)  
+[MPS-0046: non-contentive-message-numbering](/mps/mps-0046-non-contentive-message-numbering.md)  
+[MPS-0047: multi-environment-compact-releases](/mps/mps-0047-multi-environment-compact-releases.md)  
+[MPS-0048: enabling-light-clients](/mps/mps-0048-enabling-light-clients.md)  
+[MPS-0049: soulbound-shielded-attestations](/mps/mps-0049-soulbound-shielded-attestations.md)  
 
 # MIPs
 
@@ -96,3 +101,6 @@ MPS-0017: governance-observability (in review)
 [MIP-0027: transaction-revalidation-cache](/mips/mip-0027-transaction-revalidation-cache.md)  
 MIP-0028: custom-spend-logic (in review)  
 [MIP-0029: agent-identity-standard](/mips/mip-0029-midnight-agent-identity-standard.md)  
+[MIP-0030: ecdsa-account-authorisation](/mips/mip-0030-ecdsa-account-authorisation.md)  
+[MIP-0031: message-signing](/mips/mip-0031-message-signing/mip-0031-message-signing.md)  
+[MIP-0032: private-credential-registry](/mips/mip-0032-private-credential-registry.md)  
