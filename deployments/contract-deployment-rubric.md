@@ -1,14 +1,15 @@
 # Contract Deployment Rubric
 
----
-Contract deploy request reviews are not audits!
----
+> [!IMPORTANT]
+> **The deployment authorization process is retired.** Contract deployment on Midnight mainnet is now permissionless: you do not need to open a deploy request, and MNF does not review contracts before they are deployed. The records in [`deployments/`](./) are kept as a historical archive of the requests reviewed while deployment was permissioned, and are no longer updated or added to.
+>
+> The rubric below is kept as **optional self-assessment guidance** for thinking about a contract's risk before you deploy it. Scoring a contract against this rubric is **not** an audit.
 
 ## Rubric scoring
 
-Below is a comprehensive rubric designed for scoring the risk level associated with various dimensions. This scoring system aims to provide a standardized, objective framework for assessing potential risks, allowing stakeholders to quickly identify areas of concern and prioritize mitigation efforts. The rubric assigns a risk score to each dimension based on predefined criteria, ensuring a consistent evaluation across all launch initiatives.
+Below is a rubric for scoring the risk of a contract across three dimensions. It gives you a consistent framework for assessing your own contract, so you can identify areas of concern and prioritize mitigation work before you deploy. Each dimension is scored against predefined criteria.
 
-Each dApp gets scored 1 to 3 on each of the three risk categories. The score reflects what is actually at stake if something goes wrong, not how likely it is.
+Score each dApp 1 to 3 on each of the three risk categories. The score reflects what is actually at stake if something goes wrong, not how likely it is.
 
 - Privacy-at-Risk : If a ZK fault surfaces a bug in the proving system that leaks witness data or enables transaction correlation what does a user lose?
 - Value-at-Risk: If there's an exploit, how much can users lose and is that loss recoverable?
@@ -64,7 +65,7 @@ Exposure of Tier 3 data can lead to:
 
 This scoring mechanism evaluates the financial risk exposure associated with the smart contract, primarily focusing on the amount of user funds that are potentially vulnerable to a security exploit. A higher score indicates a more significant financial risk as the platform grows.
 
-| **Tier** | **Description** | **Financial Risk Profile** | **Confidence During Launch Phase** |
+| **Tier** | **Description** | **Financial Risk Profile** | **Confidence** |
 | --- | --- | --- | --- |
 | **1** | **No funds locked in contract.** <br> The smart contract architecture is designed such that user assets are never directly held within the contract's balance. Transactions may involve temporary, atomic transfers, but the contract does not serve as a long-term custodian or pool for capital. | **Minimal/Zero Risk.** <br> An exploit would not result in the direct loss of user principal held in the contract. Risk is limited to gas fees, transaction failures, or minor, non-custodial functional loss. | **Highest level of confidence.** <br> Focus shifts entirely to functional correctness and liveness, rather than catastrophic financial loss. 
 | **2** | **Funds temporarily escrowed in contract but for a bounded time.** <br> The contract holds user funds, but this is limited to short, defined periods (e.g., during a swap, a loan origination, a timelocked withdrawal, or a fixed-duration auction). The time window for funds being vulnerable is limited and predetermined. | **Bounded Risk.** <br> The maximum value-at-risk is constrained by the current volume or capacity of the temporary process. An exploit can cause a loss, but the window of opportunity is limited and the total capital at risk is less than the protocol's total value locked (TVL). | **Moderate confidence.** <br> Requires thorough review of the escrow mechanism, withdrawal logic, and timeout procedures. A critical bug has a contained blast radius. |
@@ -98,29 +99,15 @@ The contract's state can grow infinitely without limit based on user activity. I
 
 **Examples:** A simple public log or message board where anyone can post an unlimited number of entries, a system that tracks *every* historical interaction without aggregation or removal, or a decentralized identifier (DID) system that registers every alias ever created without a deactivation/deletion process.
 
-### Launch Phased Deployment Override Rule:
+## If your contract scores a 3
 
-### This phase represents a critical period for evaluating the stability, performance, and readiness of the product or feature before a full, general release. To ensure maximum stability and minimize potential negative user impact during this controlled rollout, a stringent deployment override rule is enforced.
+A score of 3 in any category usually points to a serious design risk: a critical flaw, a significant security weakness, or unbounded state growth that could harm users or the network. It no longer blocks deployment, but treat it as a prompt to rethink the architecture: fix the underlying issue and re-score the category before you deploy, rather than ship and fix later.
 
-**Deployment Override Condition:**
+Drop into [Discord #dev-chat](https://discord.gg/midnightnetwork) or post in the [developer forum](https://forum.midnight.network/) and share your contract structure. The Aliit, the community, and the DevRel team can help you understand what a lower-risk design looks like.
 
-A definitive score of 3 on any single category within the rubric will immediately trigger a deployment block. This blocks proceeding with further deployment steps until the underlying issue is fully resolved and the category score is re-evaluated and reduced to an acceptable level.
+## Self-assessment template
 
-**Rationale and Implications:**
-
-This high-stakes threshold emphasizes the principle of "fail fast and fix early" within a controlled environment. A score of 3 typically signifies a critical flaw, a severe performance degradation, a significant security vulnerability, or a major operational blocker that poses an unacceptable risk to the pilot user base, system health, or business objectives. This rule ensures that critical issues are identified and mitigated before they impact a wider audience.
-
-If your contract scores a 3 in any category, it is not a permanent block. It is a prompt to rethink the architecture. Join the developer forum or drop into Discord's #dev-chat channel and share your contract structure. The Aliit, the community, and the DevRel team can help you understand what a lower-risk design looks like.
-
-## Apply for Deployment Authorization
-
-To apply for deployment authorization, open a Pull Request against this repository.
-
-1. Fork this repository
-2. In the `deployments/` folder, create a new file named`your-dapp-name.md` if it does not already exist
-3. Open a Pull Request against the `main` branch with the title: `[Deployment Request] Your dApp Name`
-
-Use the following template for your file:
+You can use this template to record your own assessment, for example in your contract repository's README or when you scope an audit. You do not need to submit it anywhere.
 
 ---
 
@@ -137,5 +124,3 @@ Use the following template for your file:
 | State-space-at-risk | | | |
 
 ---
-
-If your contract scores a 3 in any category, it is not a permanent block. It is a prompt to rethink your architecture. Drop into [Discord #dev-chat](https://discord.gg/midnightnetwork) or post in the [developer forum](https://forum.midnight.network/) and share your contract structure. The Solutions, the DevRel team, and the Aliit community can help you understand what a lower-risk design looks like.
