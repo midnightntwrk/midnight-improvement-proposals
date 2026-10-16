@@ -1,10 +1,11 @@
 ---
-MPS: <Number> # assigned by editors
+MPS: "0048"
 Title: Enabling Light Clients on Midnight
-Authors: Bob Blessing-Hartley @bobblessinghartley
+Authors:
+  - Bob Blessing-Hartley (bobblessinghartley)
 Status: Proposed
 Category: Core
-Created: 15-OCT-2026
+Created: 15-Oct-2026
 Requires: none
 Replaces: none
 MIP: none
