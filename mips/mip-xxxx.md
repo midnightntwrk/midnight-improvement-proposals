@@ -1,9 +1,9 @@
 ---
-MIP: X
+MIP: "0031"
 Title: Midnight Message Signing
 Authors:
   - Andrzej Kopeć (kapke)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-09-08
 Requires: "MIP-0003: ECDSA signature support"
@@ -44,7 +44,7 @@ Multiple known implementations already disagree, and several reached the same mi
 
 The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described in BCP 14 (RFC 2119 and RFC 8174) when, and only when, they appear in all capitals, as shown here.
 
-This MIP profiles the DApp Connector API's existing types. It changes one of them: `scheme` is optional on the connector's `Signature` and defaults there to `schnorr_bip340`; here it is required. [MIP-0003](./mip-0003-ecdsa-support.md#dapp-connector-api) foresaw that change when it introduced the field. Until the connector API's next major version ships — the one [§8](#8-versioning) calls for — this document governs where the two disagree. A few rules presuppose the connector: the error shape of §2, and the JavaScript-specific typing rules of §2 and §7.
+This MIP profiles the DApp Connector API's existing types. It changes one of them: `scheme` is optional on the connector's `Signature` and defaults there to `schnorr_bip340`; here it is required. [MIP-0003](../mip-0003-ecdsa-support.md#dapp-connector-api) foresaw that change when it introduced the field. Until the connector API's next major version ships — the one [§8](#8-versioning) calls for — this document governs where the two disagree. A few rules presuppose the connector: the error shape of §2, and the JavaScript-specific typing rules of §2 and §7.
 
 ```ts
 signData(data: string, options: SignDataOptions): Promise<Signature>;
@@ -139,7 +139,7 @@ Let `h = SHA-256(M)` — a single untagged application over the whole of `M`, pr
 - `schnorr_bip340` — sign and verify with `h`, the 32 bytes, as BIP-340's message input.
 - `ecdsa_secp256k1_sha256` — sign and verify `h` as the ECDSA digest, i.e. ECDSA-with-SHA-256 over `M`.
 
-The key a wallet signs with MUST be the key whose address it reports through the connector's unshielded-address API, `getUnshieldedAddress`. Which address derivation applies follows from the `scheme` the returned `Signature` declares; both derivations are given in [MIP-0003](./mip-0003-ecdsa-support.md#address-generation). `getUnshieldedAddress` takes no scheme argument and is answered before `signData`, so a wallet holding an unshielded key under each scheme MUST pick one of those keys for the lifetime of a `ConnectedAPI` — the object the connector's `connect` resolves to — and report that key's address.
+The key a wallet signs with MUST be the key whose address it reports through the connector's unshielded-address API, `getUnshieldedAddress`. Which address derivation applies follows from the `scheme` the returned `Signature` declares; both derivations are given in [MIP-0003](../mip-0003-ecdsa-support.md#address-generation). `getUnshieldedAddress` takes no scheme argument and is answered before `signData`, so a wallet holding an unshielded key under each scheme MUST pick one of those keys for the lifetime of a `ConnectedAPI` — the object the connector's `connect` resolves to — and report that key's address.
 
 Signatures under either scheme MAY be randomised, so two calls signing the same `M` may return different signatures. Nonce derivation belongs to the scheme, not to this procedure, and this document fixes none for either. A verifier therefore:
 
@@ -176,7 +176,7 @@ The second and third rows are the same message, as §1 requires, so their signat
 
 Verification takes the `Signature` object of the typings above together with `P_exp`, the payload bytes the verifier asked to be signed. A DApp derives `P_exp` by applying §2 to the exact `data` and `encoding` it passed to `signData`. The `Signature` is untrusted on arrival, so `P_exp` MUST NOT be recovered from it or informed by any of its fields. A verifier acting for another party MUST receive `P_exp` from the party that made the request, over a channel independent of the `Signature`. That party may send the `data` and `encoding` instead, and the verifier derives `P_exp` per §2.
 
-Verification establishes that the holder of `verifyingKey` signed `M`, not who that holder is: a wallet that ignores §3's key-binding rule can sign under a key it generated for the purpose and still pass every step below. A verifier that attributes any meaning to the signature MUST therefore also check `verifyingKey` against a key or address it obtained independently of the `Signature`, deriving that address per [MIP-0003](./mip-0003-ecdsa-support.md#address-generation) for the resolved scheme.
+Verification establishes that the holder of `verifyingKey` signed `M`, not who that holder is: a wallet that ignores §3's key-binding rule can sign under a key it generated for the purpose and still pass every step below. A verifier that attributes any meaning to the signature MUST therefore also check `verifyingKey` against a key or address it obtained independently of the `Signature`, deriving that address per [MIP-0003](../mip-0003-ecdsa-support.md#address-generation) for the resolved scheme.
 
 Throughout the steps below, a verifier:
 
@@ -228,7 +228,7 @@ Adoption is documentary and per-implementation, and no step below depends on the
 - Change producers to return `hex(M)` in `data` and to emit `scheme`.
 - Tighten payload validation wherever malformed input is currently repaired.
 - Apply the prefix wherever it is currently omitted.
-- Correct the description of both signature halves as "the scalars `r` and `s`", wrong for `schnorr_bip340`, in all three places it appears: `SPECIFICATION.md`, the `Signature` doc comment in `src/api.ts`, and [MIP-0003's transaction-format section](./mip-0003-ecdsa-support.md#transaction-format-and-signature-verification).
+- Correct the description of both signature halves as "the scalars `r` and `s`", wrong for `schnorr_bip340`, in all three places it appears: `SPECIFICATION.md`, the `Signature` doc comment in `src/api.ts`, and [MIP-0003's transaction-format section](../mip-0003-ecdsa-support.md#transaction-format-and-signature-verification).
 
 ## Backwards Compatibility Assessment
 
@@ -250,7 +250,7 @@ The components that change are the DApp Connector API specification and wallets 
 
 ## Testing
 
-The vectors are at [`./mip-xxxx/vectors.json`](./mip-xxxx/vectors.json). They cover the bytes; §2's rules about the shape of `data` and `options` cannot be written down in the file, and a harness has to check those by other means. No valid vector's `input` carries `keyType`, by convention rather than omission: a producer harness replaying one MUST supply `'unshielded'`.
+The vectors are at [`./vectors.json`](./vectors.json). They cover the bytes; §2's rules about the shape of `data` and `options` cannot be written down in the file, and a harness has to check those by other means. No valid vector's `input` carries `keyType`, by convention rather than omission: a producer harness replaying one MUST supply `'unshielded'`.
 
 Two of the file's fields carry rules rather than data. `schemaVersion` is an integer, and a harness reading the file MUST reject a value it does not recognise. Every vector with `valid: false` carries a `kind` naming its class: `payload` for a §2 rejection a producer must make, `verification` for a §7 rejection a verifier must make. A harness MUST switch on `kind` rather than infer the class from which fields are present.
 
@@ -277,7 +277,7 @@ A verifier never sees an `input`, an `encoding` or an error code.
 ## References
 
 - [DApp Connector API specification](https://github.com/midnightntwrk/midnight-dapp-connector-api/blob/main/SPECIFICATION.md) — the Signing section this MIP lifts and completes, and [the API's types](https://github.com/midnightntwrk/midnight-dapp-connector-api/blob/main/src/api.ts)
-- [MIP-0003: ECDSA signature support](./mip-0003-ecdsa-support.md) — the ECDSA scheme, its key and address derivation, and its ledger-level low-`s` rule
+- [MIP-0003: ECDSA signature support](../mip-0003-ecdsa-support.md) — the ECDSA scheme, its key and address derivation, and its ledger-level low-`s` rule
 - [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) — Schnorr signatures for secp256k1
 - [RFC 4648](https://www.rfc-editor.org/rfc/rfc4648) — base64 encoding (Section 4) and canonical encoding (Section 3.5); [RFC 3629](https://www.rfc-editor.org/rfc/rfc3629) — UTF-8; [RFC 6979](https://www.rfc-editor.org/rfc/rfc6979) — deterministic ECDSA nonces, and its Abstract's guarantee that they are verifiable by unmodified verifiers
 - [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf) Section 6.2 — SHA-256
