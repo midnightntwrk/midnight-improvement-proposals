@@ -1,14 +1,15 @@
 ---
-MIP: "xxxx"
+MIP: "0032"
 Title: Private Credential Registry and Soulbound Profile
 Authors:
   - Harley Hermanson (@HarleysCodes)
   - Dennis Zarelli (@DpacJones)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-06-25
 Requires: none
 Replaces: none
+MPS: MPS-0049
 License: Apache-2.0
 ---
 
