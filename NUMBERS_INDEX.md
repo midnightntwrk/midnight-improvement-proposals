@@ -67,6 +67,7 @@ MPS-0017: governance-observability (in review)
 [MPS-0045: persistent-hash-to-field](/mps/mps-0045-persistent-hash-to-field.md)  
 [MPS-0046: non-contentive-message-numbering](/mps/mps-0046-non-contentive-message-numbering.md)  
 [MPS-0047: multi-environment-compact-releases](/mps/mps-0047-multi-environment-compact-releases.md)  
+[MPS-0048: enabling-light-clients](/mps/mps-0048-enabling-light-clients.md)  
 
 # MIPs
 
