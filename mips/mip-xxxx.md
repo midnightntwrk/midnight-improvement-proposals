@@ -1,5 +1,5 @@
 ---
-MIP: X
+MIP: "0030"
 Title: ECDSA Authorisation for Custody Accounts
 Authors:
   - Nicolas Di Prima (NicolasDP)
