@@ -1,13 +1,14 @@
 ---
-MPS: <Number> # assigned by editors
+MPS: "0049"
 Title: Soulbound and Non-Transferable Shielded Attestations on Midnight
-Authors: Harley Hermanson (HarleysCodes)
+Authors:
+  - Harley Hermanson (HarleysCodes)
 Status: Proposed
 Category: Standards
 Created: 25-Jun-2026
 Requires: none
 Replaces: none
-
+MIP: none
 ---
 
 <!--
@@ -602,9 +603,8 @@ copy.
 - MPS-0015: Agent Identity Gap on Midnight (companion to proposed MAIS).
   https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0015-agent-identity.md
 
-- MIP-xxx: Midnight Agent Identity Standard (MAIS), issue #110 in
-  midnightntwrk/midnight-improvement-proposals.
-  https://github.com/midnightntwrk/midnight-improvement-proposals/issues/110
+- MIP-0029: Midnight Agent Identity Standard (MAIS).
+  https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0029-midnight-agent-identity-standard.md
 
 - MPS-0018: Multi-key Account Custody for Midnight-Native Assets.
   https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0018-asset-custody-model.md
@@ -636,7 +636,7 @@ copy.
     non-transferability refinements.
   https://github.com/midnightntwrk/passport/tree/main/docs/plans/components
 
-- MPS-xxxx: Domain Separation for Midnight Hash Constructions
+- MPS-0027: Domain Separation for Midnight Hash Constructions
   (the canonical numbered version is MPS-0027 in this repository;
   the passport mirror at
   `https://github.com/midnightntwrk/passport/blob/main/docs/mps-mip/mps/mps-domain-separation.md`
