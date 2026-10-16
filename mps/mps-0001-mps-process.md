@@ -2,7 +2,7 @@
 MPS: "0001"
 Title: Midnight Problem Statement Process
 Authors: Nick Stanford @nstanford5
-Status: Proposed
+Status: Accepted
 Category: Governance
 Created: 18-JUN-2026
 Requires: none
