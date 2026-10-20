@@ -7,11 +7,9 @@ on:
   # Allow a manual run from the Actions tab.
   workflow_dispatch:
 
-# Permissions required for the GitHub Pages deployment.
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Grant nothing by default. Each job asks for the least it needs, so only the
+# deploy job can write to Pages.
+permissions: {}
 
 # Allow one concurrent deployment; don't cancel an in-progress production deploy.
 concurrency:
@@ -21,6 +19,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read   # actions/configure-pages reads the site's settings
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,6 +48,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write      # publish the Pages artifact
+      id-token: write   # verify the deployment's origin
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
