@@ -982,29 +982,32 @@ not as an incremental version, but as a superseding MIP.
 
 ## References
 
-- [HTML Standard — Policy
-  containers](https://html.spec.whatwg.org/multipage/browsers.html#policy-containers)
-- [MIP-1 — Midnight Improvement Proposal
-  Process](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0001-mip-process.md)
-- [CoIP-1 — Compact Improvement Proposal
-  Process](https://github.com/LFDT-Minokawa/compact/blob/main/coips/coip-0001.md) — the process that
+- [HTML Standard — Policy containers](https://html.spec.whatwg.org/multipage/browsers.html#policy-containers)
+- [MIP-1 — Midnight Improvement Proposal Process](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0001-mip-process.md)
+- [CoIP-1 — Compact Improvement Proposal Process](https://github.com/LFDT-Minokawa/compact/blob/main/coips/coip-0001.md) — the process that
   defines what a CoIP is and where one lives
-- [MPS-0021 — Phase 2: Contract to
-  Contract](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0021-phase2-contract-to-contract.md)
+- [MPS-0021 — Phase 2: Contract to Contract](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0021-phase2-contract-to-contract.md)
   — the problem statement this MIP answers
-- [MPS-0022 — A Standard, Language-Agnostic Representation of Compiled Compact
-  Contracts](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0022-standard-contract-representation.md)
-  — a related problem statement, which the CoIP encoding the contract-authored function kinds may
-  also answer
-- [DApp Connector API
-  specification](https://github.com/midnightntwrk/midnight-dapp-connector-api/blob/main/SPECIFICATION.md)
-- [Midnight glossary — custom spend logic](https://docs.midnight.network/glossary) — the feature's
-  only authoritative description
-
+- [MPS-0022 — A Standard, Language-Agnostic Representation of Compiled Compact Contracts](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0022-standard-contract-representation.md) — a related problem statement, which the CoIP encoding the contract-authored function kinds may also answer
+- [DApp Connector API specification](https://github.com/midnightntwrk/midnight-dapp-connector-api/blob/main/SPECIFICATION.md)
+- [Midnight glossary — custom spend logic](https://docs.midnight.network/glossary) — the feature's only authoritative description
+- Kerber, T, Kiayias, A and Kohlweiss, M 2021, [Kachina - Foundations of Private Smart Contracts](https://ieeexplore.ieee.org/document/9505181)
+  in _2021 IEEE 34th Computer Security Foundations Symposium_ (CSF). 
+  Institute of Electrical and Electronics Engineers, pp. 1-16, 34th IEEE Computer Security Foundations Symposium, 21/06/21. https://doi.org/10.1109/CSF51468.2021.00002
 ## Acknowledgements
 
-*Not yet drafted — the people who contributed to the design research behind this proposal and its
-reviews, and the workshop participants.*
+The roots of the ideas in this proposal are already present in the 
+[Kachina paper](https://ieeexplore.ieee.org/document/9505181), including the distinction between
+deterministic evolution of local state and potentially non-deterministic contextual inputs to a
+transaction.  **Jon Rossie** connected those original Kachina concepts with enforced isolation of
+local state to arrive at the original design for the capsule runtime.  While he has not been a
+direct author of this Midnight improvement proposal, the credit for all its central concepts and
+requirements goes to him.
+
+The whole Compact development team and several members of the architecture team at [Shielded
+Technologies](https://www.shielded.io/) have contributed to the design presented in this proposal.
+In addition to the proposal's primary authors, major contributors have included **Joseph Denman**,
+**Kent Dybvig**, and **Kevin Millikin**.
 
 ## Copyright Waiver
 
