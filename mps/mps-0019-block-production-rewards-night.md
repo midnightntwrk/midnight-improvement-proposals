@@ -38,7 +38,7 @@ The solution must conform to the approved edition of the Midnight Tokenomics and
 * while Reserve control remains on Cardano, Midnight must not make reward NIGHT claimable until it has observed enough unused stable release from the Cardano Reserve to cover it; and
 * who may change reward parameters, and how, must be consistent with what the published disclosures say about the Reserve's parameters and their governance.
 
-The whitepaper does not define how one pool's producer reward is divided between its SPO and its delegators. As on Cardano, each SPO sets a margin for its own pool and the rest is shared by stake; there is no governed cap, and backers are protected by seeing the margin and being able to move their stake. An ADA SPO's margin is the one in its Cardano pool certificate. The protocol must fix the form of the split and its arithmetic, so that any party can reproduce it.
+The whitepaper does not define how one pool's producer reward is divided between its SPO and its delegators. As on Cardano, each SPO sets a margin for its own pool, and may declare a fixed amount taken before it, and the rest is shared by stake; there is no governed cap, and backers are protected by seeing the terms and being able to move their stake. An ADA SPO's margin is the one in its Cardano pool certificate. The protocol must fix the form of the split and its arithmetic, so that any party can reproduce it.
 
 ## Problem
 
@@ -50,7 +50,7 @@ At mainnet launch, blocks are produced by permissioned validators that are not r
 
 **Recovering control of rewards.** A recipient who loses, or suspects compromise of, the key that receives rewards needs a way to move future and unclaimed rewards to a new key, with bounded and publicly visible exposure while the change takes effect.
 
-**Split terms.** An SPO's margin must be declared where its backers already look (for an ADA SPO, its Cardano pool certificate), and a delegator needs to see it before delegating. A change of terms must not alter a reward already calculated.
+**Split terms.** An SPO's margin must be declared where its backers already look (for an ADA SPO, its Cardano pool certificate), and a delegator needs to see it, and any fixed amount, before delegating. A change of terms must not alter a reward already calculated.
 
 **Forecasting before joining.** An SPO considering participation needs an estimate based on the published tokenomics, expected block production, utilization and its own split terms, with assumptions and uncertainty visible.
 
@@ -86,11 +86,11 @@ At mainnet launch, blocks are produced by permissioned validators that are not r
 * The protocol calculates entitlements automatically for eligible block production. While Cardano controls the Reserve, it makes them claimable automatically, but only up to the stable Cardano Reserve releases it has observed and not yet used.
 * An operator or delegator can turn a claimable balance into spendable unshielded NIGHT on Midnight through supported CLI and SDK flows.
 * Any payout can be recomputed independently from finalized Midnight and Cardano data, the published formula, the split terms and normative test vectors.
-* Settlement is bounded, replay-safe and atomic: a failure cannot consume release credit, advance a settlement cursor, or apply only part of a reward chunk.
+* Settlement is bounded, replay-safe and atomic: a failure cannot pay out released NIGHT, advance a settlement cursor, or apply only part of a reward chunk.
 * Registration ambiguity, a missing destination, key rotation, rollback, retry, runtime upgrade and delayed Reserve release do not move rewards away from the owning stake address, and do not duplicate, destroy or strand them.
 * Documented, batch-capable APIs let wallets and explorers show producer and delegator rewards without treating an indexer response as proof of correctness.
 * Before activation, the authority that may change reward parameters is confirmed to be consistent with the published disclosures.
-* Every ADA SPO's operator cut is set by the margin in its Cardano pool certificate, with no cap and no fixed amount.
+* Every ADA SPO's operator cut is set by the margin in its Cardano pool certificate, with no cap, plus any fixed amount in NIGHT the SPO declares.
 * NIGHT-native SPOs can be added by a later NIGHT staking MIP without migrating ADA SPO rewards, escrow or records.
 
 ## Dependencies and scope
@@ -106,6 +106,6 @@ Client-side verification of Midnight is outside this MPS. The reward mechanism m
 ## References
 
 * [Midnight Tokenomics and Incentives Whitepaper, version 1.81 (May 2026)](https://45047878.fs1.hubspotusercontent-na1.net/hubfs/45047878/Midnight-Tokenomics-And-Incentives-Whitepaper.pdf)
-* [NIGHT MiCA White Paper](https://a.storyblok.com/f/176646/x/2de4e159af/midnight-price-night-whitepaper.pdf)
+* NIGHT MiCA White Paper, notified 2026-07-28, SHA-256 `519e002f38574fa455cf9e763bd88abee4b50598ae6c0769484a2fcf0312258d` (stable URL to be supplied by the Foundation)
 * [MIP-0024: Block Production Rewards Payout on Cardano](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0024-block-production-rewards.md)
 * [Discussion #273](https://github.com/midnightntwrk/midnight-improvement-proposals/discussions/273)
