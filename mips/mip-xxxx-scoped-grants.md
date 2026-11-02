@@ -6,7 +6,7 @@ Authors:
   - Nicolas Di Prima (NicolasDP)
 Status: Draft
 Category: Standards
-Created: 2026-11-02
+Created: 2026-09-09
 License: Apache-2.0
 Requires: [MIP-0012, MIP-0013, MIP-0030]
 Replaces: none
@@ -885,7 +885,7 @@ evidence of authenticated provenance.
 
 The calling contract MUST authorize any `claimContractCall` it exposes.
 A contract offering arbitrary claim tuples can lend its identity to a
-call it did not execute; the [P9 provenance experiment](../../../experiments/cross-contract-calls/README.md)
+call it did not execute; the [P9 provenance experiment](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/experiments/cross-contract-calls/README.md)
 demonstrates this ledger rule. A caller pin authenticates the claiming
 address, not the integrity of that contract's claim policy or its code
 version. Mutable caller contracts retain their address across updates.
@@ -2299,7 +2299,7 @@ partial implementation evidence below.
       since what the reference localnet refuses is the funding leg, a
       small contract call carrying a NIGHT unshielded input that
       balancing pairs with a NIGHT change output
-      ([unshielded evidence](../../../contract/GRANTS-E2.md#20260916-the-unshielded-grant-twins-on-node-grants-e4)).
+      ([unshielded evidence](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/GRANTS-E2.md#20260916-the-unshielded-grant-twins-on-node-grants-e4)).
       The later P-256 grant twins compile under Compact 0.35, and the
       23 October 2026 run exercises `wa-json134` unshielded grant spends
       on node (Implementation and E11). E1 does not certify the later
@@ -2345,7 +2345,7 @@ partial implementation evidence below.
       the thirty-circuit v2 roster in three waves and the caller-bound
       thirty-six-circuit roster in seven waves. The profiled P-256
       deployment records a fifty-two-circuit inventory and ten waves
-      ([profile guide](../../../contract/WEBAUTHN.md)). These are
+      ([profile guide](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/WEBAUTHN.md)). These are
       distinct source and toolchain snapshots, not interchangeable
       sizing claims. The pre-grants compatibility control remains open.
 - [ ] E7: the read handover of Testing item 7, including the
@@ -2524,7 +2524,7 @@ complete conformance to every requirement of this MIP.
 **Caller extension (2026-10-01).** The recorded run uses Compact 0.35.0,
 runtime 0.20.0 and `spec_version = 3`. Its JubJub and k256 device arms
 bind scope:v2 and all six grant-spend circuits enforce the caller pin.
-The [caller implementation guide](../../../contract/GRANTS-CALLER.md)
+The [caller implementation guide](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/GRANTS-CALLER.md)
 records a JubJub unshielded spend via a contract, the `A -> B -> account`
 case, direct/wrong-caller/replay refusals, and a proved forged-context
 submission refused by the node. The k256 and shielded caller predicates
@@ -2534,22 +2534,22 @@ historical scope:v1 measurements and are not measurements of the caller
 extension or the P-256 arm.
 
 **P-256 profile.** The reference implements
-[`wa-json134`](../../../contract/WEBAUTHN.md), with a 134-byte canonical
+[`wa-json134`](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/WEBAUTHN.md), with a 134-byte canonical
 client-data object, a 21-byte origin, 37-byte authenticator data, and
 UP+UV required. Other JSON shapes, origin lengths, and authenticator
 extensions are outside this implementation profile. The
-[compiled inventory](../../../contract/P256-MEASUREMENTS.md) contains
+[compiled inventory](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/P256-MEASUREMENTS.md) contains
 all three P-256 grant-spend circuits. The
-[offline suite](../../../contract/src/tests/p256-offline.ts) exercises
+[offline suite](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/src/tests/p256-offline.ts) exercises
 a P-256 owner and grantee, including RP binding, scope, signature,
 replay, and revocation checks. The earlier
-[recorded node suite](../../../contract/evidence/p256-webauthn/conformance-and-proving.json)
+[recorded node suite](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/p256-webauthn/conformance-and-proving.json)
 uses an OpenSSL software authenticator for account calls, including
 P-256 device-authorised grant issuance and revocation; it does not
 exercise a P-256 grantee spend.
 
-The 23 October 2026 [grant suite](../../../contract/src/tests/p256-grants.ts)
-and its [node evidence](../../../contract/evidence/grants-completion-20261023/p256-grants-conformance.json)
+The 23 October 2026 [grant suite](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/src/tests/p256-grants.ts)
+and its [node evidence](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/grants-completion-20261023/p256-grants-conformance.json)
 establish the `wa-json134` unshielded end-to-end milestone on the full
 52-operation account with an OpenSSL software authenticator. Eleven recorded funding/lifecycle
 transactions include three proved and included grantee spends of 5 units
@@ -2563,8 +2563,8 @@ The profile case uses a valid ES256 signature over unsupported client
 JSON. Source and artifact hashes are recorded and checked unchanged
 throughout the run.
 
-The separate [refusal fixture](../../../contract/src/tests/p256-grant-refusals.ts)
-and its [recorded results](../../../contract/evidence/grants-completion-20261023/p256-grant-refusals.json)
+The separate [refusal fixture](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/src/tests/p256-grant-refusals.ts)
+and its [recorded results](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/grants-completion-20261023/p256-grant-refusals.json)
 complete the bounded Testing item 12 negative cases. This unfunded fixture
 deploys only three original account operations, retaining the original
 constructor and verifier keys; it is not a full conforming account.
@@ -2582,18 +2582,18 @@ run match. These are execution/encoding refusals against node-backed state,
 not rejected proofs or a complete adversarial ECDSA proof audit.
 
 The separate
-[live browser result](../../../contract/evidence/p256-webauthn/browser-flow.md)
+[live browser result](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/p256-webauthn/browser-flow.md)
 is an account encryption-key rotation, not the connection ceremony or
 a grant spend. E4, general browser support, P-256 shielded grant spends
 and successful forwarded P-256 calls remain outside these results.
 
 **Recovery.** The reference implements `recover_finalise`, including
 an epoch increment and complete retirement of old device entries. The
-[historical node run](../../../contract/evidence/rec-1-9-recovery-conformance.json)
+[historical node run](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/rec-1-9-recovery-conformance.json)
 exercises recovery and successor control. The expanded
-[node suite](../../../contract/src/tests/recovery-conformance.ts), its
-[23 October 2026 results](../../../contract/evidence/grants-completion-20261023/rec-1-9-recovery-conformance.json)
-and the [validation report](../../../contract/GRANTS-COMPLETION.md)
+[node suite](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/src/tests/recovery-conformance.ts), its
+[23 October 2026 results](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/grants-completion-20261023/rec-1-9-recovery-conformance.json)
+and the [validation report](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/GRANTS-COMPLETION.md)
 also establish the grant sequence. A pre-existing JubJub grant and a
 k256 grant issued during the pending window fail after each of two
 recovery finalisations. Each finalisation leaves exactly its authorised
@@ -2608,7 +2608,7 @@ not at node admission. Before/after comparisons cover `round`, `auth_nonce`,
 epoch, device count and entries, grant records and generation, unshielded
 balances, inbox count, pending-recovery status and `enc_key`; they are
 tracked-state snapshots, not complete serialized `ContractState` or UTXO
-comparisons. The expanded [simulator](../../../contract/src/tests/recovery-sim.ts)
+comparisons. The expanded [simulator](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/src/tests/recovery-sim.ts)
 also passes these cases. Its cumulative-overflow and foreign-witness-color
 cases on both shielded twins of both arms remain offline-only evidence.
 
@@ -2624,7 +2624,7 @@ cases on both shielded twins of both arms remain offline-only evidence.
 | E1 stage two: the roster completed on the same contract (the jubjub grantee seam and its three twins, the remaining k256 twin, the three lifecycle circuits on the jubjub device arm, the client and Rust signer surfaces for both grantee arms, and an off-node suite of 121 checks over both arms), with the whole thirty-circuit roster measured from 311 rows at k=9 to 97,568 at k=17 | the six grant twins and six lifecycle circuits of section 6.1 exist on both arms with no exported signature changed; the cost table of section 6.7 and the seam's per-arm row cost; the `v1` challenge and lifecycle recipes of section 6.3 and their measured preimage widths, agreed three ways over 34 vectors and three pinned signatures; the `v1` key guard of section 3.3 and the runtime's refusal of every other point outside the prime-order subgroup |
 | E2: the conformance run on a ledger-9 localnet (node 2.1.0, indexer 4.4.0-rc.2, proof server 9.0.0-rc.6), twelve evidence groups from one account and one chain: the three-wave deploy and a cross-arm enrolment, issuance across both device arms, grant spends on both grantee arms, a twelve-row rejection matrix, ten grantee-key rows, the expiry rows with their transaction transcripts read back, composition of two calls on one contract, the one-coin race, the change prediction, and every proof of the run timed at the proof provider, with the per-update ceiling bisected to one verifier key by a separate probe over throwaway accounts | the seam behaves on node as specified on both grantee arms; the change-precomputation rule and the `mt_index` retry rate of section 6.5; the refusal points and wrapper texts of section 6.4; the key-validation findings of section 3.3, including GR-2 as an authoriser obligation the contract cannot enforce; the composition mechanics of section 7.4; the wave plan, the per-update ceiling, and the proving times of section 6.7; the expiry horizon of section 5.1; Testing items 1, 3, and 9 green and items 2, 6, 10, and 11 in part |
 
-The [later unshielded run](../../../contract/GRANTS-E2.md#20260916-the-unshielded-grant-twins-on-node-grants-e4)
+The [later unshielded run](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/GRANTS-E2.md#20260916-the-unshielded-grant-twins-on-node-grants-e4)
 adds five successful non-native-color spends across the JubJub and k256
 grantee arms, proving samples for both twins, and fourteen build-time
 rejection rows against funded chain state. The historical NIGHT
@@ -2646,7 +2646,7 @@ the non-native unshielded run establishes no NIGHT grant spend.
 
 The source implements three grant twins and three device-authorised
 lifecycle circuits per deployed arm at `spec_version = 3`. The
-[scope:v2 vectors](../../../contract/src/tests/vectors/grants-v3.json)
+[scope:v2 vectors](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/src/tests/vectors/grants-v3.json)
 extend the earlier scope:v1 vectors to the caller commitment; the Rust
 signer reproduces the `k1` and `v1` constructions without a compiled
 contract module. A static consent page and a dApp implementing the
@@ -2753,7 +2753,7 @@ the following. Each item names the invariants it exercises.
    order, so the identity is its only small-order point);
    `device_count` untouched across every row; and the device-key
    control above. The
-   [23 October 2026 recovery run](../../../contract/evidence/grants-completion-20261023/rec-1-9-recovery-conformance.json)
+   [23 October 2026 recovery run](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/grants-completion-20261023/rec-1-9-recovery-conformance.json)
    additionally holds same-key two-slot revocation isolation on both arms,
    refusal to overwrite an expired but unrevoked id, stale grants after
    two recovery epochs, and old-incarnation signature refusal using fresh
@@ -2830,7 +2830,7 @@ the following. Each item names the invariants it exercises.
    signature vectors agreed across the three implementations,
    `request_digest`, `signin_digest`, the `read_pk` derivation,
    GrantViewSeal, and the complete negative key-vector corpus. The later
-   [scope:v2 vector file](../../../contract/src/tests/vectors/grants-v3.json)
+   [scope:v2 vector file](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/src/tests/vectors/grants-v3.json)
    contains 36 Compact/TypeScript/Rust derivation vectors for the caller
    extension. P-256/OpenSSL verification fixtures are separate evidence,
    not a substitute for the full three-implementation corpus.
@@ -2888,7 +2888,7 @@ the following. Each item names the invariants it exercises.
     showing no other contract action between the call and the appended
     entry; the suite's own assertion is the `inbox_count` delta across
     the call, which is weaker. The historical
-    [stale-`enc_pk` row](../../../contract/evidence/grants-e2-rejections-grants-conformance-rejections.json)
+    [stale-`enc_pk` row](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/grants-e2-rejections-grants-conformance-rejections.json)
     also signs a JubJub shielded grant call, includes the owner's
     `rotate_enc_key_with_k256`, then attempts the original call. It is
     refused at build with `stale encryption key`; no transaction is
@@ -2904,7 +2904,7 @@ the following. Each item names the invariants it exercises.
     the register cleared, a pre-kill grant refused as `unknown grant`
     with its recorded snapshot unchanged, and a
     re-issue under the new generation spending. The
-    [23 October 2026 recovery node run](../../../contract/evidence/grants-completion-20261023/rec-1-9-recovery-conformance.json)
+    [23 October 2026 recovery node run](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/grants-completion-20261023/rec-1-9-recovery-conformance.json)
     holds a pre-existing JubJub grant and a pending-window k256 grant
     invalid across two recovery epochs, each leaving exactly the
     authorised successor device. Successor re-issuance admits fresh
@@ -2918,11 +2918,11 @@ the following. Each item names the invariants it exercises.
     extension-bearing assertion is a negative case; another permitted
     profile MUST state its own envelope acceptance rules. Status: satisfied
     for the bounded `wa-json134` unshielded path.
-    The [23 October 2026 node run](../../../contract/evidence/grants-completion-20261023/p256-grants-conformance.json)
+    The [23 October 2026 node run](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/grants-completion-20261023/p256-grants-conformance.json)
     holds `wa-json134` issuance, three unshielded grantee spends,
     revocation/re-issuance, RP binding, and sixteen build-time negative
     cases, including a valid ES256 signature over unsupported client JSON.
-    The separate [three-operation fixture](../../../contract/evidence/grants-completion-20261023/p256-grant-refusals.json)
+    The separate [three-operation fixture](https://github.com/midnightntwrk/passport/blob/eb7c51f6aabdf40376085d477f15eb3575eee6ef/contract/evidence/grants-completion-20261023/p256-grant-refusals.json)
     uses the original constructor, circuits and verifier keys to hold
     identity-key, ED-flag and genuine signed-extension-suffix refusals
     against indexed state, plus an ordinary-authentication control.
