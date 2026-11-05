@@ -1,10 +1,10 @@
 ---
-MPS: "xxxx" # to be assigned
+MPS: "0050"
 Title: Post-Quantum Confidentiality for Zswap
 Authors:
 - David Nevado (davidnevadoc)
-Status: Proposed
-Category: Core | Standards
+Status: Accepted
+Category: Core
 Created: 06-Oct-2026
 Requires: none
 Replaces: none
