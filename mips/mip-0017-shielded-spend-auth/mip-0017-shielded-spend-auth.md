@@ -9,8 +9,8 @@ Created: 2026-08-28
 Requires: none
 Replaces: none
 MPS: MPS-0035
-Related-MPS: MPS-0024, MPS-0016
-Related-MIP: MIP-0005, MIP-0006
+Related-MPS: MPS-0024, MPS-0016, MPS-0013
+Related-MIP: MIP-0005, MIP-0006, MIP-0012, MIP-0013
 License: Apache-2.0
 ---
 
@@ -52,7 +52,7 @@ proven offers remain mergeable.
 required. This document defines the expected behavior and its rationale; it leaves byte layouts,
 circuit organization, and software interfaces to the implementation design.
 
-**Supporting specification:** The [Shielded Note V2 specification](mip-xxxx/specification.md)
+**Supporting specification:** The [Shielded Note V2 specification](specification.md)
 contains the detailed reference construction: cryptographic formulas, encodings, payment scopes,
 circuit constraints, and validator rules. It distinguishes verified existing behavior from v2
 requirements and unresolved protocol choices. This MIP defines the required properties and design
@@ -144,7 +144,8 @@ compute the VRF output. Uniqueness and resistance to public evaluation are separ
 
 The key holder produces one local DLEQ proof that both certifies the VRF output and binds its use
 to a digest of the protected payment effects. A VRF output obtained for viewing is not spending
-permission. The circuit MUST reject a spend lacking the corresponding payment-bound evidence.
+permission. The owner spend relation MUST reject a v2 spend lacking the corresponding
+payment-bound evidence.
 
 The spending key, wallet seed, key shares, and signing nonces MUST NOT enter a v2 proving
 request. The prover may receive coin openings, a Merkle path, commitment randomness, and the
@@ -189,7 +190,8 @@ payment conditions must respect the existing segment semantics.
 
 ### Verification remains a ledger responsibility
 
-A valid v2 spend must establish all of the following, regardless of circuit organization:
+A valid owner-authorized v2 spend must establish all of the following, regardless of circuit
+organization:
 
 - The spent commitment belongs to the declared commitment tree and binds the claimed owner.
 - The VRF output was derived for that coin by the same key that owns it.
@@ -273,7 +275,7 @@ nonce at the coordinator.
 ## Payment Flow and Custody Boundaries
 
 1. **Set up.** A local signer or MPC group holds the spending key and exports its public key.
-   The wallet combines the recipient-key representation with the existing encryption public key
+   The wallet combines that public key with the existing encryption public key
    to form a versioned receiving address.
 2. **Receive.** A sender creates a v2 output without needing the recipient's spending key. The
    receiving wallet decrypts and matches the actual commitment before crediting the coin. It
@@ -302,6 +304,8 @@ records and final proofs, not the private VRF/DLEQ witness.
 Receiving and spending remain separate capabilities. The existing encryption path is retained;
 the wallet identifies ownership and note version by matching the decrypted coin's commitment
 against its held receiving keys. Successful decryption alone is not evidence of ownership.
+The wallet SDK's event-replay path does not yet perform this matching, so it is a wallet
+change rather than existing behavior.
 
 A v2 incoming viewing key can identify receipts without a spending key, but cannot independently
 derive nullifiers. The key holder can provide per-coin VRF outputs for the wallet to build a
@@ -325,6 +329,8 @@ V2 changes consensus verification and therefore requires a coordinated network u
 wallet-only change cannot make a VRF witness satisfy the existing v1 circuit or verifier key.
 
 Existing v1 notes MUST remain spendable under their original ownership and nullifier relation.
+This guarantees the relation, not unconditional liveness: notes of either version can be subject
+to asset-level validity conditions that a later upgrade applies uniformly.
 Migration is a transfer to a v2 address, not reinterpretation of an existing leaf. A wallet that
 must keep its old key private produces the v1 input proof locally; later spends of the v2 output
 can be delegated without exposing either spending key.
@@ -358,8 +364,10 @@ choose the correct output relation.
 Contracts cannot yet pay v2 recipients. The Compact standard library and its runtime express a
 user recipient only as a v1 coin public key, so a coin that a contract mints or sends to a user
 is a v1 note, and a v2 recipient encoded into that field would make the coin unspendable.
-Extending that toolchain is a separate change against which deployed contracts must be
-redeployed; this MIP fixes only the v2 output relation it must produce. Until then a user who
+Extending that toolchain is a separate change. A deployed contract adopts it through its
+maintenance authority, keeping its address and token types; only a contract without a usable
+one must be redeployed, which changes an issuing contract's token types. This MIP fixes only
+the v2 output relation that extension must produce. Until then a user who
 receives from contracts keeps a v1 receiving address, and those coins reach v2 only by a later
 transfer.
 
@@ -406,7 +414,7 @@ that a compiled circuit or complete transaction is valid.
 
 The protocol properties above are fixed; the low-level recipe is not. Developers can choose the
 simplest construction that preserves them. The
-[supporting specification](mip-xxxx/specification.md) records the detailed reference
+[supporting specification](specification.md) records the detailed reference
 design and identifies the remaining interoperable choices:
 
 | Area | Property to preserve | Detail left to implementation design |
@@ -415,7 +423,7 @@ design and identifies the remaining interoperable choices:
 | Payment binding | Exact protected effects, network and segment binding, and safe offer merging. | Scope layout, reference representation, digest encoding, and validation data structures. |
 | Compatibility proofs | Complete ownership checks, identical branch-visible format, and digest binding. | Witness layout, branch selection, transcript placement, and compiler gadgets. |
 | Key holding | No key or nonce export to the prover, with the same public relation for local and MPC use. | Device APIs, secure nonce derivation, threshold protocol, and recovery tooling. |
-| Deployment | Continued v1 spendability, deterministic verification, and bounded consensus work. | Version tags, artifact packaging, resource accounting, and upgrade scheduling. |
+| Deployment | Continued v1 spendability under the original ownership and nullifier relation, deterministic verification, and bounded consensus work. | Version tags, artifact packaging, resource accounting, and upgrade scheduling. |
 
 These choices are not independent per wallet or validator: consensus-relevant behavior must be
 specified once and shared across implementations before activation. Flexibility in this MIP is
@@ -434,14 +442,20 @@ total custody compromise, hide witnesses from a remote prover, or guarantee serv
 
 ## References
 
-- [Shielded Note V2: Supporting Specification](mip-xxxx/specification.md), the detailed
+- [Shielded Note V2: Supporting Specification](specification.md), the detailed
   reference construction, code baseline, and unresolved protocol choices supporting this MIP.
-- [MPS-0035: Shielded Spend Authorization Requires Exposing the Spend Key](../mps/mps-0035-shielded-spend-key-exposure.md).
-- [MPS-0024: Custodian-Safe Native Shielded Asset Transfer](../mps/mps-0024-custodian-safe-shielded-spends.md)
-  and [MPS-0016: Custodian-Compatible Shielded Wallet Generation](../mps/mps-0016-custodian-shielded-wallet-generation.md),
+- [MPS-0035: Shielded Spend Authorization Requires Exposing the Spend Key](../../mps/mps-0035-shielded-spend-key-exposure.md).
+- [MPS-0024: Custodian-Safe Native Shielded Asset Transfer](../../mps/mps-0024-custodian-safe-shielded-spends.md)
+  and [MPS-0016: Custodian-Compatible Shielded Wallet Generation](../../mps/mps-0016-custodian-shielded-wallet-generation.md),
   related custody problems addressed by this design.
-- [MIP-0005: Offer Files](mip-0005-offer-files.md) and
-  [MIP-0006: P2P Atomic Swaps](mip-0006-p2p-atomic-swaps.md), related merge-based flows, not dependencies.
+- [MPS-0013: Zswap Business Logic](../../mps/mps-0013-zswap-business-logic.md), asset-level issuer
+  controls over the same spend and output relations.
+- [MIP-0005: Offer Files](../mip-0005-offer-files.md) and
+  [MIP-0006: P2P Atomic Swaps](../mip-0006-p2p-atomic-swaps.md), related merge-based flows, not dependencies.
+- [MIP-0012: Contract Custody of Midnight-Native Assets](../mip-0012-native-asset-custody.md) and
+  [MIP-0013: Multi-key Account Authorisation for Custody Contracts](../mip-0013-account-authorisation.md),
+  a contract-account custody route. Such accounts cannot pay v2 recipients until the standard
+  library has a v2 recipient arm, and their FROST threshold signatures are not the two-base DLEQ.
 - Chaum and Pedersen, "Wallet Databases with Observers," CRYPTO 1992, for DLEQ proofs.
 - [RFC 9381: Verifiable Random Functions](https://www.rfc-editor.org/rfc/rfc9381), for security
   definitions; this MIP does not specify an RFC 9381 wire-compatible ciphersuite.

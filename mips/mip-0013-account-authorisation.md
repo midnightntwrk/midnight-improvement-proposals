@@ -230,9 +230,11 @@ recommended by MPS-0027.
 Each bound element carries an obligation. The account address makes
 entries for the same key in different accounts unequal, so a device
 key registered in several accounts produces no matching ledger values
-anywhere. The epoch makes revocation total without enumerating the
-set: after a bump, no stale entry can match a recomputation under the
-current epoch. The use counter makes every entry single-use, so the
+anywhere. With entries derived at enrolment using the contract's
+current epoch (section 6), an epoch bump makes them stale without
+enumerating the set. An epoch inside an unchecked opaque entry does
+not establish when it was enrolled; section 8 specifies the required
+retirement rule. The use counter makes every entry single-use, so the
 ledger never holds a device identifier that is stable across two
 authorised calls (AUTH-9). This is the departure from a static device
 commitment, which is a fixed pseudonym disclosed on every call; a
@@ -470,12 +472,20 @@ mix threshold and single-signer devices freely.
 The contract MUST expose exactly one path that changes the device set
 without an active device: a recovery circuit that (a) verifies a
 recovery authorisation whose mechanism this MIP does not specify,
-(b) increments `device_epoch`, (c) registers exactly one fresh device
-entry at the new epoch and use counter 0 and sets `device_count` to 1,
-and (d) increments `auth_nonce` and `round`. Entries recorded under
-earlier epochs are not removed (the set cannot be enumerated
-in-circuit); they are permanently inert (AUTH-6), and their number is
-bounded by `device_count` at the moment of the bump.
+(b) increments `device_epoch`, (c) retires all existing device entries
+and registers exactly one authorised successor entry at the new epoch
+and use counter 0, setting `device_count` to 1, and (d) increments
+`auth_nonce` and `round`. Entry retirement and successor registration
+MUST be atomic, including when recovery has a pending phase.
+
+Retained entries MUST remain unusable after recovery. Section 6 derives
+entries using the contract's current epoch. An implementation accepting
+opaque entries without verifying that epoch at enrolment MUST clear
+the device set at finalisation before inserting the successor, or
+enforce an equivalent
+contract-assigned registration-epoch check during authorisation. A
+client-side requirement to use the current epoch is insufficient. This
+obligation includes entries added while recovery was pending (AUTH-6).
 
 Under contract custody, recovery restores asset access by construction:
 assets sit in the contract, the epoch bump changes who may authorise,
@@ -505,10 +515,12 @@ addition to the custody MIP's INV-1 through INV-8.
   the signature and never the signing key.
 - **AUTH-5 (no lock-out by ceremony).** `remove_device` cannot remove
   the last active device.
-- **AUTH-6 (revocation totality).** After an epoch bump, no credential
-  recorded under a previous epoch can authorise any operation. Entries
-  bind the epoch inside the hash, so staleness needs no per-entry
-  state: a stale entry can never match an in-circuit recomputation.
+- **AUTH-6 (revocation totality).** Immediately after recovery
+  finalisation, the authorised successor's entry is the only active
+  device entry. No other entry enrolled before finalisation may authorise
+  an operation, regardless of the epoch or use counter in its preimage.
+  Authority may subsequently be granted through a fresh authorised
+  enrolment; an epoch bump alone MUST NOT reactivate a retained entry.
 - **AUTH-7 (seedlessness).** Device keys are mutually independent; no
   flow requires a shared seed or derives one device's key from
   another's.
@@ -821,6 +833,13 @@ not conform to this standard. MIP-0003 wallet keys and address
 derivation are unaffected. Wallets unaware of this standard are
 unaffected.
 
+The entry-retirement requirement in section 8 changes neither the
+signature recipes nor device-entry encodings. Existing deployments
+that do not satisfy it require a corrected recovery verifier where
+maintenance is available, or migration to a corrected deployment
+where maintenance authority has been retired. Updating this document
+does not alter an installed verifier or clear existing account state.
+
 ## Security Considerations
 
 - **S1. Nonce reuse and bias.** Reusing the Schnorr nonce `r` across
@@ -946,6 +965,10 @@ unaffected.
   profiling its ciphersuite to the section 5 challenge (Path to
   Active). Committee operation, participant authentication, and share
   lifecycle are that deployment's concern, not this standard's.
+- **Recovery entry retirement.** [Passport #183](https://github.com/midnightntwrk/passport/pull/183)
+  clears the reference device set at finalisation before installing the
+  successor. The merged correction and its evidence limits are recorded
+  in [MIP-0022's implementation section](./mip-0022-account-recovery.md#implementation).
 - This MIP contains no implementation code; the artefacts above are
   its evidence base, and the reference implementation is an acceptance
   criterion, to be linked at its public location on submission.
@@ -982,6 +1005,13 @@ Conformance is demonstrated by a suite exercising, against a real node:
    rolls each time), remove it by presenting its current entry,
    observe rejection; last-device removal fails; epoch bump
    invalidates all prior devices in one step (AUTH-5, AUTH-6).
+   Recovery checks MUST inspect actual entry membership or eligibility,
+   not only `device_count`: only the authorised successor is active
+   immediately after finalisation. For implementations accepting opaque
+   entries, cover entries for future epochs and different use counters,
+   enrolled before submission and while recovery is pending. Each must
+   be rejected at enrolment or remain unusable after recovery, including
+   after a later epoch bump without fresh authorised enrolment.
    Additionally: a client with no local counter state re-derives its
    current counter by the rescan of S11 and then authorises
    successfully; the ledger transcript of the run contains no repeated

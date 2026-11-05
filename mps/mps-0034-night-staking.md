@@ -84,6 +84,7 @@ A future MIP satisfies this MPS if all of the following are testable and true.
 2. The stakeable form of NIGHT is mNIGHT.
 3. Rewards are claimed through a documented CLI and SDK path consistent with the block production reward conventions.
 4. Total emission does not exceed the published Reserve curve, and the funding source for staking rewards is named.
+5. The chain is able to operate in a blended stake mode, where ADA SPOs can have a weighted proportion of block production. The proportion needs to be configurable.
 
 ## Copyright
 

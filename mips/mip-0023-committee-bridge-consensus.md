@@ -667,7 +667,11 @@ submission rule, and adds only what is specific to its contract.
 ### Acceptance Criteria
 
 - Multiple committee rotations, including a membership change, verified
-  end to end on a public testnet by the light client.
+  end to end on a local environment testnet by the light client.
+- Local environment testnet setup scripts and accompanying runbook for
+  starting the network without the committee bridge, upgrading it to
+  version that includes the bridge, and observing that bridge is
+  operating are delivered.
 - The contract tests of the Testing section passing against the
   deployed contracts on that testnet.
 - The light client advanced across those rotations by the data pumps of
