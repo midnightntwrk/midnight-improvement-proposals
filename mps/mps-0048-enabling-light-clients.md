@@ -9,7 +9,7 @@ Category: Core
 Created: 15-Oct-2026
 Requires: none
 Replaces: none
-MIP: none
+MIP: MIP-xxxx (draft: Verified Warp Sync)
 ---
 
 <!--
