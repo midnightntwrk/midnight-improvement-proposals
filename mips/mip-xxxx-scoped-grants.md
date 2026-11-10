@@ -1,5 +1,5 @@
 ---
-MIP: xxxx
+MIP: "0033"
 Title: Scoped Grants and dApp Connection for Custody Accounts
 Authors:
   - Hector Bulgarini (hbulgarini)
@@ -8,7 +8,7 @@ Status: Draft
 Category: Standards
 Created: 2026-09-09
 License: Apache-2.0
-Requires: [MIP-0012, MIP-0013, MIP-0030]
+Requires: MIP-0012, MIP-0013, MIP-0030
 Replaces: none
 MPS: MPS-0018
 ---
