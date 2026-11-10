@@ -3,6 +3,7 @@ MPS: "0048"
 Title: Enabling Light Clients on Midnight
 Authors:
   - Bob Blessing-Hartley (bobblessinghartley)
+  - Iñigo Querejeta Azurmendi (iquerejeta)
 Status: Proposed
 Category: Core
 Created: 15-Oct-2026
@@ -45,9 +46,8 @@ Midnight's protocol carries an enablement layer that gives light clients a nearl
 foundation. A client checks a single object, and neither that object nor the work of checking it
 grows as the chain does; an ordinary phone does it in seconds. Making the object takes no special
 hardware — a machine someone already owns will do — so anyone who wants the proof to exist can
-produce one, and nobody has to be paid to. Whoever builds clients, produces proofs, or serves data is
-free to do it their own way. And the protocol catches double-signing, the abuse any BFT two-thirds
-honest majority is sized against.
+produce one, and nobody has to be paid to do it. The protocol prescribes no particular way to build
+clients, produce proofs, or serve data; each is open to whatever approach its builder chooses.
 
 ## Problem
 
@@ -62,9 +62,11 @@ state at the point of entry, so that execution can go forward from it rather tha
 and the committee at that point, so that what is offered as the chain can be told from what is not.
 The first of these Midnight already produces. The second it does not.
 
-So nothing can hold a trustworthy view of Midnight without running a full node. What is missing is
-not evidence that a committee was seated, which the signatures already carry, but the pieces that
-would let something start from a recent point and go on from there.
+So without running a full node, there is no way to hold a trustworthy view of Midnight. Block
+signatures show that a committee signed, but a verifier can only check them against a committee it
+already knows. What is missing is a way for a client joining at a recent block to learn which
+committee is valid there and confirm it without replaying the chain, and then to follow that
+committee as it changes.
 
 ### Why this is needed now
 
@@ -84,11 +86,9 @@ for verifiers that are not that contract, and sets requirements MIP-0023 deliber
 - MIP-0023 verifies one signature list per handover, on Cardano, in sequence. Its committee size is
   capped by `signer_cap` so that a quorum fits one Cardano transaction. This MPS asks for a single
   object a client checks without walking the handovers, at committee sizes well beyond that cap.
-  MIP-0023 itself names a succinct quorum proof as "the urgent item after this MIP".
 - MIP-0023 is built on secp256k1 ECDSA and Keccak-256 so that Cardano can verify it cheaply. This
-  MPS asks for security against a quantum adversary and, where that conflicts with Cardano
-  verifiability, keeps the former. A construction answering this MPS may therefore need signatures
-  or commitments that differ from MIP-0023's.
+  MPS does not require cheap verification in Cardano. A construction answering this MPS may therefore
+  need signatures or commitments that differ from MIP-0023's.
 - MIP-0023's signed payload is the MMR root alone. This MPS asks for a signed root covering the whole
   post-execution state, which is what bootstrapping the state machine takes.
 - MIP-0023 makes equivocation provable and attributable through BEEFY's `DoubleVotingProof` and
@@ -173,20 +173,20 @@ being on Cardano or anywhere in particular. What it replaces is the walk, not th
    state machine takes all of it.
 
 4. **What the proof rests on besides the committee is accounted for** by the proposal that implements
-   this: the setup the proof system requires and the discarding nothing attests, the circuit
-   expressing what was meant, and the code that checks the proof.
+   this: the setup the proof system requires, the circuit expressing what was meant, the code that
+   checks the proof.
 
-5. **The construction is secure against a quantum adversary.** The same object a client checks can be
-   checked by a contract on Cardano; where that and quantum security pull against each other, the
-   second is kept and the first given up.
+6. **The construction is secure under the same cryptographic assumptions the consensus mechanism
+   uses.** Apart from the proof system, it introduces no cryptographic assumption beyond those
+   consensus already relies on.
 
-6. **Every epoch's committee is reachable, in order, from the activation committee.** A proof covering
+8. **Every epoch's committee is reachable, in order, from the activation committee.** A proof covering
    a later epoch covers every one before it, so no epoch is missing from the succession a client is
    shown. It holds at committee sizes well beyond what Midnight seats today. Reaching those sizes is
    Midnight's own business and not an answer's, but an answer that only works at today's sizes does
    not serve.
 
-7. **What a client does to satisfy itself that a given root was signed by the committee Midnight
+9. **What a client does to satisfy itself that a given root was signed by the committee Midnight
    seated does not grow with the number of signatures behind it.** Which committee was seated, and
    whether that committee signed a given root, are two questions, and a client needs both answered
    without counting signatures. One construction may answer both, or one may answer each; that choice
@@ -195,14 +195,14 @@ being on Cardano or anywhere in particular. What it replaces is the walk, not th
    light client want that fact and not a root, and a packaging chosen for the client's sake must not
    cost them.
 
-8. **Producing the signature is part of running a node**, for governance-selected and openly
+10. **Producing the signature is part of running a node**, for governance-selected and openly
    registered validators alike, so that failing to produce it is the same kind of failure as failing
    a node's other duties. Anything the system must do on every epoch, forever, is done by software
    participants are likely to run continually as a consequence of running a node, and never by
    anyone's initiative. No participant is asked to hold funds, to spend them, or to give unattended
    software access to them; what the protocol asks of a participant is a signature.
 
-9. **Detecting and reporting equivocation is ordinary node operation.** A client satisfies itself
+11. **Detecting and reporting equivocation is ordinary node operation.** A client satisfies itself
    about what it is shown by checking signatures against a committee, which it can do because two
    thirds of that committee are assumed honest. That threshold is not arbitrary: any BFT system
    arrives at two thirds because a dishonest member can equivocate — sign two incompatible things and
@@ -216,7 +216,7 @@ being on Cardano or anywhere in particular. What it replaces is the walk, not th
    convicts without anyone trusting whoever carries it. What follows is the banning of the offending
    keys; nothing is seized. Midnight does not do this today.
 
-10. **Computing the proof is open to anyone and reserved to no one.** No party is appointed to it,
+12. **Computing the proof is open to anyone and reserved to no one.** No party is appointed to it,
     none is privileged in it, and a client accepts a proof on what it contains rather than on who
     produced it. Any prover can continue any valid proof another produced, holding nothing private to
     its producer; otherwise every prover begins at the activation committee, the same work is
@@ -224,9 +224,6 @@ being on Cardano or anywhere in particular. What it replaces is the walk, not th
     Producing the proof has to be within hardware a party already owns for other reasons, and has to
     keep pace with the epoch rate. Nobody is paid to do it, so only what is cheap enough to be worth
     doing will be done.
-
-11. **From the tip it has checked, a client can reach the present** without replaying the chain and
-    without running a full node.
 
 An answer having these serves a light client and anything else that wants the same fact; one missing
 any of them serves neither well.
