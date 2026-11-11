@@ -7,7 +7,7 @@ Category: Core
 Created: 14-MAY-2026
 Requires: none
 Replaces: none
-MIP: MIP-0026
+MIP: MIP-0026, MIP-xxxx (draft: Verified Warp Sync)
 ---
 
 <!--
