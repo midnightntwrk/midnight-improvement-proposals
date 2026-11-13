@@ -5,7 +5,7 @@ Authors:
   - Andrzej Kopeć (kapke)
   - Jonathan Sobel (jonathan-sobel)
 Status: Draft
-Category: Core
+Category: Standards
 Created: 2026-08-19
 Requires: none
 Replaces: none
@@ -24,6 +24,12 @@ Unless required by applicable law or agreed to in writing, software distributed 
 distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing permissions and limitations under the
 License. -->
+
+_Note: While this proposal descibes significant changes to Compact and its off-chain execution of
+contract code, the changes do not require updates to the core Midnight protocol or ledger format.
+Thus, the appropriate category for this proposal is **Standards**.  It could even be categorized as
+**Informational**, because the specific changes to Compact will be defined seprately in Compact
+Improvement Proposals (CoIPs)._
 
 ## Abstract
 
@@ -806,19 +812,64 @@ encapsulation were the only criterion, it would be cheaper.
 - **The remote-origin variant imports a new trust anchor.** Whoever controls that origin controls
   the boundary, and must own its hosting, availability, versioning, and review.
 
-## Path to Active
+## Path to Acceptance and Availability
 
-*Not yet drafted. The acceptance milestones and the sequence behind them need detail which this
-draft deliberately does not carry.*
+This section provides an overview of the conditions for accepting this proposal and for the
+availability of the capsule runtime for Midnight users.
+
+Because this proposal does not require a Midnight network upgrade, it does not require the same
+implementation and deployment steps as a proposal in the **Core** category.  On the other hand,
+it _does_ require implementation and deployment in order to become available to Midnight users.
+
+The criteria under which the proposal should be evaluated are listed at the beginning of the
+[Specification](#specification) section.  If
+   
+- the criteria are deemed appropriate, and
+- having a capsule runtime with the properties described throughout the proposal and having a
+  Compact compiler that produces output for that runtime would satisfy the criteria, 
+
+then the proposal should be **Accepted**.  This is typically the terminal status for informational
+proposals, but it is not the end of the work to deliver the capsule runtime.
+
+The [Implementation](#implementation) section lists various Midnight elements that must be created
+or changed in order to deliver the full vision described in this proposal.  Notably, the Compact
+compiler and runtime must be updated, the detailed capsule runtime specification must be created,
+and an initial reference implementation must be made available.  At the same time, specifications
+must be created to define how other elements will interact with the capsule runtime, especially
+user applications and wallet software.
+
+Some of the preceding elements will be defined in Compact Improvement Proposals (CoIPs), which are
+managed in the Minokawa project's [Compact repository](https://github.com/LFDT-Minokawa/compact) and
+follow their own process.  Changes the Compact language certainly fall into this category, as do
+changes to well-defined intermediate outputs of the compiler tool-chain, such as ZKIR.
+
+Other elements might be better defined here as additional Midnight improvement proposals.  For
+example, perhaps the updated specifications for the wallet API belongs here.
+
+Still other elements, such as the portable language-independent representation of compiled contracts
+could reasonably be argued to belong in *either* place, and the authors welcome input from the
+maintainers and the broader community to guide the delivery and placement of these specifications.
+
+In some sense, this proposal has been implemented as soon as a single combination of all the
+necessary elements exists: enabling a combination of contracts written in Compact to express the
+deterministic evolution of their local state and to refer to relevant contextual inputs, and
+supporting their safely-private execution by applications in *some* end-user environment with some
+wallet software.  In another sense, this proposal's equivalent of an **Active** status will be
+achieved only when all the elements are widely available and exercised by applications and their
+users.
+
+The authors intend to implement prototype versions of all the elements even before the
+aforementioned specifications are finished, so that implementation experience and community feedback
+can inform the definitions of each part.  As of this writing, early prototypes already exist.
 
 ## Backwards Compatibility Assessment
 
 First, deployed contracts and already-compiled DApps keep working indefinitely. Nothing here is
-retroactive and nothing is broken. A contract with no on-chain capsule reference gets no
-capsule-runtime service at all and continues unchanged under today's model until its author attaches
-one. The two models coexist. There is no flag day, no deprecation, and no end date. A path for
-migrating existing private state into a capsule may exist, but is never a precondition, a transition
-period, or a fallback.
+retroactive and no existing deployed contracts are broken by the acceptance of this proposal. A
+contract with no on-chain capsule reference gets no capsule-runtime service at all and continues
+unchanged under today's model until its author attaches one. The two models coexist. There is no
+flag day, no deprecation, and no end date. A path for migrating existing private state into a
+capsule may exist, but is never a precondition, a transition period, or a fallback.
 
 Second, from the Compact release that first supports capsules, the compiler no longer emits
 old-model private-state support. Updating a contract therefore means adopting the capsule model.
@@ -960,7 +1011,29 @@ releases, are:
 
 ## Testing
 
-*Not yet drafted.*
+Notice that items in the preceding list of new or changed components does *not* include any Midnight
+ledger, protocol, or node software.  Thus, it will be possible to test the updated Compact compiler
+and capsule runtime on existing Midnight networks, including both test and production networks,
+without a hard fork or even a node runtime update.  (It is possible, of course, that the delivery of
+the updated tool-chain elements will expose flaws in the design or implementation of core Midnight
+components, which would then require correction prior to successful delivery of a fully usable
+capsule runtime.)
+
+The primary drivers for testing will be two categories of Compact programs and applications that use
+them:
+1. Existing contracts and applications that rely on the current style of witness functions, where
+   the application fully defines and manages local state.  While already-compiled instances of these
+   should continue to operate on Midnight, the valuable testing exercise is to convert them so that
+   their local state is defined and updated within the contract code and so that the applications
+   call into the capsule runtime to exercise the contracts.
+2. Contracts and applications that were impossible to express prior to the existence of capsules and
+   the corresponding updates to the Compact language.  Any multi-contract systems that require local
+   state in called contracts fall into this category.
+   
+Another major area of testing will be replay and recovery of local state, including the transfer of
+capsule state across heterogeneous devices.
+
+None of this testing is prerequisite to the acceptance of this proposal.
 
 ## Versioning
 
