@@ -7,7 +7,7 @@ Authors:
 Status: Draft
 Category: Core
 Created: 2026-10-16
-Requires: mip-xxxx-cardano-reserve-release
+Requires: mip-xxxx-cardano-reserve-release, mip-xxxx-night-staking-on-cardano
 Replaces: MIP-0024
 License: Apache-2.0
 MPS: MPS-0019
@@ -33,12 +33,12 @@ MPS: MPS-0019
 
 This proposal defines native Midnight block-production rewards. The protocol records each block
 producer, applies the published tokenomics formula, and accumulates the result for the producing
-operator. An operator is either an ADA SPO, a Cardano stake pool, or a NIGHT-native SPO, whose
-operator record, stakers and stake snapshot a separate NIGHT staking MIP will define. At each
-Midnight epoch boundary, the finalized stake snapshot used for committee selection also supplies
-the inputs to a public, reproducible split of the pool's reward between its operator and its
-delegators or stakers, on the margin each SPO declares, plus any fixed amount in NIGHT it declares:
-for an ADA SPO, the margin in its Cardano pool registration certificate.
+operator. An operator is a Cardano stake pool registered for Midnight under the required staking
+MIP, NIGHT Staking on Cardano. Once per Cardano epoch, the stake snapshot that selected that epoch's
+committees also supplies the inputs to a public, reproducible split of the pool's reward between its
+operator, its ADA delegators and the holders of cNIGHT locked behind it, on the margin in its
+Cardano pool registration certificate, plus any fixed cost in NIGHT that its Midnight registration
+declares.
 
 Rewards accrue automatically as NIGHT entitlements in runtime state and settle into Midnight's
 existing ledger reward balances. While Reserve control remains on Cardano, Midnight's existing
@@ -48,19 +48,20 @@ Cardano needs no knowledge of Midnight for this. A recipient then uses the
 existing signed reward-claim transaction to create a spendable unshielded NIGHT UTXO on Midnight.
 No Cardano per-recipient payout contract, batcher, or virtual account is required.
 
-The proposal reuses Partner Chains producer registration and the existing Cardano observation
-infrastructure, with a reward-specific destination registration. Runtime, RPC, indexer, CLI, and SDK interfaces expose
-registration, forecasts, accrued and release-gated balances, per-block calculations, epoch splits,
-and withdrawals. Independent implementations can recompute payouts from finalized public data and
+The pool registration, the lock in which a recipient names its Midnight reward address, and the
+stake snapshot are those of the required staking MIP; this proposal reads the snapshot record and
+defines none of them. Runtime, RPC, indexer, CLI, and SDK interfaces expose reward addresses,
+forecasts, accrued and release-gated balances, per-block calculations, epoch splits, and
+withdrawals. Independent implementations can recompute payouts from finalized public data and
 normative vectors.
 
 ## Motivation
 
 As Midnight decentralizes block production, Cardano stake-pool operators need a defined way to
 register for rewards, forecast likely returns, observe accrual, verify calculations, and withdraw
-spendable NIGHT on Midnight. Delegators need to see how a pool's reward is divided between the
-operator and stake-based recipients under the terms the pool's operator has set. None of those
-workflows is complete today.
+spendable NIGHT on Midnight. Delegators, and holders of cNIGHT locked behind a pool, need to see how
+a pool's reward is divided between the operator and stake-based recipients under the terms the
+pool's operator has set. None of those workflows is complete today.
 
 The current codebase already contains most of the native payout substrate. The Midnight ledger has
 `block_reward_pool`, `unclaimed_block_rewards`, `DistributeReserve`,
@@ -70,7 +71,7 @@ records block authors and reward-claim transactions.
 
 The production path is nevertheless inactive. The node runtime's block-reward pallet and block
 beneficiary inherent are disabled, the configured ledger block reward is `(0, None)`, and there are
-no complete production interfaces for reward registration, calculation history, recipient splits,
+no complete production interfaces for reward addresses, calculation history, recipient splits,
 forecasting, or withdrawal.
 
 The initially proposed MIP-0024 proposes paying NIGHT on Cardano through virtual accounts, contracts, a rewards pool,
@@ -89,17 +90,28 @@ Succinct verification without a full node is outside this proposal.
 
 * `STAR` is the smallest NIGHT unit. Consensus arithmetic uses whole STAR.
 * `pool_id` is the 28-byte Blake2b-224 hash of a Cardano stake-pool verification key.
-* `stake_address` is the network-tagged Cardano reward address for a stake credential.
-* `operator_kind` is `AdaSpo` or `NightSpo`; `operator_id` and a *payee* identify an operator and a
-  reward recipient across both kinds (see **Operator kinds**).
-* `reward_key` is a Midnight signature verification key. Its derived `UserAddress` is the
-  recipient's NIGHT address on Midnight: it holds the ledger balance of the unclaimed reward, whose
-  entitlement `stake_address` owns, signs withdrawals, and receives the claimed NIGHT. Rewards
-  are paid in NIGHT on Midnight and remain on Midnight; this MIP provides no transfer to Cardano.
-* `epoch` is the Midnight committee session used for reward calculation and settlement.
-* `snapshot_id` identifies the finalized stake snapshot of an operator's kind used to select an
-  epoch's committee: the Cardano stake and pool-parameter snapshot for ADA SPOs, and the NIGHT
-  stake snapshot for NIGHT-native SPOs, whose 32-byte identifier the NIGHT staking MIP defines.
+* `stake_address` is the network-tagged Cardano reward address for a stake credential. The snapshot
+  record gives a stake credential as a kind byte and a 28-byte hash, and on one network the two
+  forms name the same credential.
+* The *required staking MIP* is NIGHT Staking on Cardano (`mip-xxxx-night-staking-on-cardano.md`).
+  This MIP cites its rules as "staking rule N, Name", and takes from it the pool registration, the
+  lock, `cnight_weight` and the stake snapshot record. It defines none of them.
+* *cNIGHT* is NIGHT on Cardano. A *lock* is the delegation lock of the required staking MIP: a UTXO
+  at its staking contract whose datum names an owner credential, one pool and a `reward_address`,
+  and which holds the cNIGHT it stakes, which may be none.
+* `operator_id` identifies an operator and is its `pool_id` (see **Operators and payees**).
+* `reward_address` is a Midnight `UserAddress`, 32 bytes, that a pool names in its Midnight
+  registration and a recipient names in a lock. It holds the ledger balance of the unclaimed reward
+  and receives the claimed NIGHT, and a withdrawal is signed by the key from which the ledger
+  derives it. Rewards are paid in NIGHT on Midnight and remain on Midnight; this MIP provides no
+  transfer to Cardano.
+* `epoch` is a Cardano epoch `E`. A block belongs to epoch `E` when its committee was selected from
+  the stake snapshot of epoch `E` (staking rule 24, Selection). Rewards are calculated per block,
+  and are split and settled once per epoch. A *Midnight epoch* is one committee session, and one
+  Cardano epoch holds many of them.
+* `snapshot_id` identifies the stake snapshot record of an epoch, `NightStakeSnapshotV1` (staking
+  rule 23, Snapshot record): the one record per Cardano epoch that lists the operators, the locks
+  and the ADA delegators, and from which that epoch's committees are selected.
 * `reward_reserve_outstanding` is the canonical economic balance used to calculate future base
   rewards. It corresponds to `B_o` in the tokenomics whitepaper and decreases by `N_b` when each
   reward-eligible block executes. At the best-chain head it also reflects draws by blocks not yet
@@ -117,247 +129,71 @@ Succinct verification without a full node is outside this proposal.
 
 No consensus calculation uses floating-point arithmetic.
 
-### Operator kinds
+### Operators and payees
 
-An operator is either an ADA SPO or a NIGHT-native SPO, never both, and every committee entry
-carries its `operator_kind`. Version 1 of this MIP fully specifies ADA SPOs. For NIGHT-native SPOs
-it fixes the interfaces that reward calculation, splitting and settlement use, and leaves their
-definitions to a separate NIGHT staking MIP. Until that MIP is active, a committee entry of kind
-`NightSpo` is invalid.
+An operator is a Cardano stake pool that the required staking MIP admits at the stake snapshot
+(staking rule 18, Pools at the snapshot): the registration set on Cardano holds an active and valid
+registration for its `pool_id`, and Cardano holds the pool as registered, with or without ADA
+delegated to it. `operator_id` is its `pool_id`. A pool that Cardano has retired, or whose
+registration is inactive or invalid at the snapshot, is no operator in that epoch and earns nothing
+in it. This MIP reads the snapshot record (staking rule 23, Snapshot record) and nothing else about
+a pool, a lock or a delegator. For each operator the record carries the `margin` and the `owners` of
+its Cardano pool registration certificate and the `fixed_cost` and `reward_address` of its Midnight
+registration, and it lists the locks and the ADA delegators that are the pool's payees (see **Epoch
+reward split**).
 
-| | ADA SPO (`AdaSpo`) | NIGHT-native SPO (`NightSpo`) |
-|---|---|---|
-| `operator_id` | `pool_id` | Identifier of its Midnight operator record, defined by the NIGHT staking MIP |
-| Stake snapshot | Cardano stake and pool-parameter snapshot (`snapshot_id`) | NIGHT stake snapshot, defined by the NIGHT staking MIP |
-| Payees | `CardanoStake(stake_address)`: the operator's reward address and its delegators | `MidnightStaker(id)`: the operator and its NIGHT stakers, defined by the NIGHT staking MIP |
-| Claim address | The `reward_key` bound under **Producer and reward-destination registration**, with rotation and escrow | The `UserAddress` the NIGHT staking MIP binds to each payee |
-| Margin | The margin in its Cardano pool registration certificate, read from the same snapshot | Declared in its operator record, defined by the NIGHT staking MIP |
-| Fixed amount | Optional, in NIGHT per Cardano epoch, declared in the `RewardDestinationV1` of its pool reward address | Optional, in NIGHT, declared in its operator record, defined by the NIGHT staking MIP |
+A recipient names the Midnight address at which it is paid in a lock, in a Cardano transaction that
+the lock's owner credential authorizes (staking rule 5, Owner authorization). The key behind a
+`reward_address` signs nothing on Cardano, because a recipient chooses where its own rewards go. The
+owner names a new address with an Update of the lock, and the new address applies from the first
+snapshot that records it. An amount already calculated goes to the address in its snapshot record,
+and a balance already credited stays with the address that holds it: no rule moves a credited
+balance to another address, so a recipient that loses the key of an address loses the balance
+credited to it.
 
-Both kinds draw the same per-block reward from the same Reserve, under the same release gate, and
-split it with the same form in **Epoch reward split**. A pool never mixes kinds: an ADA SPO's
-payees are only `CardanoStake` and a NIGHT-native SPO's only `MidnightStaker`. How committee seats
-are divided between the kinds is decided by consensus and the NIGHT staking MIP; this MIP reads the
-committee record as given.
-
-`operator_id` and every payee are encoded as a one-byte kind tag followed by the kind's identifier
-bytes, so that identifiers are unique across kinds and order canonically.
-
-The NIGHT staking MIP MUST define, for `NightSpo`: the operator record and `operator_id`; the NIGHT
-stake snapshot, which it MUST take at the point fixed in **Epoch reward split**; the
-`MidnightStaker` payee and its binding to a claim-capable `UserAddress`, or an escrow rule where
-none exists; how its operator declares its margin and any fixed amount; which
-stakers are eligible and where its pools' rounding remainders go; and the actions that change who
-owns a `MidnightStaker` entitlement. Those actions join the closed list in **Entitlement
-ownership** only by that MIP superseding it; until then none exist. It MUST NOT change the per-block
-calculation, the split form, the release gate or the settlement queue defined here.
-
-### Producer and reward-destination registration
-
-This section applies to ADA SPOs and their `CardanoStake` payees. Producer eligibility continues
-to use the existing Partner Chains candidate registration. The
-registered stake-pool public key determines `pool_id`; the finalized Cardano pool parameters in the
-epoch snapshot determine the pool reward address, operator stake, delegated stake, and any other
-inputs the reward split requires.
-
-Reward ownership uses a reward-specific registration observed through the existing
-`pallet_cnight_observation` infrastructure. That pallet was built to observe NIGHT held on Cardano
-(cNIGHT) for DUST generation; this MIP reuses only its Cardano-observation machinery to carry the
-registration, and the reward asset is NIGHT on Midnight, not cNIGHT. Its logical form is:
-
-```
-RewardDestinationV1 {
-    stake_address:        bytes29,
-    reward_key:           bytes,
-    reward_key_signature: bytes,
-    purpose:              "midnight-block-reward-v1",
-    valid_from_epoch:     u64,
-    fixed_amount_star:    u128,
-    observed_utxo:        cardano_utxo_id
-}
-```
-
-`fixed_amount_star` is meaningful only in the registration of a pool's reward address, where it is
-the SPO's fixed amount in **Epoch reward split**, in STAR per Cardano epoch; elsewhere it MUST be
-zero. A registration without one declares zero.
-
-The registration UTXO MUST hold a refundable deposit of at least `registration_deposit_lovelace` ADA,
-returned to the stake credential when the registration is removed and its UTXO spent. The deposit is
-a ratified parameter of the reward-binding contract, as Cardano's stake-key deposit is, so that
-each pending registration costs locked ADA. Its initial value is ratified with the backlog
-calculation below; the reserve-contracts spike's account deposit of 10 to 40 ADA is the starting
-point.
-
-The Cardano registration transaction MUST authenticate the stake credential, include the exact
-purpose string above, and bind it to a canonically encoded ledger `SignatureVerifyingKey` whose
-derived `UserAddress` can authorize `ClaimRewardsTransaction`. A key credential authorizes the
-registration with its stake-key signature. A script credential authorizes it through the
-policy-defined Cardano script execution, including a zero withdrawal when required by that script.
-`reward_key_signature` is a signature by `reward_key` over the canonical encoding of the purpose
-string, Midnight network ID, `stake_address`, and `valid_from_epoch`; it proves that the holder of
-the claim key consented to the binding. The runtime rejects any other key type or encoding and any
-registration whose `reward_key_signature` does not verify.
-
-Only registrations carrying the unique policy identity of the audited reward-binding contract are
-accepted. That policy identity, Cardano network, asset name, datum encoding, and stability rule are
-versioned protocol parameters. A cNIGHT/DUST registration does not automatically authorize reward
-ownership; an existing registration may be migrated only through an explicit reward-purpose opt-in
-satisfying these rules.
-
-The registration is usable only when exactly one unambiguous UTXO is final. Existing Cardano
-stability, replay-protection, replacement, and ambiguity rules are reused. Ambiguity never removes
-or changes an effective registration: the current reward key stays in force until a rotation
-activates. A new registration takes
-effect no earlier than the next epoch. Reward entitlement is owned by `stake_address`; `reward_key`
-is its current Midnight claim authority. A `reward_key`, once bound to a stake address, can never
-be bound to a different stake address; a registration naming such a key is rejected. Each
-`unclaimed_block_rewards` entry therefore belongs to exactly one stake address.
-
-Any change of claim authority for a stake address that has had an effective registration is a
-rotation. This includes a new key, removal of the registration, and a registration submitted after
-an earlier removal. Every rotation is authenticated by the same Cardano stake credential and is
-publicly queryable while pending. The canonical encodings of removal, cancellation and forced
-rotation, and the precedence between them, are Open Question 9.
-
-A rotation first enters a cancellable pending state lasting `rotation_delay_epochs`. During it, the
-most recent reward key for the stake address may cancel the rotation. If the rotation is cancelled,
-the stake credential may resubmit it as a forced rotation, which activates after
-`forced_rotation_delay_epochs` and cannot be cancelled. The initial values are two and six epochs
-respectively. When a rotation that names a new reward key activates, the ledger operation
-`RekeyUnclaimedReward` moves the stake address's entire `unclaimed_block_rewards` entry to the new
-key, and escrow and later earnings settle to that key. When a rotation that removes the
-registration activates, the existing unclaimed balance stays with the previous key and remains
-withdrawable, and later earnings accrue in escrow. A successful claim before activation remains
-final.
-
-The registration and rotation states of one stake address are:
-
-```mermaid
-stateDiagram-v2
-    state "No registration<br/>rewards held in escrow" as NONE
-    state "Reward key K effective" as K
-    state "Rotation pending<br/>rotation_delay_epochs (2)<br/>K may cancel" as PEND
-    state "Forced rotation pending<br/>forced_rotation_delay_epochs (6)<br/>cannot be cancelled" as FORCED
-    state ACT <<choice>>
-    state "New key K2 effective<br/>RekeyUnclaimedReward<br/>moves K's balance to K2" as K2
-    state "Registration removed<br/>K keeps its balance<br/>new rewards to escrow" as REMOVED
-
-    [*] --> NONE
-    NONE --> K: registration, effective next epoch
-    K --> PEND: rotation by stake credential
-    PEND --> K: cancelled by K
-    K --> FORCED: resubmitted as forced after a cancellation
-    PEND --> ACT: delay ends
-    FORCED --> ACT: delay ends
-    ACT --> K2: names a new key
-    ACT --> REMOVED: removes the registration
-    REMOVED --> PEND: new registration
-```
-
-`RekeyUnclaimedReward` is a proposed new ledger system operation, specified in **Ledger operation
-`RekeyUnclaimedReward`** below.
-
-Under this rule the exposure in each case is bounded and publicly visible. Loss of the reward key
-is repaired by a rotation that nobody cancels. Compromise of the reward key is repaired by a forced
-rotation; the attacker can claim at most the existing balance and rewards credited before
-activation. Compromise of the stake credential compromises the owner of the entitlement: the
-attacker's rotation activates after `rotation_delay_epochs` unless the current reward key cancels
-it, and after a cancellation only through a forced rotation after `forced_rotation_delay_epochs`.
-Until activation the current reward key keeps receiving and may claim every credit; future rewards
-can be protected only by moving the stake to a new credential. Wallets and monitoring tools MUST
-surface every pending and forced rotation, because the cancellation window protects only a key
-holder who acts within it. The delays change only through the delayed, versioned parameter
-process.
-
-The same reward-specific mechanism is available for the operator's reward address and every
-delegator stake address. It is not necessary to add every delegator to the producer registration or
-committee record. A recipient without an effective registration still earns rewards, but the
-runtime holds them in escrow keyed by `stake_address`. Once a valid registration becomes effective,
-a bounded settlement step moves that address's escrow to its `reward_key`.
+A holder of locked cNIGHT is paid at the `reward_address` of its lock. An ADA delegator names its
+address in a lock that holds no cNIGHT and whose owner is its stake credential. A stake credential
+that is delegated to a pool and owns no such lock still earns, and the runtime holds its share in
+escrow keyed by `stake_address`; **Bounded native settlement** states when that escrow moves to a
+reward address.
 
 Every committee entry carries a consensus `reward_eligible` flag. In accordance with the
 tokenomics whitepaper, the initial trusted permissioned producers are ineligible and their blocks
 draw no reward from the Reserve. Participating Cardano SPOs are eligible. A later hybrid-stage
 policy may make another producer class eligible only through a superseding MIP and network upgrade
-whose activation is announced at least one complete epoch in advance; changing eligibility cannot be
-retroactive.
+whose activation is announced at least one complete Midnight epoch in advance; changing eligibility
+cannot be retroactive.
 
-Producer deregistration prevents later selection under the existing Partner Chains rules. Removing
-a reward-destination registration is a rotation and follows the rules above. Once it activates, it
-prevents new credits to that key but neither destroys escrow nor disables withdrawal of balances
-already owned by the key.
+A pool leaves block production with a Deactivate of its Midnight registration, which is permanent
+(staking rule 10, Changes), and it is an operator in no snapshot after that change. Rewards
+calculated for earlier epochs settle as before. A delegator whose lock no longer counts (staking
+rule 14, Effective lock) keeps the rewards already credited, and its later ADA share is held in
+escrow.
 
-Candidate registrations, reward bindings, and per-delegator snapshot entries MUST be ingested in
-canonically ordered, commitment-checked pages. The runtime configuration fixes maximum entries and
-bytes per page, maximum pages admitted per block, and maximum unprocessed backlog. An incomplete,
-duplicated, skipped, or inconsistently committed snapshot cannot activate an epoch. No unbounded
-collection may be carried in one inherent or processed in one block. The ratified limits MUST let a
-snapshot of the maximum supported size be ingested within one epoch at no more than half the
-admitted pages per block, and the activation evidence MUST show the calculation, so that a valid
-snapshot can never be too large to activate. Bounding work per block protects block production but
-not the queue, so the activation evidence MUST also show the ADA locked in deposits, plus Cardano
-fees, that filling the maximum backlog with registrations would cost, at the ratified
-`registration_deposit_lovelace`.
-
-### Ledger operation `RekeyUnclaimedReward`
-
-Rotation moves a stake address's existing unclaimed balance to its new reward key. The current
-ledger has no operation that can do this: the only operation that debits `unclaimed_block_rewards`
-is a claim signed by the owning key, which pays to that key's own address. This MIP therefore adds
-one ledger system operation:
-
-```
-RekeyUnclaimedReward {
-    from: UserAddress,
-    to:   UserAddress
-}
-```
-
-Its semantics are:
-
-* It moves the whole `unclaimed_block_rewards[from]` entry to `to` and removes the `from` entry. It
-  never moves part of an entry.
-* If `to` already holds a balance, the two are added. Because a reward key is only ever bound to one
-  stake address, `to` can hold only the same stake address's earlier balance.
-* If `from` holds no balance, the operation succeeds and changes nothing.
-* It is rejected if `from` equals `to`. The runtime therefore never issues it for a rotation whose
-  new key is the stake address's most recent key, such as re-registration of the same key after a
-  removal; such a rotation activates without moving any balance.
-* It changes no other ledger state, and the ledger's NIGHT supply invariant is checked after it, as
-  after the existing reward operations.
-* `from` is the stake address's most recent reward key, including a key whose registration was
-  removed and whose balance therefore stayed with it (see Open Question 5).
-
-Within a block, rotation activations and their `RekeyUnclaimedReward` operations apply first,
-followed by settlement chunks, then user transactions. A claim by the previous key in an earlier
-block is final; a claim by the previous key in the activating block, or later, finds no balance.
-Switching the stake address's current key and the `RekeyUnclaimedReward` operation commit together
-or not at all, including across interruption and runtime upgrade.
-
-The ledger cannot tell which component built a system transaction. The restriction that only the
-reward-specific executor issues `RekeyUnclaimedReward` is therefore enforced by the node runtime: it
-issues the operation only when a rotation activates, and no extrinsic, governance call, or RPC can
-cause it to be issued. Runtime events, RPC, and indexer records MUST show each move, with its
-source key, target key, amount, and stake address, so that a rotation cannot look like a balance
-disappearing.
-
-The operation requires agreement from the ledger maintainers and a ledger release that includes it
-(see Open Question 4).
+The rows of the snapshot record MUST be ingested in canonically ordered, commitment-checked pages.
+The runtime configuration fixes maximum entries and bytes per page, maximum pages admitted per
+block, and maximum unprocessed backlog. An incomplete, duplicated, skipped, or inconsistently
+committed snapshot cannot activate an epoch. No unbounded collection may be carried in one inherent
+or processed in one block. The ratified limits MUST let a snapshot of the maximum supported size be
+ingested before the deadline by which the required staking MIP adopts it (staking rule 17, Snapshot
+finality), at no more than half the admitted pages per block, and the activation evidence MUST show
+the calculation, so that a valid snapshot can never be too large to activate. Bounding work per
+block protects block production but not the size of the snapshot. Each lock holds an ADA deposit of
+at least `lock_deposit_lovelace`, so the activation evidence MUST also show the ADA in deposits,
+plus Cardano fees, that filling a snapshot of the maximum supported size with locks would cost.
 
 ### Author attribution
 
 The block author is derived from the active BABE authority index and the immutable committee
-record for the block's epoch. It is never supplied by an environment variable, RPC parameter,
+record for the block's Midnight epoch. It is never supplied by an environment variable, RPC parameter,
 indexer, or other unverified inherent.
 
-For a registered producer, the committee record provides `operator_kind` and `operator_id`: for an
-ADA SPO, its `pool_id`, with the epoch snapshot supplying the operator's stake address and reward
-parameters; for a NIGHT-native SPO, its operator record identifier, with the NIGHT staking MIP
-supplying its payee and terms. An ineligible producer generates an attribution record with zero
-reward; if it has no operator identity, the record's `operator_id` and `operator_payee` are
-empty. Failure to map an eligible consensus author to the immutable
-committee and operator identity is an invalid block transition; it does not pay a fallback recipient or create an
-unowned escrow entry.
+For a registered producer, the committee record provides `operator_id`, its `pool_id`, and the
+epoch's snapshot record supplies the operator's `reward_address` and reward terms. An ineligible
+producer generates an attribution record with zero reward; if it has no operator identity, the
+record's `operator_id` is empty. Failure to map an eligible consensus author to the immutable
+committee and operator identity is an invalid block transition; it does not pay a fallback recipient
+or create an unowned escrow entry.
 
 ### Tokenomics parameters
 
@@ -382,8 +218,6 @@ RewardParametersV1 {
     recipient_split_policy:   bytes32,
     recipient_policy_hash:    bytes32,
     max_updates_per_block:    u32,
-    rotation_delay_epochs:    u32,
-    forced_rotation_delay_epochs: u32,
     publication_hash:         bytes32,
     governance_action_hash:   bytes32
 }
@@ -392,7 +226,7 @@ RewardParametersV1 {
 For the initial parameter version, `publication_hash` MUST identify the exact approved edition of
 the Midnight Tokenomics and Incentives Whitepaper. The digest and the initial values MUST be
 independently verified and ratified before this MIP moves to `Proposed`. This MIP assigns the
-initial subsidy ratio and rotation delays, and recommends `pi` (Open Question 13); `B`, `T` and
+initial subsidy ratio and recommends `pi` (Open Question 9); `B`, `T` and
 `gamma` come from the publication and the active slot duration. In the
 notation of that publication, `initial_expansion` is `pi`,
 `reserve_allocation` is `B`, `treasury_allocation` is `T`, and
@@ -468,7 +302,7 @@ where:
 * `B_s` is `reward_reserve_outstanding` before the block, corresponding to the publication's `B_o`;
 * `r_n/r_d` is `R`, the base distribution rate derived above;
 * `s_n/s_d` is the fixed subsidy ratio;
-* `u_used/u_max` is consensus block utilization, whose exact definition is Open Question 8;
+* `u_used/u_max` is consensus block utilization, whose exact definition is Open Question 5;
 * `N_b` is the total reserve draw;
 * `N_a` is the producing pool's reward; and
 * `N_t` is the Midnight treasury's share.
@@ -506,10 +340,9 @@ Each block produces the following consensus record and event:
 ```
 BlockRewardRecordV1 {
     block_number:           u64,
-    epoch:                  u64,
-    operator_kind:          u8,
+    midnight_epoch:         u64,
+    cardano_epoch:          u32,
     operator_id:            bytes,
-    operator_payee:         bytes,
     base_draw_star:         u128,
     producer_reward_star:   u128,
     treasury_reward_star:   u128,
@@ -528,80 +361,88 @@ consulting private or implementation-specific state.
 
 ### Epoch reward split
 
-The reward split for epoch `E` uses, for each operator, the stake snapshot of its kind that
-selected epoch `E`'s committee: `snapshot_id` for an ADA SPO, and the NIGHT stake snapshot for a
-NIGHT-native SPO. That finalized snapshot supplies the operator's own stake, the stake of each of
-its delegators or stakers, and their payees. Nodes MUST NOT substitute a newer local snapshot.
-
-The NIGHT stake snapshot used for an epoch, computed by Midnight from NIGHT staked on Cardano, is
-taken at the same Cardano epoch boundary as the ADA snapshot, two Cardano epochs back, before the
-committee's randomness is known. Midnight epochs are shorter than Cardano's and share the Cardano
-nonce, so a NIGHT reading taken at a Midnight epoch boundary would let a holder see which committee
-is selected and then move stake to it. The NIGHT staking MIP inherits this point.
+The split for epoch `E` uses the stake snapshot record of epoch `E`, the record that `snapshot_id`
+identifies, and no other source. The required staking MIP takes that record from the Cardano ledger
+state at the start of Cardano epoch `E - 3`, before the nonce that seeds the committees of epoch `E`
+is known (staking rule 16, Snapshot point), and selects those committees from it (staking rule 24,
+Selection), so one record fixes who produces the blocks of an epoch and who is paid for them. Nodes
+MUST NOT substitute a newer local snapshot. The split runs once per epoch, after the last block of
+the epoch is finalized, on each pool's producer total `P_pool`, the sum of `N_a` over the blocks of
+the epoch that the pool produced.
 
 The tokenomics whitepaper establishes that participating SPOs and their enabling delegators can
 withdraw rewards, but it does not define how one pool's producer reward is divided among them. As on
 Cardano, each SPO sets a margin and the rest is shared in proportion to stake, the operator's own
 stake included; this MIP fixes the form of the split and its arithmetic. There is no governed cap on
 the margin and no default: backers are protected, as on Cardano, by seeing the margin where they
-already look and being able to move their stake. An ADA SPO's margin is the margin in its Cardano
-pool registration certificate, as recorded in the pool parameters of the epoch's `snapshot_id`. A
-NIGHT-native SPO's margin is declared in its operator record and recorded in the NIGHT stake
-snapshot.
+already look and being able to move their stake. A pool's margin is the margin in its Cardano pool
+registration certificate, which the snapshot record carries as `margin`.
 
-An SPO may also declare a fixed amount in NIGHT, taken off the top of its pool's reward before the
+An SPO may also declare a fixed cost in NIGHT, taken off the top of its pool's reward before the
 margin, as Cardano's fixed cost is. Cardano's own fixed cost, an ADA amount, is not used: no
-conversion takes place, and the SPO chooses a number of NIGHT. An ADA SPO declares it as
-`fixed_amount_star` in the `RewardDestinationV1` registration of its pool reward address, in STAR per
-Cardano epoch. It takes effect only from the Cardano snapshot that selects the committee, like the
-margin, so an SPO cannot raise it after learning it was selected and how many slots it holds. For
-Midnight epoch `E`, the amount is prorated by duration across the Midnight epochs in the Cardano
-epoch:
+conversion takes place, and the SPO chooses a number of NIGHT. The SPO declares it as `fixed_cost`
+in its Midnight registration, in STAR per Cardano epoch, and the snapshot record carries it. Like
+the margin, it takes effect only from the snapshot that selects the committee, so an SPO cannot
+raise it after learning it was selected and how many slots it holds.
+
+The payees of a pool in epoch `E` are fixed by the snapshot record:
+
+* each row of `delegators` that names the pool, except a row whose stake credential is the key
+  credential of one of the pool's `owners`, with `s_i` its `lovelace`; and
+* each row of `locks` that names the pool, with `s_i = floor(cnight * w_n / w_d)`, where `cnight` is
+  the STAR of cNIGHT in the lock and `w_n/w_d` is the record's `cnight_weight`, the lovelace of
+  stake per STAR of cNIGHT (staking rule 19, Virtual stake).
+
+The lovelace of the `delegators` rows that name the pool and belong to its `owners` is the pool's
+pledge, and it is the operator's own stake, `s_operator`. An owner is not paid as a delegator: the
+share of the pledge goes to the operator. Each lock is its own payee with its own term, so two locks
+that name one `reward_address` are two entries, and both settle to that address.
+
+For a pool with producer total `P_pool`, fixed cost `fixed_cost`, margin `m_n/m_d` (with
+`0 <= m_n <= m_d`), stake `s_i` for each payee `i`, and total stake `s`, the sum of `s_operator` and
+every `s_i`:
 
 ```
-F_E = floor(fixed_amount_star * midnight_epoch_ms / cardano_epoch_ms)
-```
-
-For a pool with producer total `P_pool`, fixed amount `F_E`, the SPO's margin `m_n/m_d` (with
-`0 <= m_n <= m_d`), and stake `s_i` for each eligible payee `i` of the operator's kind in the epoch
-snapshot, including the operator's own, with total `s`:
-
-```
-fixed              = min(P_pool, F_E)
+fixed              = min(P_pool, fixed_cost)
 operator_cut       = fixed + floor((P_pool - fixed) * m_n / m_d)
 shared             = P_pool - operator_cut
 share_i            = floor(shared * s_i / s)
-operator           = operator_cut + share_operator
-rounding_remainder = shared - sum(share_i)
+share_operator     = floor(shared * s_operator / s)
+rounding_remainder = shared - share_operator - sum(share_i)
+operator           = operator_cut + share_operator + rounding_remainder
 ```
 
-If `s` is zero, every `share_i` is zero and `rounding_remainder = shared`. As on Cardano, if the
-pool's reward is at or below the fixed amount, the operator takes all of it; delegators are
-protected by seeing the amount and being able to leave.
+`s` equals the pool's virtual stake, which is above zero for every pool that a committee holds
+(staking rule 24, Selection). As on Cardano, if the pool's reward is at or below the fixed cost, the
+operator takes all of it; delegators are protected by seeing the amount and being able to leave.
 
-Every amount is a non-negative integer number of STAR. Multiple entries for one payee are
-aggregated before the split is evaluated, and outputs are ordered by canonical payee bytes. The
-split's canonical output is the ordered collection of non-negative `(payee, amount_star)`
-entitlements plus the rounding remainder, and it MUST satisfy:
+The operator's amount is paid at the pool's `reward_address`, and a lock's `share_i` at the lock's
+`reward_address`. A stake credential's `share_i` is paid at the `reward_address` that its locks for
+the pool name: the locks in the record whose owner is that credential and whose pool is that pool.
+It is held in escrow when the credential has no lock for the pool, or when its locks for the pool
+name different addresses.
+
+Every amount is a non-negative integer number of STAR. Each row of the record is one payee, a
+`RewardPayeeV1`, and outputs are ordered as the payees of a pool are in **Bounded native
+settlement**. The split's canonical output is the ordered collection of non-negative
+`(payee, amount_star)` entitlements, the operator's among them, and it MUST satisfy:
 
 ```
-sum(recipient_entitlements) + rounding_remainder = P_pool
+sum(recipient_entitlements) = P_pool
 ```
 
-The form is identified by `recipient_split_policy` and `recipient_policy_hash`. Their values are fixed
-for version 1 of this MIP: they appear in `RewardParametersV1` so that records identify the form, not
-so that governance can change it, and changing them requires a superseding MIP. An SPO's change to
-its margin or fixed amount applies only from the first epoch whose snapshot records it and cannot
-alter a calculated epoch. The destination of the rounding remainder and
-the definition of an eligible delegator are part of Open Question 3; this MIP does not silently
-select them. Behaviour for zero stake, inactive
-credentials and pool retirement follows from the form above, and a missing destination changes no
-allocation: its entitlement is held in escrow.
+The form is identified by `recipient_split_policy` and `recipient_policy_hash`. Their values are
+fixed for version 1 of this MIP: they appear in `RewardParametersV1` so that records identify the
+form, not so that governance can change it, and changing them requires a superseding MIP. An SPO's
+change to its margin or fixed cost applies only from the first epoch whose snapshot records it and
+cannot alter a calculated epoch. A pool that is no operator at a snapshot holds no seat in that
+epoch, so neither the pool nor the cNIGHT locked behind it earns in that epoch. A missing reward
+address changes no allocation: the entitlement is held in escrow.
 
 The epoch result records the gross pool reward, the split form's identifier and hash, the pool's
-fixed amount and margin, operator aggregate, delegator aggregate, treasury amount, rounding remainder, snapshot ID,
-and reward-parameter version. Per-recipient entitlements record their payee, claim address, stake
-amount, and credited STAR.
+fixed cost and margin, operator aggregate, delegator aggregate, lock aggregate, treasury amount,
+rounding remainder, snapshot ID, and reward-parameter version. Per-recipient entitlements record
+their payee, reward address, stake amount, and credited STAR.
 
 ### Settlement gate and supply invariant
 
@@ -707,30 +548,52 @@ change who owns an entitlement, or reduce one, only through the actions in **Ent
 
 ### Bounded native settlement
 
-The number of delegators cannot determine the weight of one block. Epoch settlement therefore uses
-a deterministic queue. Each block processes no more than `max_updates_per_block` entries. Later
-epochs may accumulate while an earlier settlement is in progress, but queue order is fixed and
-cannot skip an entry. Within each epoch, the treasury amount is one entry that sorts before every
-pool, and each pool's rounding remainder is one entry for its policy-defined destination that sorts
-after that pool's recipients. Formally, entries sort by
-`(epoch, kind, operator_id, sub_kind, payee)`, compared field by field with byte strings compared
-lexicographically: `kind` is 0 for the treasury entry and 1 for pool entries; `sub_kind` is 0 for a
-recipient and 1 for the pool's rounding remainder; and `operator_id` and `payee` are empty where an
-entry has none.
+The number of delegators cannot determine the weight of one block. Epoch settlement therefore uses a
+deterministic queue. Each block processes no more than `max_updates_per_block` entries. Later epochs
+may accumulate while an earlier settlement is in progress, but queue order is fixed and cannot skip
+an entry. An entry of the queue is a `SettlementEntryV1` of one epoch:
 
-An entry is settled whole or not at all. Every chunk, including its producer, delegator, treasury,
-and rounding components, MUST be less than or equal to both its unsettled entitlement total and
+```
+SettlementEntryV1 = enum {
+    Treasury,
+    Pool          { operator_id: [u8; 28], payee: RewardPayeeV1 },
+    EscrowRelease { stake_credential: (u8, [u8; 28]) }
+}
+
+RewardPayeeV1 = enum {
+    Operator,
+    Delegator { stake_credential: (u8, [u8; 28]) },
+    Lock      { utxo: ([u8; 32], u16) }
+}
+```
+
+Entries sort by epoch, then by variant in the order shown, then by their fields in order, each
+compared by value. Within an epoch the treasury amount therefore comes before every pool and the
+escrow releases come after every pool, and within a pool the operator comes first, then its
+delegators, then its locks. `stake_credential` and `utxo` have the forms that the snapshot record
+gives them (staking rule 23, Snapshot record). Both types are encoded with SCALE like the other
+records of this MIP, so the codec writes the variant, and this MIP assigns no byte value by hand.
+
+An entry is settled whole or not at all. Every chunk, including its operator, delegator, lock, and
+treasury components, MUST be less than or equal to both its unsettled entitlement total and
 `unassigned_released`. A chunk ends before the first entry whose amount exceeds the
 `unassigned_released` that remains, and that entry waits at the head of the queue until enough
 release has been mirrored.
 
-A `MidnightStaker` entry settles to the claim address the NIGHT staking MIP binds to it, or to
-that MIP's escrow. A `CardanoStake` entry whose stake address has no effective registration is
-settled to escrow: it stays in `block_reward_pool`, moves from the unassigned balance into
-`escrow[stake_address]`, and counts towards `S`. No entry is held at the head of the queue for lack
-of a registration. When a registration becomes effective, `DistributeNight` moves that address's
-whole escrow to its reward key without changing `S`. Between chunks, `block_reward_pool` equals its
-balance at activation plus the sum of all escrow balances plus `unassigned_released`.
+An operator's entry settles to the pool's `reward_address`, and a lock's entry to the lock's
+`reward_address`. A stake credential's entry settles to the `reward_address` that its locks for the
+pool name. When the credential has no lock for the pool, or its locks for the pool name different
+addresses, the entry is settled to escrow: it stays in `block_reward_pool`, moves from the
+unassigned balance into `escrow[stake_address]`, and counts towards `S`. No entry is held at the
+head of the queue for lack of a lock. An epoch holds one escrow release for each stake address whose
+escrow is not empty once the pool entries of the epoch are settled, and whose credential owns one or
+more locks in the snapshot record of the epoch that all name one `reward_address`. The release moves
+the whole of `escrow[stake_address]` to that address with `DistributeNight`, without changing `S`.
+The credential needs no share in that epoch, so a delegator that has left its pool collects its
+escrow with a lock that holds no cNIGHT. That lock must name a pool that is an operator at the
+snapshot, because the record lists no other lock (staking rule 23, Snapshot record); a lock that
+names a retired pool releases nothing. Between chunks, `block_reward_pool` equals its balance at
+activation plus the sum of all escrow balances plus `unassigned_released`.
 
 Each settlement chunk is a mandatory atomic runtime transition identified by
 `(epoch, chunk_index)`. Before changing state, the runtime validates the complete chunk, including
@@ -738,7 +601,7 @@ its entitlement sum, `unassigned_released`, output encodings, replay identifiers
 and execution limits. It then applies the existing ledger operations to a temporary state:
 
 1. `DistributeNight(Reward, outputs)` moves the amount for each recipient from `block_reward_pool`
-   into `unclaimed_block_rewards[reward_key]`.
+   into `unclaimed_block_rewards[reward_address]`.
 2. The treasury portion is moved through the ledger's existing treasury path,
    `PayBlockRewardsToTreasury`.
 
@@ -746,11 +609,10 @@ The new ledger state root, `S`, escrow balances, settlement cursor, and used chu
 committed together only if both steps succeed. Any failure commits none of them. Retrying the same
 valid chunk after a transient failure is safe; retrying a committed chunk is rejected. The
 reward-specific system-transaction executor MUST reject every ledger operation other than the two
-listed above and `RekeyUnclaimedReward` at rotation activation. It never issues `DistributeReserve`;
-only the bridge does, for a mirrored release.
+listed above. It never issues `DistributeReserve`; only the bridge does, for a mirrored release.
 
 If an output is below the claim minimum, it still accrues and combines with future rewards; a
-balance that never reaches the minimum is Open Question 11. An
+balance that never reaches the minimum is Open Question 7. An
 entitlement does not expire. No operator, delegator, per-recipient batcher, or fee-paying agent is
 required to initiate Midnight settlement once released NIGHT is available. Cardano Reserve release
 and its mirroring remain prerequisites during the initial reserve-control stage.
@@ -762,9 +624,10 @@ not duplicate or lose rewards.
 ### Withdrawal into spendable NIGHT
 
 A recipient withdraws with the existing `ClaimRewardsTransaction` and `ClaimKind::Reward`. The
-transaction commits to network ID, amount, owner, nonce, and claim kind and is signed by
-`reward_key`. A successful claim subtracts the amount from `unclaimed_block_rewards` and creates an
-unshielded NIGHT UTXO owned by the same Midnight address.
+transaction commits to network ID, amount, owner, nonce, and claim kind and is signed by the owner
+key, whose `UserAddress` is the `reward_address`. A successful claim subtracts the amount from that
+address's `unclaimed_block_rewards` entry and creates an unshielded NIGHT UTXO owned by the same
+Midnight address.
 
 The existing minimum claim threshold applies; it is the ledger's parameter, and this MIP sets no
 separate one. A claim at or above the threshold pays no additional
@@ -774,33 +637,31 @@ protection and normal transaction validity checks apply.
 CLI and SDK surfaces follow Cardano's explicit query-then-withdraw convention:
 
 ```
-midnight-cli stake-address register-rewards --stake-address ... --reward-key ...
-midnight-cli stake-address deregister-rewards --stake-address ...
-midnight-cli stake-address cancel-rewards-rotation --stake-address ... --reward-key ...
-midnight-cli stake-address force-rewards-rotation --stake-address ... --reward-key ...
 midnight-cli query stake-pool-rewards --stake-address ... [--epoch ...]
-midnight-cli transaction withdraw-rewards --stake-address ... --amount all|STAR --out-file ...
+midnight-cli query stake-pool-rewards --reward-address ... [--epoch ...]
+midnight-cli transaction withdraw-rewards --reward-address ... --amount all|STAR --out-file ...
 ```
 
-The SDK provides typed equivalents for registration payload construction, reward queries, offline
-claim construction, external signing, submission, and confirmation.
+A recipient creates, updates and removes a lock with a Cardano transaction, with the tooling of the
+required staking MIP, and this MIP adds no command for it. The SDK provides typed equivalents for
+reward queries, offline claim construction, external signing, submission, and confirmation.
 
 ### Public query interface
 
-Runtime API, RPC, and indexer queries are batch-capable and accept `stake_address`, or a NIGHT
-staker's payee identifier once the NIGHT staking MIP defines it, as the primary user-facing key.
-Each query mirrors a Koios endpoint and uses its response shape, with batch queries by POST, so that
-wallets, explorers and test harnesses can port existing Cardano integrations:
+Runtime API, RPC, and indexer queries are batch-capable and accept `stake_address` as the primary
+user-facing key: the network-tagged form of an ADA delegator's stake credential or of a lock's owner
+credential. Each query mirrors a Koios endpoint and uses its response shape, with batch queries by
+POST, so that wallets, explorers and test harnesses can port existing Cardano integrations:
 
 | Midnight query | Koios counterpart | Fields, in Koios's names where one exists |
 |---|---|---|
-| Account status | `account_info` | `stake_address`, `status` (registration), `delegated_pool`, `rewards` (calculated entitlement), `withdrawals` (claims), `rewards_available` (claimable); plus operator kind, claim address, effective epoch, observed Cardano block, release-gated and unsettled amounts |
+| Account status | `account_info` | `stake_address`, `status` (whether its locks name a reward address), `delegated_pool`, `rewards` (calculated entitlement), `withdrawals` (claims), `rewards_available` (claimable); plus its locks with their reward addresses, escrow, release-gated and unsettled amounts |
 | Reward history | `account_reward_history` | `earned_epoch`, `spendable_epoch` (the epoch the entitlement became claimable), `amount`, `type` (`leader` or `member`), `pool_id` |
-| Pool epoch totals | `pool_history` | `epoch_no`, `active_stake`, `block_cnt`, `delegator_cnt`, `margin`, `fixed_cost` (the fixed amount in NIGHT), `pool_fees` (operator aggregate), `deleg_rewards` (delegator aggregate); plus treasury amount, rounding remainder, split form identifier and hash, snapshot identifier |
-| Pool delegators | `pool_delegators` | `stake_address`, `amount`, `active_epoch_no` |
-| Registration and claim history | `account_update_history` | `action_type` (registration, rotation, cancellation, removal, claim), `tx_hash`, `epoch_no`, `block_time`; the claim history takes the place of Cardano withdrawals |
+| Pool epoch totals | `pool_history` | `epoch_no`, `active_stake`, `block_cnt`, `delegator_cnt`, `margin`, `fixed_cost` (the fixed cost in NIGHT), `pool_fees` (operator aggregate), `deleg_rewards` (delegator aggregate); plus locked cNIGHT, `cnight_weight`, lock aggregate, treasury amount, rounding remainder, split form identifier and hash, snapshot identifier |
+| Pool delegators | `pool_delegators` | `stake_address`, `amount`, `active_epoch_no`; plus the pool's locks, each with its owner, cNIGHT and reward address |
+| Lock and claim history | `account_update_history` | `action_type` (lock, update, unbond, unlock, claim), `tx_hash`, `epoch_no`, `block_time`; the claim history takes the place of Cardano withdrawals |
 
-Amounts are in STAR and epochs are Midnight epochs. The Koios API version mirrored is fixed with the
+Amounts are in STAR and epochs are Cardano epochs, as in Koios. The Koios API version mirrored is fixed with the
 normative vectors. Further queries, with no Koios counterpart, return:
 
 * per-block reward records;
@@ -808,7 +669,7 @@ normative vectors. Further queries, with no Koios counterpart, return:
 * `ReserveReleaseObservationV1` records, `unassigned_released`, and settlement progress; and
 * withdrawal transaction identifiers and resulting UTXOs.
 
-Queries by pool ID and reward key are also supported. Historical pagination uses stable cursors and
+Queries by pool ID and reward address are also supported. Historical pagination uses stable cursors and
 declares the retention window. The node runtime API remains authoritative for current state; the
 indexer is a convenient historical projection.
 
@@ -817,8 +678,8 @@ indexer is a convenient historical projection.
 The SDK and CLI expose a pure forecast function taking published reward parameters, the current
 `reward_reserve_outstanding`, the pool's expected number of blocks over the range (derived from its
 share of committee seats and the number of slots, with the selection model stated), expected
-utilization, the pool's margin, operator
-stake, delegated stake, and a time range. The result shows assumptions, low/base/high scenarios,
+utilization, the pool's margin and fixed cost, operator
+stake, delegated stake, locked cNIGHT and `cnight_weight`, and a time range. The result shows assumptions, low/base/high scenarios,
 gross pool rewards, and the policy-defined operator and delegator allocations.
 
 A forecast never changes consensus and MUST be labelled as an estimate. Default assumptions are
@@ -829,11 +690,11 @@ selection and utilization are uncertain and that past performance does not guara
 
 A verifier recomputes a payout using only finalized public data:
 
-1. identify the epoch's stake snapshots and reward-parameter version;
+1. identify the epoch's stake snapshot record and reward-parameter version;
 2. derive each finalized block author from consensus data;
 3. recompute every `BlockRewardRecordV1` and the pool epoch totals;
-4. read the split form's identifier, the pool's margin, and the identified
-   snapshot;
+4. read the split form's identifier and, from the identified snapshot record, the pool's terms,
+   locks and delegators;
 5. recompute the policy-defined epoch split in canonical order;
 6. verify finalized Cardano Reserve releases and the resulting release-credit balance; and
 7. compare the result with Midnight's settlement records, claimable balances, and withdrawals.
@@ -848,8 +709,8 @@ verify against their own Midnight and Cardano nodes.
 
 All new records and canonical encodings carry version 1, denoted by the `V1` suffix of the type
 name and encoded as a leading version tag. Unknown versions are rejected. A semantic
-change to reward arithmetic, rounding, snapshot selection, author attribution, registration
-ownership, or settlement ordering requires a superseding MIP and network upgrade. Governance may
+change to reward arithmetic, rounding, snapshot selection, author attribution, payee
+selection, or settlement ordering requires a superseding MIP and network upgrade. Governance may
 change values already designated as parameters, but only through the delayed, versioned mechanism
 defined above.
 
@@ -890,7 +751,7 @@ MIP-0024 remains relevant design input. This proposal retains or adapts its:
 * direct protocol allocation to operators and delegators rather than discretionary SPO payment;
 * use of the committee-selection stake snapshot and Cardano pool parameters;
 * stake-credential authentication for both key and script credentials;
-* rule that missing recipient registration delays delivery without forfeiting entitlement;
+* rule that a missing reward address delays delivery without forfeiting entitlement;
 * deterministic ordering and bounded processing of large recipient sets;
 * funded, permissionless submission of Reserve release transactions; and
 * Cardano stability, replay, migration, audit, and public-recomputation requirements.
@@ -907,37 +768,41 @@ Recipients control consolidation timing, small amounts can accumulate, and settl
 produce dust UTXOs. The existing claim transaction already authenticates the owner and creates
 spendable unshielded NIGHT.
 
-The Partner Chains registration is reused for producer eligibility rather than creating a second
-SPO registry, because it already proves control of the pool and Midnight authority keys. Reward
-destinations use a separate purpose-bound registration so that delegators can register without
-joining the committee record. The `reward_key_signature` in that registration proves that the
-holder of the claim key consented to the binding, which prevents an attacker from binding a key
-they do not control.
+The pool registration, the lock and the stake snapshot are taken from the required staking MIP
+rather than defined here, so that committee selection and rewards read one registration and one
+snapshot record. A recipient names its reward address in a lock that its own Cardano credential
+authorizes, and the key behind the address signs nothing, because the address only receives and a
+recipient chooses where its own rewards go.
 
-Rotation lets the stake credential, which already owns the entitlement, eventually prevail. The
-cancellation window and the longer forced delay give the current key holder time and a public
-signal. Under this rule a lost or compromised reward key is always recoverable, a compromised stake
-credential gains control only after a public delay that one cancellation by the current key
-lengthens, and the exposure in each case is bounded. Defending against either compromise needs
-one timely action, not continuous vigilance.
+A change of reward address moves only future rewards: the new address applies from the next
+snapshot, and a balance already credited stays with the address that holds it. This needs no new
+ledger operation and no rotation state, because the existing claim remains the only operation that
+debits an unclaimed balance. The cost is that a recipient whose key is lost or stolen loses the
+balance credited to that key's address, and this MIP accepts that loss and adds no mechanism to
+recover it.
 
-Operator kinds, kind-tagged identifiers and where each kind declares its margin are fixed now,
-before NIGHT-native SPOs exist, so that the NIGHT staking MIP adds definitions rather than migrating
-ADA SPO rewards, escrow or settlement records. Keeping each pool to one kind means no exchange rate
-between ADA and NIGHT stake is ever needed to split a reward.
+Every operator is a Cardano stake pool, backed by ADA delegated to it and by cNIGHT locked behind
+it, so one snapshot record and one split serve every pool. ADA stake and cNIGHT stake are added
+through `cnight_weight`, the rate that the required staking MIP sets and that the snapshot record
+carries, so the split uses the same weight that selected the committee.
 
-The margin follows Cardano: uncapped and with no default. Reading an ADA SPO's margin from its
-Cardano certificate keeps one set of terms where its delegators already look, and raising it costs
-the SPO on Cardano too. A fixed amount follows Cardano as well, so that a small pool can cover its
-running costs without a high margin. Cardano's ADA figure is not reused, because that would need an
-exchange rate; a fixed amount declared in NIGHT needs none, and keeping it in line with costs is the
-operator's business, as keeping Cardano's ADA cost current is on Cardano. It is declared in the
-SPO's reward registration on Cardano, so SPOs keep using Cardano tools, and the query interface
-exposes it beside the margin, because standard pool explorers do not show it.
+The margin follows Cardano: uncapped and with no default. Reading a pool's margin from its Cardano
+certificate keeps one set of terms where its delegators already look, and raising it costs the SPO
+on Cardano too. The owners' stake is the pool's pledge and counts as the operator's own stake, as on
+Cardano, so its share of the reward goes to the operator and no owner is also paid a delegator's
+share. A fixed cost in NIGHT follows Cardano as well, so that a small pool can cover its running
+costs without a high margin. Cardano's ADA figure is not reused, because that would need an exchange
+rate; a fixed cost declared in NIGHT needs none, and keeping it in line with costs is the operator's
+business, as keeping Cardano's ADA cost current is on Cardano. It is declared in the pool's Midnight
+registration on Cardano, so SPOs keep using Cardano tools, and the query interface exposes it beside
+the margin, because standard pool explorers do not show it.
 
 The committee-selection snapshot is reused because paying against a different stake view would make
-eligibility and compensation inconsistent. Bounded deterministic settlement avoids unbounded block
-work while preserving automatic protocol distribution.
+eligibility and compensation inconsistent. That snapshot is one record per Cardano epoch and fixes
+every input to the split, the stake, the terms and the reward addresses, so the split runs once per
+Cardano epoch, and the fixed cost, which is stated per Cardano epoch, needs no proration across
+Midnight epochs. Bounded deterministic settlement avoids unbounded block work while preserving
+automatic protocol distribution.
 
 Alternatives rejected are:
 
@@ -949,65 +814,38 @@ Alternatives rejected are:
 * **Create UTXOs automatically:** produces avoidable state growth and removes recipient control over
   consolidation.
 * **Trust an indexer calculation:** convenient for display, but not independently reproducible.
-* **Reward-key veto over rotation:** a compromised reward key could cancel every recovery
-  attempt and keep claiming indefinitely, making loss of control permanent.
-* **Rotation by stake credential without cancellation:** recovers quickly from a compromised
-  reward key, but gives the holder of a compromised stake credential uncontested control after
-  the short delay, leaving the owner time only to claim existing balances.
-* **Cancellation only by the stake credential:** holds off an attacker only while the owner
-  signs a Cardano cancellation within every window; one missed window redirects rewards, and
-  each defence costs ADA and a cold-key or multisig signature.
-* **Immediate rotation when both keys sign:** saves only the cancellation delay, during which
-  the current key still receives rewards, while adding a second authorization path to specify,
-  test, and analyse for delay bypass.
-
-### Existing balances at rotation
-
-Rotation exists so that a lost or compromised reward key does not cost its owner the rewards
-already credited to it. Moving those balances needs some mechanism, and the alternatives considered
-were:
-
-* **Move only future rewards:** needs no ledger change, but a lost key's existing balance is
-  stranded permanently, which defeats the recovery that rotation exists for.
-* **The previous key claims and transfers to the new key:** needs the previous key, which is
-  exactly what is missing after a loss, and which an attacker controls after a compromise.
-* **Hold balances on the runtime side, keyed by stake address, until claim:** avoids changing
-  ledger balances at rotation, but changes the existing claim transaction and takes unclaimed
-  rewards out of the ledger's supply invariant, a larger and riskier change than one operation.
-* **Key the ledger's unclaimed map by stake address instead of reward key:** makes rotation a
-  key-pointer update, but changes the ledger's state layout and claim authorization, and needs the
-  same ledger agreement plus a migration of existing balances.
-* **A dedicated ledger operation, `RekeyUnclaimedReward` (proposed):** the smallest ledger change.
-  It leaves supply unchanged, keeps the existing claim path, and is used only when a rotation
-  activates.
+* **Move a credited balance to a new reward address:** recovers the balance of a lost key, but needs
+  a new ledger operation and a delayed, cancellable rotation so that a stolen Cardano credential
+  cannot take the balance. A change of address moves only future rewards.
 
 ## Path to Active
 
 ### Acceptance Criteria
 
 This MIP requires Native NIGHT Block Production Rewards: Cardano Reserve Release, whose
-`ReserveReleaseObservationV1` records it consumes as the released NIGHT available to settle. That
-MIP depends on no other. Reward calculation starts with the first Midnight block at or after that
-MIP's `anchor_posix_ms`. *Activation* is the network upgrade that enables the feature; the MIP
-becomes `Active` once the criteria below hold.
+`ReserveReleaseObservationV1` records it consumes as the released NIGHT available to settle, and
+NIGHT Staking on Cardano, whose stake snapshot record supplies the operators, the payees and their
+reward addresses. Each of those MIPs depends on no other. Reward calculation starts with the first
+Midnight block at or after the required Reserve MIP's `anchor_posix_ms`. *Activation* is the network
+upgrade that enables the feature; the MIP becomes `Active` once the criteria below hold.
 
 This MIP may move from Accepted to Active only when all of the following are true on Midnight
 mainnet:
 
-1. An SPO can register and deregister for block production through Partner Chains, and an operator
-   or delegator can register, rotate, remove, and query a Midnight reward destination by Cardano
-   stake address.
+1. An SPO can register and deregister for Midnight block production on Cardano, and a delegator
+   can create, update, remove and query a lock that names its Midnight reward address.
 2. Every produced block is attributed from consensus state and its reward is calculated using the
    published formula and exact integer arithmetic.
 3. Initial permissioned producers receive zero rewards, while every reward-eligible producer is
    identified by consensus state and the active committee record.
-4. Each pool's margin and fixed amount are publicly queryable, and public interfaces expose the
-   split form's identifier, each pool's fixed amount and margin, operator aggregate, delegator
+4. Each pool's margin and fixed cost are publicly queryable, and public interfaces expose the
+   split form's identifier, each pool's fixed cost and margin, operator aggregate, delegator
    aggregate, treasury amount, and rounding remainder, in the Koios response shapes of **Public
    query interface**.
 5. An operator or delegator can query accrued rewards and withdraw them through supported CLI and
    SDK flows into spendable unshielded NIGHT on Midnight.
-6. The required Cardano Reserve-release MIP is Active on the target network.
+6. The required Cardano Reserve-release MIP and the required staking MIP are Active on the target
+   network.
 7. Settlement pays only out of `unassigned_released`, never above it; no entitlement becomes
    claimable while released NIGHT is insufficient; and the reward executor never moves
    `reserve_pool`.
@@ -1016,22 +854,18 @@ mainnet:
    interruption, rollback, and upgrade scenarios, and halts closed on each condition listed there.
 9. Independent implementations reproduce every normative vector and a representative sample of
    mainnet payouts from finalized Midnight and Cardano data.
-10. Registration ambiguity, missing destinations, key rotation, settlement interruption, runtime
-    upgrade, and replay do not move rewards away from the owning stake address, duplicate,
-    destroy, or strand them.
+10. Locks that name different addresses, a missing lock, a change of reward address, settlement
+    interruption, runtime upgrade, and replay do not move rewards away from their payee,
+    duplicate, destroy, or strand them.
 11. Supply-invariant, migration, performance, and adversarial test suites pass, and the feature has
-   completed at least two full committee rotations on a public test network.
-12. Committee entries carry an operator kind; per-block calculation, the split form and settlement
-    treat both kinds alike; and a committee entry of kind `NightSpo` is rejected until a NIGHT
-    staking MIP that defines its operator records, payees and stake snapshot is active.
+   completed at least two full epochs on a public test network.
 
 ### Implementation Plan
 
 1. Ratify the published tokenomics constants, derivation, document hash, governance origin, Cardano
    snapshot schema, canonical encodings, and normative calculation vectors before `Proposed`.
-2. Connect candidate identities to Cardano pool reward addresses, mark the initial permissioned
-   authorities reward-ineligible, and add the reward-specific, purpose-bound destination
-   registration for operator and delegator Midnight keys.
+2. Read each pool's Midnight registration and each lock from the snapshot record of the required
+   staking MIP, and mark the initial permissioned authorities reward-ineligible.
 3. Activate or replace the block-reward pallet path, derive block authors from consensus, and add
    versioned parameters, per-block records, epoch accumulators, escrow, and the bounded settlement
    queue.
@@ -1042,30 +876,29 @@ mainnet:
    and withdrawal construction.
 6. Publish an independent calculation library and cross-implementation conformance vectors.
 7. Run migration rehearsals, cross-chain and internal economic-invariant tests, load tests at the
-   maximum supported stake distribution, and at least two public-testnet committee rotations.
+   maximum supported stake distribution, and at least two public-testnet epochs.
 8. Activate through a coordinated runtime and node upgrade after operator tooling and documentation
    are released.
 
 ## Backwards Compatibility Assessment
 
 This is a consensus-breaking runtime change and requires a coordinated network upgrade. It activates
-reward accounting, extends authority registration, adds runtime storage and events, and introduces
+reward accounting, adds runtime storage and events, and introduces
 mandatory settlement system transactions.
 
 This proposal requires Midnight ledger 9.1 or later, from its first stable release. It relies on
 the version-2 `ClaimRewardsTransaction` signing envelope, which places `network_id` and `kind`
 under the owner's signature; on `SignatureVerifyingKey` claim owners; and on the supply-invariant
 check after `PayBlockRewardsToTreasury`. It also requires a later ledger release, to be named under
-Open Question 4, that adds the `RekeyUnclaimedReward` system operation and an atomic reward-chunk
-entry point or equivalent temporary-state commit boundary.
+Open Question 3, that adds an atomic reward-chunk entry point or equivalent temporary-state commit
+boundary.
 
-Existing Partner Chains registrations remain valid but are subject to the consensus
-`reward_eligible` flag; the initial permissioned authorities are ineligible. A cNIGHT/DUST mapping
-does not become a reward destination without an explicit purpose-bound opt-in. Rewards for a stake
-address without an effective reward destination accrue in escrow until the address is registered.
-Existing ledger balances do not change. `block_reward_pool` and
-`unclaimed_block_rewards` retain their meaning, and existing version-2
-`ClaimRewardsTransaction` transactions remain valid.
+Producer registration is the Midnight registration of the required staking MIP, and no pool holds
+one before that MIP is active. The initial permissioned authorities are ineligible under the
+consensus `reward_eligible` flag. A cNIGHT/DUST registration names no reward address; only a lock
+does. Rewards for a stake address without a lock for its pool accrue in escrow until it has one.
+Existing ledger balances do not change. `block_reward_pool` and `unclaimed_block_rewards` retain
+their meaning, and existing version-2 `ClaimRewardsTransaction` transactions remain valid.
 
 Activation also requires the Cardano Reserve-release transition and the bridge's mirroring of it
 to be operational. Pending entitlements remain non-claimable if Cardano releases stop or Midnight
@@ -1120,33 +953,31 @@ continues only while `B_o` remains unambiguous.
 **Author attribution.** Consensus state is the only source of block authorship. Engine-transition
 tests cover BABE boundaries, skipped slots, session rotation, and missing author bindings.
 
-**Reward redirection.** The reward-specific Cardano registration authenticates the stake credential
-and purpose string, and the reward key's own signature, that bind a reward address to a
-claim-capable Midnight key. A reward key serves at most one stake address. Every change of claim
-authority, including removal and re-registration, is a rotation: stability-delayed, epoch-bound,
-publicly visible, and cancellable by the current key, with a longer uncancellable forced path for
-the stake credential. Entitlement remains owned by the Cardano stake address. At activation,
-`RekeyUnclaimedReward` moves its entire unclaimed balance to the new claim key. Claims completed
-before activation remain final. A compromised reward key exposes at most the balance credited
-before a forced rotation activates. A compromised stake credential redirects later rewards after
-the rotation delay unless the current key cancels, and otherwise only after the forced delay; the
-current key keeps every credit until activation.
+**Reward redirection.** Only the owner credential of a lock can create or change it (staking rule 5,
+Owner authorization), so only that credential names the `reward_address` at which the lock, or the
+owner's ADA share, is paid. A pool's `reward_address` changes only with an Update of its
+registration, under the pool's owner or its cold key (staking rule 10, Changes). A new address
+applies from the first snapshot that records it and moves no balance already credited. A compromised
+owner credential can therefore redirect later rewards and cannot reach a credited balance. The loss
+or theft of the key of a reward address exposes the balance credited to that address, which no rule
+moves, and the owner limits the loss by naming a new address.
 
-**Snapshot consistency.** Committee selection and reward splitting use the identical finalized
-Cardano snapshot. A missing or inconsistent snapshot stops the deterministic epoch transition; a
+**Snapshot consistency.** Committee selection and reward splitting use the identical stake
+snapshot record. A missing or inconsistent snapshot stops the deterministic epoch transition; a
 node cannot substitute another view.
 
 **Arithmetic manipulation.** Consensus integers, checked wide intermediates, specified rounding,
 fixed monetary parameters, and normative vectors prevent platform-dependent results. Governance
 cannot alter an already settled epoch.
 
-**Registration flooding.** Ingestion is bounded per block, and each pending registration locks a
-refundable ADA deposit, so filling the backlog to delay legitimate registrations and rotations costs
-locked ADA, not only Cardano fees.
+**Snapshot flooding.** Ingestion is bounded per block, and each lock holds a refundable ADA deposit
+of at least `lock_deposit_lovelace`, so filling a snapshot with locks costs locked ADA, not only
+Cardano fees.
 
-**Snapshot timing.** The NIGHT stake snapshot is taken at the same Cardano epoch boundary as the ADA
-snapshot, before the committee's randomness is known, and an SPO's margin and fixed amount are read
-from the same snapshot, so neither stake nor terms can be moved after the committee is known.
+**Snapshot timing.** The snapshot record is taken at the start of Cardano epoch `E - 3`, before the
+nonce that seeds the committees of epoch `E` is known, and a pool's margin and fixed cost are read
+in the same state (staking rule 16, Snapshot point), so neither stake nor terms can be moved after
+the committee is known.
 
 **Settlement denial of service.** Work is bounded per block and ordered deterministically. A large
 delegator set delays availability but cannot change entitlement amounts or block all later block
@@ -1157,29 +988,28 @@ controls that Reserve. The CLI and public APIs distinguish calculated, release-g
 claimed amounts so that a release outage cannot be mistaken for lost rewards. No timeout forfeits a
 pending entitlement.
 
-**Escrow abuse.** Missing registration never pays an arbitrary default. Escrow releases only to a
-purpose-bound destination proven to belong to the same stake identity.
+**Escrow abuse.** A missing lock never pays an arbitrary default. Escrow releases only to the
+`reward_address` of a lock whose owner is the same stake credential.
 
 **Entitlement ownership.** Once an entitlement is calculated, only these actions change who owns it
 or reduce it:
 
-1. a `ClaimRewardsTransaction` signed by the current reward key, paying that key's own address;
-2. activation of a rotation authenticated by the stake credential, after its delay, which moves the
-   unclaimed balance with `RekeyUnclaimedReward`; and
-3. settlement of escrow to the reward key registered for the same stake address through the
-   accepted reward-binding contract.
+1. a `ClaimRewardsTransaction` signed by the key of the reward address, paying that key's own
+   address; and
+2. settlement of escrow to the `reward_address` of a lock owned by the same stake credential.
 
 Settling a calculated entitlement into its recipient's balance changes neither its owner nor its
 amount. No parameter change or other governance action under this MIP adds an action to this list;
-adding one requires a superseding MIP. Action 3 is safe only while the accepted reward-binding
-contract authenticates the stake credential; whether governance may change that contract is Open
-Question 6. An entitlement calculated in error, for example after a software defect or a corrupted
-snapshot, stays as calculated until a superseding MIP specifies the correction, the affected
-entitlements and the public evidence for it; nothing in this MIP corrects it.
+adding one requires a superseding MIP. Action 2 rests on the staking contract, which is a fixed
+script whose hash is a constant of the chain specification with no governance setter, so that only
+the owner credential names the address. An entitlement calculated in error, for example after a
+software defect or a corrupted snapshot, stays as calculated until a superseding MIP specifies the
+correction, the affected entitlements and the public evidence for it; nothing in this MIP corrects
+it.
 
-**Public linkage.** Reward records associate Cardano stake addresses, pools, Midnight reward keys,
-amounts, and withdrawals. This is public by design and MUST be documented. This MIP does not provide
-shielded reward accrual.
+**Public linkage.** Reward records associate Cardano stake addresses, locks, pools, Midnight reward
+addresses, amounts, and withdrawals. This is public by design and MUST be documented. This MIP does
+not provide shielded reward accrual.
 
 **Trusted data displays.** RPC and indexer responses may be stale or dishonest. The standardized
 records, snapshot identifiers, formula, and vectors let users reproduce results with their own
@@ -1191,27 +1021,24 @@ source.
 The following components change:
 
 * **`midnight-node/runtime`**: activate or replace `pallet_block_rewards`; derive the beneficiary from
-  authorship and committee state; store versioned parameters, records, accumulators, registrations,
-  escrow, and settlement cursors.
+  authorship and committee state; store versioned parameters, records, accumulators, escrow, and
+  settlement cursors.
 * **`midnight-node/pallets/midnight` and `midnight-system`**: execute bounded
   atomic `DistributeNight`/treasury settlement out of `block_reward_pool` through a reward-only
   executor, and expose reward runtime APIs.
 * **`pallet-c2m-bridge`**: keep mirroring each Reserve release with `DistributeReserve`, extended as
   the required Reserve MIP specifies to emit `ReserveReleaseObservationV1`.
-* **Partner Chains committee selection and data sources**: carry pool reward address,
-  policy-required pool parameters, per-credential delegation, and snapshot identifier.
-* **`pallet_cnight_observation`**: add a purpose-bound reward-destination namespace, carrying the
-  fixed amount and holding the deposit, without changing cNIGHT/DUST ownership semantics.
+* **Stake snapshot**: read the pools, locks and delegators of the snapshot record that the required
+  staking MIP builds, and its `snapshot_id`; this MIP adds no Cardano data source of its own.
 * **`midnight-ledger`**: retain the reward pool, entitlement map, claim transaction, minimum claim,
   replay protection, and supply checks; add an atomic reward-chunk entry point or equivalent
-  temporary-state commit boundary and the `RekeyUnclaimedReward` system operation, accepted only
-  from the reward-specific executor, without widening any other caller's allow-list.
-* **`midnight-indexer`**: persist registrations, block reward records, epoch splits, settlement
+  temporary-state commit boundary, accepted only from the reward-specific executor, without
+  widening any other caller's allow-list.
+* **`midnight-indexer`**: persist block reward records, epoch splits, settlement
   progress, claimable projections, and withdrawals; expose batch GraphQL queries.
 * **`midnight-wallet` and `midnight-js`**: typed reward queries, forecasting, claim construction,
   offline signing, submission, and confirmation.
-* **CLI and toolkit**: registration, deregistration, query, forecast, withdrawal, audit, and
-  conformance-vector commands.
+* **CLI and toolkit**: query, forecast, withdrawal, audit, and conformance-vector commands.
 
 No implementation code belongs in the MIP repository. Component repositories link their changes to
 the numbered MIP after editor assignment.
@@ -1227,16 +1054,17 @@ Testing includes:
 * differential calculation against an independent implementation and sampled Cardano snapshots;
 * duplicate-block, duplicate-chunk, replay, reorganization, skipped-slot, and stalled-settlement
   tests;
-* registration ambiguity, invalid purpose or signature, missing or invalid reward-key signature,
-  reward-key reuse across stake addresses, rotation, cancellation, forced rotation, removal,
-  re-registration after removal, missing destination, and escrow-release tests;
-* settlement-queue tests in which an unregistered stake address sits ahead of registered
-  recipients, asserting that registered entries settle whenever `unassigned_released` covers them,
-  that `block_reward_pool` equals its activation baseline plus total escrow plus
-  `unassigned_released` between chunks, and that escrow reaches only the key
-  later registered for the same stake address;
-* adversarial rotation tests in which an attacker holds only the stake credential or only the
-  reward key, asserting the bounded exposure stated under Security Considerations;
+* payee tests for a stake credential with no lock for its pool, with one lock, with several locks
+  that name one address and with several that name different addresses, for a change of reward
+  address between two snapshots, and for escrow release, with and without a share in the epoch of
+  the release;
+* settlement-queue tests in which a stake address without a lock sits ahead of other recipients,
+  asserting that the other entries settle whenever `unassigned_released` covers them, that
+  `block_reward_pool` equals its activation baseline plus total escrow plus `unassigned_released`
+  between chunks, and that escrow reaches only the reward address of a lock owned by the same stake
+  credential;
+* split tests for the pledge, in which an owner's row adds to the operator's stake and is paid no
+  delegator's share, and for `cnight_weight`, in which a lock's term uses the value in the record;
 * BABE transition, committee rotation, and block-author attribution tests;
 * ledger supply-invariant, insufficient reserve, overflow, and adversarial over-withdrawal tests;
 * cross-chain invariant tests for delayed, partial, excess, duplicated, malformed, unfinalized,
@@ -1244,10 +1072,10 @@ Testing includes:
   including released NIGHT that exceeds earned entitlements;
 * tests that each release drains `reserve_pool` exactly once, through the bridge, and that any other
   `reserve_pool` movement halts settlement;
-* split tests for the fixed amount: zero, below, equal to and above the pool's reward, proration
-  across Midnight epochs, and a change after the selecting snapshot, which must not apply;
-* snapshot-timing tests proving that NIGHT stake moved after the committee's randomness is known does
-  not count for that epoch;
+* split tests for the fixed cost: zero, below, equal to and above the pool's reward, and a change
+  after the selecting snapshot, which must not apply;
+* snapshot tests proving that the split of an epoch uses the record that selected its committees,
+  and that stake, terms and reward addresses changed after that snapshot do not count for the epoch;
 * golden vectors for every Koios-shaped query response;
 * eligibility tests proving that initial permissioned-authority blocks draw zero Reserve reward;
 * indexer reprocessing, pagination, retention, and runtime/indexer consistency tests;
@@ -1256,7 +1084,7 @@ Testing includes:
 * fault injection between every ledger operation proving all-or-nothing chunk behavior;
 * maximum-delegator-count benchmarks for runtime weight, queue lag, storage growth, indexer load, and
   query latency; and
-* at least two full committee rotations on a public test network with published reconciliation
+* at least two full epochs on a public test network with published reconciliation
   results.
 
 ## Open Questions
@@ -1281,87 +1109,24 @@ unless `pi` changes.
 ### 2. Delegator rewards and "the successful block producer"
 
 The tokenomics white paper states that rewards are withdrawn by "participating SPOs and the
-delegators whose stake enables those SPOs' block production". The MiCA white paper describes
-rewards paid to SPOs acting as block producers and says the fixed part of the base reward is
-"distributed entirely to the successful block producer"; it does not mention delegators. This MIP
-splits the producing pool's reward between operator and delegators. The two are consistent if "block
-producer" means the producing stake pool and the split happens within the pool. Proposed
-resolution: state that reading normatively in **Epoch reward split** and record counsel's
-confirmation. Decides: counsel. Blocks: activation.
+delegators whose stake enables those SPOs' block production". The MiCA white paper describes rewards
+paid to SPOs acting as block producers and says the fixed part of the base reward is "distributed
+entirely to the successful block producer"; it does not mention delegators. This MIP splits the
+producing pool's reward between its operator, its ADA delegators and the holders of cNIGHT locked
+behind it. The two are consistent if "block producer" means the producing stake pool and the split
+happens within the pool, and if a holder of cNIGHT locked behind a pool counts among the delegators
+whose stake enables its block production. Proposed resolution: state that reading normatively in
+**Epoch reward split** and record counsel's confirmation, for ADA delegators and for holders of
+locked cNIGHT. Decides: counsel. Blocks: activation.
 
-### 3. ADA SPO payees, eligibility and rounding remainders
+### 3. Ledger support for the atomic reward chunk
 
-An ADA SPO's margin is the margin in its Cardano pool certificate, with no cap, plus any fixed
-amount in NIGHT it declares (see **Epoch reward split**). Still to fix: the destination of rounding remainders,
-and which delegators are eligible: for example, every stake credential delegated to the pool in the epoch snapshot with
-non-zero stake. It must also say who receives the operator's amounts: a Cardano pool can have
-several owner credentials, whose stake makes up the pledge, and a reward account that need not be
-any of them. One rule is needed for which stake address receives `operator_cut` and
-`share_operator`, and whether each owner credential is paid its own `share_i` like a delegator.
-Decides: authors. Blocks: `Proposed`.
+Settlement depends on an atomic reward-chunk entry point, or an equivalent temporary-state commit
+boundary, that no ledger release has (see **Bounded native settlement**). The ledger maintainers
+need to agree to add it and to name the release that will contain it, which this MIP then cites in
+**Backwards Compatibility Assessment**. Decides: ledger maintainers. Blocks: `Proposed`.
 
-### 4. Ledger support for `RekeyUnclaimedReward`
-
-Rotation depends on a ledger operation that no ledger release has (see **Ledger operation
-`RekeyUnclaimedReward`**; the alternatives are in **Rationale**). The ledger maintainers need to
-agree to add it, with the semantics specified here, together with the atomic reward-chunk entry
-point that **Bounded native settlement** requires, and to name the release that will contain it,
-which this MIP then cites in **Backwards Compatibility Assessment**. If they decline, the fallback is
-to move only future rewards at rotation, which strands a lost key's existing balance. Decides:
-ledger maintainers. Blocks: `Proposed`.
-
-### 5. Balances left with a removed key
-
-When a removal activates, the unclaimed balance stays with the previous key and remains
-withdrawable. This MIP currently specifies that a later registration for the same stake address
-moves that balance to the new key, because the entitlement belongs to the stake address. The
-alternative is to leave it with the removed key, which keeps it withdrawable only by that key.
-Decides: authors. Blocks: `Proposed`.
-
-### 6. Changing the reward-binding contract
-
-**Producer and reward-destination registration** makes the accepted reward-binding policy identity a
-versioned protocol parameter. Governance could therefore activate a contract that accepts
-registrations without authenticating the stake credential, and escrowed and future rewards would
-follow those registrations. The list of actions in **Entitlement ownership** does not close this
-path, because it permits release of escrow to a later registration.
-
-*How registration binding works today.* The reward registration reuses the Cardano observation of
-`pallet_cnight_observation`, which today carries cNIGHT/DUST registrations. The node recognizes a
-registration as a Cardano UTXO at the configured mapping-validator address that holds exactly one
-auth token, whose policy ID is that validator's script hash and whose asset name is configured. Its
-datum holds a stake credential and a DUST public key, and the node derives the Cardano reward
-address from that credential. The node checks no signature itself: that the stake credential
-consented rests entirely on the Cardano contract that mints the auth token. The mapping-validator
-address and auth-token asset name are runtime storage, and Root can replace either at once with
-`set_mapping_validator_contract_address` or `set_auth_token_asset_name`; the source describes them
-as intended for test forks that point at staging contracts. On Midnight, Root is reached by a
-federated-authority motion approved by both the Council and the Technical Committee. Mainnet's
-genesis configuration sets the mapping validator to
-`addr1w9e7ft4rrdd4rkdseguxr9hudfxyytm5ckh2qy0yhz7lfeg9lvhq7`, with an empty auth-token asset name. If the reward namespace inherited these setters, one approved motion could
-point reward registration at a different contract, with no delay.
-
-*Options and their cost.*
-
-- (a) Fix the binding policy identity for version 1, set per network in the chain specification,
-  with no runtime call that changes it; a new contract needs a superseding MIP and a runtime upgrade.
-  This closes the path for both registered and never-registered stake addresses. The code cost is
-  small: the reward namespace omits the setters. The costs are elsewhere: the contract must be
-  audited before activation, because a defect, or a Cardano change that breaks it, can then be
-  repaired only through a superseding MIP; and a runtime upgrade remains a Root action, so the
-  protection is the MIP and upgrade review process, not a technical barrier.
-- (b) Allow a change only if registrations under the previous identity remain effective and any
-  registration under the new identity for an already registered stake address is a rotation. This
-  protects registered recipients, but escrow of a stake address that has never registered still
-  follows the new contract's registrations. It also needs two identities in force at once and rotation
-  rules across contracts, which adds specification, implementation, and test cost.
-- (c) Allow a change only through the delayed, versioned parameter process, with the pending change
-  publicly queryable. This is the cheapest to build and gives recipients and monitors time to react,
-  but it closes nothing: after the delay, the new contract's registrations are accepted.
-
-Decides: authors, with governance agreement. Blocks: `Proposed`.
-
-### 7. Block production when an epoch snapshot cannot activate
+### 4. Block production when an epoch snapshot cannot activate
 
 **Security Considerations** says a missing or inconsistent snapshot stops the epoch transition, but
 this MIP does not say whether the current committee keeps producing blocks, or which snapshot,
@@ -1370,7 +1135,7 @@ Chains rule applies, cited here, and such blocks are attributed and split under 
 epoch's snapshot; or (b) block production halts until a complete snapshot is ingested. Decides:
 authors, with the node and Partner Chains maintainers. Blocks: `Proposed`.
 
-### 8. Definition of block utilization
+### 5. Definition of block utilization
 
 `N_v` depends on `u_used/u_max`, so every implementation must compute the same ratio for the same
 block, but this MIP says only that it is "consensus block utilization". It must define which
@@ -1381,27 +1146,12 @@ specified reduction of the ledger's block-limit dimensions, such as the largest 
 (c) a single dimension, such as transaction bytes. Decides: authors, with the ledger and node
 maintainers. Blocks: `Proposed`.
 
-### 9. Rotation messages and their precedence
+### 6. Long-term growth of runtime state
 
-`RewardDestinationV1` defines a registration, but this MIP does not define the canonical messages
-for removing a registration, cancelling a pending rotation, or submitting a forced rotation; where
-each is submitted (a cancellation is signed by a Midnight reward key, the others by a Cardano stake
-credential); their replay protection; or what happens when several arrive for the same stake
-address in one epoch, for example a new rotation while one is pending, or a forced rotation and a
-cancellation in the same block. The same decision must fix two details of `RewardDestinationV1`: what
-`valid_from_epoch` means when it is earlier than the first epoch the registration could take effect
-(rejected or moved forward) or far in the future (rejected beyond a limit, or accepted); and what
-`reward_key_signature` covers, which today omits the reward-binding contract's policy identity and
-the kind of action. Binding the policy identity into the signature also means a registration
-accepted under one contract cannot be replayed under another (see Open Question 6). Decides:
-authors. Blocks: `Proposed`.
-
-### 10. Long-term growth of runtime state
-
-Work per block is bounded, but runtime state is not bounded over time. Key-binding history, escrow
+Work per block is bounded, but runtime state is not bounded over time. Escrow
 balances that never expire, per-recipient entitlements, epoch split records and per-block reward
 records all accumulate. Options include keeping per-block and per-epoch records in runtime state
-only until every entitlement they produced has been settled, with the indexer preserving them; keeping only the current and most recent reward key per stake address; and
+only until every entitlement they produced has been settled, with the indexer preserving them; and
 a cap on unsettled queue length that halts new epochs rather than growing without limit. Escrow is
 bounded by the number of stake addresses and is not removed, because entitlements do not expire.
 Pruning interacts with **Independent payout verification**: the decision must name which records
@@ -1410,7 +1160,7 @@ epoch splits, snapshot identifiers and parameter history), where they are kept, 
 responsible for keeping them available. Decides: authors, with the node maintainers. Blocks:
 `Proposed`.
 
-### 11. Reward balances below the claim minimum
+### 7. Reward balances below the claim minimum
 
 The ledger rejects a reward claim below its minimum claimable amount, and has no exception for
 withdrawing a final balance. The minimum is a multiple (½ by default) of the NIGHT whose
@@ -1424,21 +1174,18 @@ long period to the Treasury, which conflicts with entitlements never expiring; o
 the loss and stating it in the acceptance criteria and operator documentation. Decides: authors,
 with the ledger maintainers. Blocks: `Proposed`.
 
-### 12. Order of work within a block
+### 8. Order of work within a block
 
-**Ledger operation `RekeyUnclaimedReward`** orders rotation activation before settlement and user
-transactions, but this MIP does not order the rest of a block's work, or say which of it a valid
-block must contain. The decision must fix the order of Cardano observations (registrations and
-mirrored Reserve releases), epoch activation (snapshot, committee and registration activations),
-rotation activations and escrow release, settlement chunks, user transactions, and the block's own
-reward record. It must also say which work is mandatory, so that a block omitting an available
-settlement chunk is invalid, and how block weight is reserved for it. A proposed order: Cardano
-observations; epoch activation and registration and rotation activations; settlement chunks; user
-transactions; then the block's reward record. Under it, credit observed in a block can be settled in the same block, and a registration
-effective from an epoch receives that epoch's first settlement. Decides: authors, with the node
-maintainers. Blocks: `Proposed`.
+This MIP does not order a block's work, or say which of it a valid block must contain. The decision
+must fix the order of Cardano observations (mirrored Reserve releases), epoch activation (the
+snapshot record and the committee), settlement chunks with their escrow releases, user transactions,
+and the block's own reward record. It must also say which work is mandatory, so that a block
+omitting an available settlement chunk is invalid, and how block weight is reserved for it. A
+proposed order: Cardano observations; epoch activation; settlement chunks; user transactions; then
+the block's reward record. Under it, credit observed in a block can be settled in the same block.
+Decides: authors, with the node maintainers. Blocks: `Proposed`.
 
-### 13. The value of `pi`
+### 9. The value of `pi`
 
 `pi` is the only input to the Cardano release rate, and once the required Reserve MIP's logic is
 frozen it is permanent. The tokenomics publication does not state a value. This MIP recommends
@@ -1462,6 +1209,8 @@ settled before the freeze. Decides: Foundation and economics owner. Blocks: `Pro
   Cardano](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0024-block-production-rewards.md)
 * [Working draft: Native NIGHT Block Production Rewards: Cardano Reserve
   Release](./mip-xxxx-cardano-reserve-release.md)
+* [Working draft: NIGHT Staking on Cardano, `mip-xxxx-night-staking-on-cardano.md`, in pull
+  request 419](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/419)
 * [MIP-0001: Midnight Improvement Proposal
   Process](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0001-mip-process.md)
 
