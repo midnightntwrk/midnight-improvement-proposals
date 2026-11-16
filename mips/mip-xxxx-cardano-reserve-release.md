@@ -205,7 +205,7 @@ The release factor, the release interval and every other value that defines the 
 constants compiled into the Reserve logic:
 
 ```
-ReserveRewardConstantsV1 {
+ReserveRewardConstants {
     initial_reward_reserve_star:     u128,
     release_factor_n:                u128,
     release_factor_d:                u128,
@@ -220,7 +220,7 @@ ReserveRewardConstantsV1 {
 The Reserve contract's datum stores only the state that changes:
 
 ```
-ReserveRewardStateV1 {
+ReserveRewardState {
     curve_remaining_star:            u128,
     cumulative_released_star:        u128,
     next_interval_start_ms:          u64,
@@ -445,11 +445,12 @@ nodes MUST be able to reconstruct every release and observation from finalized p
 
 ### Versioning
 
-All records and encodings in this proposal carry version 1, denoted by the `V1` suffix of the
-type name and encoded as a leading version tag, as in the native-rewards MIP. Unknown versions
-are rejected. A change to the schedule's meaning, release calculation, destination classification,
-observation record, or denomination requires a superseding MIP; after the freeze, it can change
-nothing in the frozen Reserve logic.
+The observation record carries version 1, denoted by the `V1` suffix of the type name and encoded as
+a leading version tag, as in the native-rewards MIP, and unknown versions are rejected. The
+constants and the datum of the Reserve contract carry no version, because the logic that reads them
+changes only through the two-stage upgrade. A change to the schedule's meaning, release calculation,
+destination classification, observation record, or denomination requires a superseding MIP; after
+the freeze, it can change nothing in the frozen Reserve logic.
 
 ## Rationale
 
@@ -632,7 +633,7 @@ its Reserve release flow. Neither proposal supersedes MIP-0024 alone, and MIP-00
 Superseded only when both are accepted.
 
 Existing circulating NIGHT, ordinary cross-chain transfers, DUST generation, and user-held NIGHT
-UTXOs are unchanged. Existing Reserve state must be migrated into `ReserveRewardStateV1` without
+UTXOs are unchanged. Existing Reserve state must be migrated into `ReserveRewardState` without
 changing its NIGHT amount, and that amount MUST equal `initial_reward_reserve`. The migrated state
 starts with `curve_remaining_star` equal to `initial_reward_reserve`, `cumulative_released_star`
 zero, and `next_interval_start_ms` equal to `anchor_posix_ms`.
