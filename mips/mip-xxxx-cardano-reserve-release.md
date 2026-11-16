@@ -3,7 +3,7 @@ MIP: "xxxx"
 Title: Native NIGHT Block Production Rewards: Cardano Reserve Release
 Authors:
   - "Bob Blessing-Hartley (bobblessinghartley)"
-  - "Kasey White (microproofs)"
+  - "MicroProofs"
 Status: Draft
 Category: Core
 Created: 2026-10-26
