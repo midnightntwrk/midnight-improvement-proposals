@@ -18,7 +18,7 @@ MIP: "Native NIGHT Block Production Rewards: Accrual and Claims; Native NIGHT Bl
 
 As Midnight decentralizes block production, participating Cardano stake-pool operators (SPOs) become eligible to produce Midnight blocks and earn NIGHT. The Midnight Tokenomics and Incentives Whitepaper states that rewards are tallied and made available for withdrawal on the Midnight ledger by participating SPOs and the delegators whose stake enables their block production. It also states that the initial trusted permissioned producers do not receive block-production rewards.
 
-There is no complete mechanism yet for an SPO or delegator to register where rewards go, forecast rewards, observe accrual, verify calculations, tell pending amounts from claimable ones, or withdraw spendable NIGHT on Midnight. Nor is there a way for an SPO to set, or a delegator to see, the terms on which a pool's reward is shared between the operator and its delegators.
+There is no complete mechanism yet for an SPO or delegator to name where rewards go, forecast rewards, observe accrual, verify calculations, tell pending amounts from claimable ones, or withdraw spendable NIGHT on Midnight. Nor is there a way for an SPO to set, or a delegator to see, the terms on which a pool's reward is shared between the operator and its delegators.
 
 ## Vision
 
@@ -38,7 +38,7 @@ The solution must conform to the approved edition of the Midnight Tokenomics and
 * while Reserve control remains on Cardano, Midnight must not make reward NIGHT claimable until it has observed enough unused stable release from the Cardano Reserve to cover it; and
 * who may change reward parameters, and how, must be consistent with what the published disclosures say about the Reserve's parameters and their governance.
 
-The whitepaper does not define how one pool's producer reward is divided between its SPO and its delegators. As on Cardano, each SPO sets a margin for its own pool, and may declare a fixed amount taken before it, and the rest is shared by stake; there is no governed cap, and backers are protected by seeing the terms and being able to move their stake. An ADA SPO's margin is the one in its Cardano pool certificate. The protocol must fix the form of the split and its arithmetic, so that any party can reproduce it.
+The whitepaper does not define how one pool's producer reward is divided between its SPO and its delegators. As on Cardano, each SPO sets a margin for its own pool, and may declare a fixed amount taken before it, and the rest is shared by stake; there is no governed cap, and backers are protected by seeing the terms and being able to move their stake. An SPO's margin is the one in its Cardano pool certificate. The protocol must fix the form of the split and its arithmetic, so that any party can reproduce it.
 
 ## Problem
 
@@ -46,11 +46,11 @@ At mainnet launch, blocks are produced by permissioned validators that are not r
 
 ## Gaps
 
-**Eligibility and registration.** An SPO needs to register and deregister for block production. Every recipient, operator or delegator, needs a reward-specific destination on Midnight, authenticated by its Cardano stake credential and by the Midnight key that will receive the rewards. An existing cNIGHT/DUST registration must not be assumed to authorize reward ownership.
+**Eligibility and registration.** An SPO needs to register and deregister for block production. A recipient names the Midnight address that receives its rewards in a Cardano transaction that its own credential authorizes. An ADA delegator that has not named an address still accumulates rewards. They become claimable when it names one. An existing cNIGHT/DUST registration must not be assumed to authorize reward ownership.
 
-**Recovering control of rewards.** A recipient who loses, or suspects compromise of, the key that receives rewards needs a way to move future and unclaimed rewards to a new key, with bounded and publicly visible exposure while the change takes effect.
+**Changing the reward address.** A recipient needs a way to name a new reward address. The new address receives rewards from the next stake snapshot. Rewards already credited stay with the address that holds them.
 
-**Split terms.** An SPO's margin must be declared where its backers already look (for an ADA SPO, its Cardano pool certificate), and a delegator needs to see it, and any fixed amount, before delegating. A change of terms must not alter a reward already calculated.
+**Split terms.** An SPO's margin must be declared where its backers already look (its Cardano pool certificate), and a delegator needs to see it, and any fixed amount, before delegating. A change of terms must not alter a reward already calculated.
 
 **Forecasting before joining.** An SPO considering participation needs an estimate based on the published tokenomics, expected block production, utilization and its own split terms, with assumptions and uncertainty visible.
 
@@ -75,9 +75,9 @@ At mainnet launch, blocks are produced by permissioned validators that are not r
 
 ## Acceptance criteria
 
-* An SPO can register and deregister for Midnight block production through the Partner Chains mechanism.
-* An operator or delegator can register, rotate, remove and query a reward destination on Midnight, authenticated by the Cardano stake credential and by the receiving key.
-* A lost or compromised receiving key can be replaced, with a bounded, publicly visible delay and without losing rewards already credited to the stake address.
+* An SPO can register and deregister for Midnight block production.
+* An operator or delegator can name, change and query its Midnight reward address, in a Cardano transaction that its own credential authorizes.
+* A recipient can replace its reward address. The new address receives rewards from the next stake snapshot, and rewards already credited stay with the address that holds them.
 * Initial trusted permissioned producers receive zero block-production rewards.
 * Every eligible block is attributed from consensus state and its reward is calculated with the published tokenomics formula, exact integer arithmetic and the active parameter version.
 * The initial subsidy is 95%, and the non-producer variable share is credited to the on-chain Treasury according to block utilization.
@@ -87,17 +87,19 @@ At mainnet launch, blocks are produced by permissioned validators that are not r
 * An operator or delegator can turn a claimable balance into spendable unshielded NIGHT on Midnight through supported CLI and SDK flows.
 * Any payout can be recomputed independently from finalized Midnight and Cardano data, the published formula, the split terms and normative test vectors.
 * Settlement is bounded, replay-safe and atomic: a failure cannot pay out released NIGHT, advance a settlement cursor, or apply only part of a reward chunk.
-* Registration ambiguity, a missing destination, key rotation, rollback, retry, runtime upgrade and delayed Reserve release do not move rewards away from the owning stake address, and do not duplicate, destroy or strand them.
+* Registration ambiguity, a missing destination, rollback, retry, runtime upgrade and delayed Reserve release do not move rewards away from the owning stake address, and do not duplicate, destroy or strand them.
 * Documented, batch-capable APIs let wallets and explorers show producer and delegator rewards without treating an indexer response as proof of correctness.
 * Before activation, the authority that may change reward parameters is confirmed to be consistent with the published disclosures.
-* Every ADA SPO's operator cut is set by the margin in its Cardano pool certificate, with no cap, plus any fixed amount in NIGHT the SPO declares.
-* NIGHT-native SPOs can be added by a later NIGHT staking MIP without migrating ADA SPO rewards, escrow or records.
+* Every SPO's operator cut is set by the margin in its Cardano pool certificate, with no cap, plus any fixed amount in NIGHT the SPO declares.
+* NIGHT-native SPOs can be added by a later MIP without migrating existing rewards, escrow or records.
 
 ## Dependencies and scope
 
 The supporting rewards MIP depends on a companion MIP that specifies the Cardano Reserve release and its observation by Midnight. The release follows a published schedule, so Cardano needs no knowledge of Midnight state. The release is part of cross-chain supply safety; it is not a per-recipient payout mechanism. Together the two MIPs supersede MIP-0024, which pays rewards as NIGHT on Cardano.
 
-Block producers will be of two kinds: ADA SPOs, which are Cardano stake pools with ADA delegators, and NIGHT-native SPOs, which hold and are backed by NIGHT on Midnight. An operator is one kind or the other, never both. This MPS covers rewards for both kinds; NIGHT staking itself, including NIGHT-native operator records and stake snapshots, is specified by a separate MPS and MIP. A solution to this MPS must accept NIGHT-native SPOs without migrating ADA SPO rewards, escrow or records.
+Block producers are Cardano stake pools registered for Midnight. A pool is backed by ADA delegated to it on Cardano and by cNIGHT locked behind it on Cardano. This MPS covers rewards for both. NIGHT staking itself, including the lock and the stake snapshot, is specified by a separate MPS and MIP.
+
+NIGHT-native SPOs, operators backed by NIGHT held on Midnight, are outside this MPS; a future MPS and MIP will cover them. A solution to this MPS must accept them later without migrating existing rewards, escrow or records.
 
 Moving control of the Reserve from Cardano to Midnight is outside this MPS.
 
