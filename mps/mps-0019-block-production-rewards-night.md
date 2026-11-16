@@ -38,7 +38,7 @@ The solution must conform to the approved edition of the Midnight Tokenomics and
 * while Reserve control remains on Cardano, Midnight must not make reward NIGHT claimable until it has observed enough unused stable release from the Cardano Reserve to cover it; and
 * who may change reward parameters, and how, must be consistent with what the published disclosures say about the Reserve's parameters and their governance.
 
-The whitepaper does not define how one pool's producer reward is divided between its SPO and its delegators. As on Cardano, each SPO sets a margin for its own pool, and may declare a fixed amount taken before it, and the rest is shared by stake; there is no governed cap, and backers are protected by seeing the terms and being able to move their stake. An SPO's margin is the one in its Cardano pool certificate. The protocol must fix the form of the split and its arithmetic, so that any party can reproduce it.
+The whitepaper does not define how one pool's producer reward is divided between its SPO and its delegators. As on Cardano, each SPO sets a margin for its own pool, and may declare a fixed cost in NIGHT taken before it, and the rest is shared by stake; backers are protected by seeing the terms and being able to move their stake. An SPO's margin is the one in its Cardano pool certificate. The protocol must fix the form of the split and its arithmetic, so that any party can reproduce it.
 
 ## Problem
 
@@ -50,7 +50,7 @@ At mainnet launch, blocks are produced by permissioned validators that are not r
 
 **Changing the reward address.** A recipient needs a way to name a new reward address. The new address receives rewards from the next stake snapshot. Rewards already credited stay with the address that holds them.
 
-**Split terms.** An SPO's margin must be declared where its backers already look (its Cardano pool certificate), and a delegator needs to see it, and any fixed amount, before delegating. A change of terms must not alter a reward already calculated.
+**Split terms.** An SPO's margin must be declared where its backers already look (its Cardano pool certificate), and a delegator needs to see it, and any fixed cost, before delegating. A change of terms must not alter a reward already calculated.
 
 **Forecasting before joining.** An SPO considering participation needs an estimate based on the published tokenomics, expected block production, utilization and its own split terms, with assumptions and uncertainty visible.
 
@@ -90,7 +90,7 @@ At mainnet launch, blocks are produced by permissioned validators that are not r
 * Registration ambiguity, a missing destination, rollback, retry, runtime upgrade and delayed Reserve release do not move rewards away from the owning stake address, and do not duplicate, destroy or strand them.
 * Documented, batch-capable APIs let wallets and explorers show producer and delegator rewards without treating an indexer response as proof of correctness.
 * Before activation, the authority that may change reward parameters is confirmed to be consistent with the published disclosures.
-* Every SPO's operator cut is set by the margin in its Cardano pool certificate, with no cap, plus any fixed amount in NIGHT the SPO declares.
+* Every SPO's operator cut is set by the margin in its Cardano pool certificate, plus any fixed cost in NIGHT the SPO declares.
 * NIGHT-native SPOs can be added by a later MIP without migrating existing rewards, escrow or records.
 
 ## Dependencies and scope
