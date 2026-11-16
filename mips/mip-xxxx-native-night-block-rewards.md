@@ -1210,7 +1210,7 @@ settled before the freeze. Decides: Foundation and economics owner. Blocks: `Pro
 * [Working draft: Native NIGHT Block Production Rewards: Cardano Reserve
   Release](./mip-xxxx-cardano-reserve-release.md)
 * [Working draft: NIGHT Staking on Cardano, `mip-xxxx-night-staking-on-cardano.md`, in pull
-  request 419](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/419)
+  request 421](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/421)
 * [MIP-0001: Midnight Improvement Proposal
   Process](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0001-mip-process.md)
 
