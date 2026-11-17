@@ -4,7 +4,7 @@ Title: On-Chain Token Metadata Emission (`TokenMetadata` Events)
 Authors:
   - Edward Alvarado <edward.alvarado@midnight.foundation>
   - Sebastien Guillemot (@SebastienGllmt) <sebastien.guillemot@midnight.foundation>
-Status: Proposed
+Status: Accepted
 Category: Standards
 Created: 2026-09-17
 Requires: "MIP-0002: Public Contract Log Emission for Compact"
