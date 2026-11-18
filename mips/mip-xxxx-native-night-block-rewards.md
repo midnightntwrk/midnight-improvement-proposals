@@ -141,8 +141,9 @@ in it. This MIP reads the snapshot record (staking rule 23, Snapshot record) and
 a pool, a lock or a delegator. For each operator the record carries the `margin` and the `owners` of
 its Cardano pool registration certificate and the `fixed_cost` and `reward_address` of its Midnight
 registration, and it lists the locks and the ADA delegators that are the pool's payees (see **Epoch
-reward split**). The split needs the per-delegator rows of the record, and whether the record
-carries those rows or only a commitment to them is Open Question 4 of the required staking MIP.
+reward split**). The split needs the per-delegator rows of the record. The record carries those
+rows, and how they reach the runtime in bounded pages is Open Question 4 of the required staking
+MIP.
 
 A recipient names the Midnight address at which it is paid in a lock, in a Cardano transaction that
 the lock's owner credential authorizes (staking rule 5, Owner authorization). The key behind a
@@ -706,8 +707,8 @@ All new records and canonical encodings carry version 1, denoted by the `V1` suf
 name and encoded as a leading version tag. Unknown versions are rejected. A semantic
 change to reward arithmetic, rounding, snapshot selection, author attribution, payee
 selection, or settlement ordering requires a superseding MIP and network upgrade. Governance may
-change values already designated as parameters, but only through the delayed, versioned mechanism
-defined above.
+change values already designated as parameters, but only by a new parameter version (**Tokenomics
+parameters**).
 
 ## Rationale
 
@@ -1100,9 +1101,10 @@ governance authorities, the Technical Authority (6 of 9) and the Council (4 of 6
 decentralized on-chain governance system may cover "elements that are not currently within the
 federated committee's scope, such as monetary-policy parameters". This MIP therefore adopts option
 (b) of the earlier draft: the monetary parameters (base-rate inputs and subsidy ratio) stay fixed
-until decentralized on-chain governance exists, keeping only the emergency pause, which ends when
-the Reserve logic is frozen (see **Tokenomics parameters**). With the release rate a constant of the
-frozen Reserve logic, it needs no change unless `pi` changes.
+until decentralized on-chain governance exists (see **Tokenomics parameters**), keeping only the
+emergency pause, which ends when the Reserve logic is frozen (required Reserve MIP, **Pause,
+upgrade, and freeze**). With the release rate a constant of the frozen Reserve logic, it needs no
+change unless `pi` changes.
 
 ### 2. Delegator rewards and "the successful block producer"
 
