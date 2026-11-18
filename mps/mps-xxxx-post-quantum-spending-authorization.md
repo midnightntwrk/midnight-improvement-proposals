@@ -1,5 +1,5 @@
 ---
-MPS: "xxxx" # to be assigned
+MPS: "0051"
 Title: Post-Quantum Spending Authorization for Unshielded Outputs
 Authors:
 - Quantova Inc (quantova-inc)
