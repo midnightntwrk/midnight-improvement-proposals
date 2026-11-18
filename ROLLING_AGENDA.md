@@ -33,3 +33,4 @@ This index holds the rolling agenda for MIP working sessions. It's purpose is to
 - 22 September 2026 -- MIP-0018: On-chain Token Meta Standard scheduled for wallet-wg (Edward Alvarado), MPS-xxx Token Registry, repo maintenenace, numbering conventions  
 - 13 October 2026 -- MPS votes: MPS-0001, MPS-0015 (editors)  
 - 17 November 2026 -- MIP votes: MIP-0018 (editors)  
+- 8 December 2026 -- MIP votes: MIP-0021 (editors)  
