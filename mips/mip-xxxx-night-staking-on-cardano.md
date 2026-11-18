@@ -78,7 +78,7 @@ The cNIGHT policy and the `night_staking` and `night_registration` script hashes
 - holder: the party that controls a lock's owner. A holder with a lock is a staker.
 - pool: a Cardano stake pool registered for Midnight by a node of the registration set. `pool_id` is the 28-byte hash of its cold key. `crch` is the pool's cross-chain key, the key under which the runtime identifies a candidate for committee selection, of the scheme the runtime uses for that key; the scheme at activation is in The cross-chain key, under The pool registration, and the contracts read `crch` and its signature as bytes of any length within the size limit of a node (rule 9, Nodes), so a later scheme needs no new contract. An operator is a pool that rule 18, Pools at the snapshot, admits at a snapshot.
 - cnight(L): for a lock L, the STAR of cNIGHT in its value; the locks that count for a snapshot are those of rule 14, Effective lock.
-- *reward address*: a Midnight address that can claim rewards, as the companion rewards MIP defines the claim; 32 bytes, to confirm with that MIP.
+- *reward address*: a Midnight address that can claim rewards, as the companion rewards MIP defines the claim; 32 bytes.
 - stake snapshot: the per-pool and per-lock cNIGHT stake Midnight fixes for one Cardano epoch (rules 16 to 23, Snapshot point to Snapshot record).
 - virtual stake: a pool's ADA stake in lovelace plus the sum over its locks L of floor(cnight(L) × cnight\_weight) (rule 19, Virtual stake).
 - `E` is a Cardano epoch. A *Midnight epoch* is an interval of slots, 300 slots of 6 s today. The committees of every Midnight epoch within Cardano epoch `E` are selected from the data of Cardano epoch `E − 2`.
