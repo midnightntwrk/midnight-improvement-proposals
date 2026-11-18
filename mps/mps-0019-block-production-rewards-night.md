@@ -87,7 +87,7 @@ At mainnet launch, blocks are produced by permissioned validators that are not r
 * An operator or delegator can turn a claimable balance into spendable unshielded NIGHT on Midnight through supported CLI and SDK flows.
 * Any payout can be recomputed independently from finalized Midnight and Cardano data, the published formula, the split terms and normative test vectors.
 * Settlement is bounded, replay-safe and atomic: a failure cannot pay out released NIGHT, advance a settlement cursor, or apply only part of a reward chunk.
-* Registration ambiguity, a missing destination, rollback, retry, runtime upgrade and delayed Reserve release do not move rewards away from the owning stake address, and do not duplicate, destroy or strand them.
+* Registration ambiguity, a missing destination, rollback, retry, runtime upgrade and delayed Reserve release do not move rewards away from the recipient that owns them, and do not duplicate, destroy or strand them.
 * Documented, batch-capable APIs let wallets and explorers show producer and delegator rewards without treating an indexer response as proof of correctness.
 * Before activation, the authority that may change reward parameters is confirmed to be consistent with the published disclosures.
 * Every SPO's operator cut is set by the margin in its Cardano pool certificate, plus any fixed cost in NIGHT the SPO declares.
@@ -97,7 +97,7 @@ At mainnet launch, blocks are produced by permissioned validators that are not r
 
 The supporting rewards MIP depends on a companion MIP that specifies the Cardano Reserve release and its observation by Midnight. The release follows a published schedule, so Cardano needs no knowledge of Midnight state. The release is part of cross-chain supply safety; it is not a per-recipient payout mechanism. Together the two MIPs supersede MIP-0024, which pays rewards as NIGHT on Cardano.
 
-Block producers are Cardano stake pools registered for Midnight. A pool is backed by ADA delegated to it on Cardano and by cNIGHT locked behind it on Cardano. This MPS covers rewards for both. NIGHT staking itself, including the lock and the stake snapshot, is specified by a separate MPS and MIP.
+Block producers are Cardano stake pools registered for Midnight. A pool is backed by ADA delegated to it on Cardano and by cNIGHT locked behind it on Cardano. This MPS covers rewards for both. In this MPS, a delegator is either of the two: a holder of ADA delegated to a pool, or the owner of cNIGHT locked behind it. NIGHT staking itself, including the lock and the stake snapshot, is specified by a separate MPS and MIP.
 
 NIGHT-native SPOs, operators backed by NIGHT held on Midnight, are outside this MPS; a future MPS and MIP will cover them. A solution to this MPS must accept them later without migrating existing rewards, escrow or records.
 
