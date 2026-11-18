@@ -61,7 +61,7 @@ The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described 
 This proposal relies on these external facts. It cites them and does not restate them.
 
 - Committee selection: `select_authorities` and `weighted_with_guaranteed_assignment` in [`ariadne_v2.rs`](https://github.com/midnightntwrk/midnight-node/blob/main/partner-chains/toolkit/committee-selection/selection/src/ariadne_v2.rs); the D-parameter `DParameter { num_permissioned_candidates, num_registered_candidates }` and the data offset `DATA_MC_EPOCH_OFFSET = 2` in `sidechain_domain`.
-- Registered candidates: the candidate data source and the candidate filter `filter_invalid_candidates`, which verifies the signature entries, as vendored in [midnight-node](https://github.com/midnightntwrk/midnight-node/tree/main/partner-chains/toolkit); the committee candidate validator and `RegisterValidatorDatum` are not read.
+- Registered candidates: the candidate data source and the candidate filter `filter_invalid_candidates`, which verifies the signature entries, as vendored in [midnight-node](https://github.com/midnightntwrk/midnight-node/tree/main/partner-chains/toolkit).
 - Candidate keys: `CandidateKey { id: [u8; 4], bytes }` in `sidechain_domain`. The runtime's session keys decide which keys a registration must carry; this proposal names none beyond `crch`.
 - cNIGHT observation: `pallet_cnight_observation` in midnight-node and [`cnight_generates_dust.ak`](https://github.com/midnightntwrk/midnight-reserve-contracts/blob/main/validators/cnight_generates_dust.ak) in midnight-reserve-contracts.
 - Rewards: the native rewards MIPs in [midnight-improvement-proposals PR 406](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/406), which read this proposal's snapshot record.
@@ -440,7 +440,7 @@ No hard fork: the change is a node release, a Midnight runtime upgrade and three
 
 **Existing DUST registrations.** A credential's `cnight_generates_dust` registration is untouched. The cNIGHT it locks stops generating DUST while it is locked, and the rest generates DUST as today.
 
-**Registered candidates.** No pool is registered for Midnight on any network, and the node reads no registered candidates (`AuthoritySelectionInputs::from_mc_data`): registration begins with this proposal, in the registration set, and the committee candidate validator is not read. The D-parameter is the value in `pallet_system_parameters`, where `R` is 0 on every network, and this proposal does not change it. A pool's cNIGHT stakers are paid from the same pool reward as its ADA delegators.
+**Registered candidates.** No pool is registered for Midnight on any network, and the node reads no registered candidates (`AuthoritySelectionInputs::from_mc_data`): registration begins with this proposal, in the registration set. The D-parameter is the value in `pallet_system_parameters`, where `R` is 0 on every network, and this proposal does not change it. A pool's cNIGHT stakers are paid from the same pool reward as its ADA delegators.
 
 **Activation.** Activation is the runtime upgrade that brings rules 11 to 26 into force together with the rewards MIP. Every node runs the node release that reads the registration set from it.
 
