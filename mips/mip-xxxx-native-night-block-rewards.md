@@ -122,10 +122,11 @@ Succinct verification without a full node is outside this proposal.
 * `unassigned_released` is released NIGHT available to settle: the balance of `block_reward_pool`
   less its balance at activation and less all escrow. A Cardano transaction or release is
   *finalized* in this MIP when it is stable under the network's Cardano stability rule.
-* `ledger_reserve_pool` is Midnight's actual `M.R` balance. It moves only when the bridge mirrors a
+* `reserve_pool` is Midnight's actual `M.R` balance. It moves only when the bridge mirrors a
   finalized Cardano Reserve release.
-* `STAR_PER_NIGHT` is a network constant equal to 1,000,000, as in the required Reserve MIP. It is
-  not a governable parameter and MUST be published with the tokenomics parameters.
+* `STAR_PER_NIGHT` is a network constant equal to 1,000,000; the required Reserve MIP uses the same
+  denomination. It is not a governable parameter and MUST be published with the tokenomics
+  parameters.
 
 No consensus calculation uses floating-point arithmetic.
 
@@ -196,7 +197,7 @@ The runtime stores a versioned `RewardParametersV1` containing:
 RewardParametersV1 {
     version:                  u32,
     activation_slot:          u64,
-    reserve_initial_star:     u128,
+    initial_reward_reserve_star: u128,
     initial_expansion_n:      u128,
     initial_expansion_d:      u128,
     reserve_allocation_n:     u128,
@@ -267,10 +268,10 @@ Block time stays on Midnight. `gamma` is derived from the slot duration, and `R`
 `R * gamma = R_a` still holds, and the Cardano release does not move. Such a change MUST take effect
 at a release-interval boundary and only to a slot duration that divides the required Reserve MIP's
 `release_interval_ms`, which keeps the release covering what Midnight can draw. A parameter version
-that only rescales `R` and `gamma` this way is not a monetary change. `reserve_initial_star` and the
-denomination change only through a superseding MIP. A later parameter version records the hash of
-its governing published source in `publication_hash` and that of its approved governance action in
-`governance_action_hash`; it cannot alter a finalized or settled epoch.
+that only rescales `R` and `gamma` this way is not a monetary change. `initial_reward_reserve_star`
+and the denomination change only through a superseding MIP. A later parameter version records the
+hash of its governing published source in `publication_hash` and that of its approved governance
+action in `governance_action_hash`; it cannot alter a finalized or settled epoch.
 
 The parameters and their complete activation history are available through the runtime API and
 indexer. This MIP does not grant a new authority to change tokenomics.
@@ -690,7 +691,7 @@ A verifier recomputes a payout using only finalized public data:
 4. read the split form's identifier and, from the identified snapshot record, the pool's terms,
    locks and delegators;
 5. recompute the policy-defined epoch split in canonical order;
-6. verify finalized Cardano Reserve releases and the resulting release-credit balance; and
+6. verify finalized Cardano Reserve releases and the resulting `unassigned_released`; and
 7. compare the result with Midnight's settlement records, claimable balances, and withdrawals.
 
 A public conformance repository linked from this MIP publishes normative JSON and SCALE test
@@ -1170,7 +1171,7 @@ snapshot record and the committee), settlement chunks with their escrow releases
 and the block's own reward record. It must also say which work is mandatory, so that a block
 omitting an available settlement chunk is invalid, and how block weight is reserved for it. A
 proposed order: Cardano observations; epoch activation; settlement chunks; user transactions; then
-the block's reward record. Under it, credit observed in a block can be settled in the same block.
+the block's reward record. Under it, a release mirrored in a block can be settled in the same block.
 Decides: authors, with the node maintainers. Blocks: `Proposed`.
 
 ### 8. The value of `pi`
