@@ -38,7 +38,7 @@ Midnight already reads cNIGHT balances and their registrations from final Cardan
 
 Within the registered seats of the D-parameter, Ariadne weights each pool by its *virtual stake*, its ADA stake plus `cnight_weight` times its staked cNIGHT, with the weighted selection it has for ADA stake. Nothing else in selection changes, except that the filter that drops a candidate with no stake tests virtual stake.
 
-This proposal enforces the lock contract, the pool registration, the stake snapshot and the virtual-stake weight in committee selection. It leaves the reward split to the companion NIGHT rewards MIP (alongside the native rewards MIPs that bobblessinghartley proposed in midnight-improvement-proposals PR 406), DUST generation itself to the existing cNIGHT observation rules with one exclusion, and the selection algorithm to Ariadne (Partner Chains), which needs no new candidate class and no new D-parameter definition.
+This proposal enforces the lock contract, the pool registration, the stake snapshot and the virtual-stake weight in committee selection. It leaves the reward split to the companion rewards MIP, Native NIGHT Block Production Rewards: Accrual and Claims (midnight-improvement-proposals PR 406), DUST generation itself to the existing cNIGHT observation rules with one exclusion, and the selection algorithm to Ariadne (Partner Chains), which needs no new candidate class and no new D-parameter definition.
 
 ## Motivation
 
