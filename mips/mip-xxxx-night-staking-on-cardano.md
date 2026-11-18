@@ -459,7 +459,7 @@ No hard fork: the change is a node release, a Midnight runtime upgrade and three
 
 **A compromised node owner.** The owner is a hot credential, a key or a script: a stolen owner key can change the pool's keys, terms and reward address, but it moves no cNIGHT, cannot change `owner` and cannot deactivate the node. The cold key MAY sign every change (rule 10, Changes), so the pool recovers by setting a new `owner` under its cold key.
 
-**Governance keys.** The contract hash is a chain-spec constant, so no runtime call redirects or opens locks. `cnight_weight` is set by the governance origin, so a captured governance can raise the weight of cNIGHT at once, which shifts seats toward cNIGHT-backed pools but adds no seat class. The federated authorities already hold runtime-upgrade power, so this proposal adds no authority.
+**Governance keys.** The contract hash is a chain-spec constant, so no runtime call redirects or opens locks. `cnight_weight` is set by the governance origin, so a captured governance can raise the weight of cNIGHT. The change counts from the next snapshot (rule 25, cnight\_weight), so it shifts seats toward cNIGHT-backed pools three to four Cardano epochs later, and it adds no seat class. The federated authorities already hold runtime-upgrade power, so this proposal adds no authority.
 
 **Liveness.** A pool that is offline misses its slots, as a permissioned producer does today. cNIGHT changes the weight of registered candidates and nothing else, so the share of seats that finality needs is unchanged.
 
