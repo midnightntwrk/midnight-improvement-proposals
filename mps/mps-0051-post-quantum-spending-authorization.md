@@ -37,7 +37,7 @@ held under that key. A key stays hidden behind its address hash until its first
 spend, so exposure grows with every spend and every reused address. Reward
 claims carry the verifying key directly and are exposed from the start.
 
-MPS #362 covers the confidentiality of shielded notes. This MPS covers the
+[MPS-0050](/mps/mps-0050-post-quantum-confidentiality-zswap.md) covers the confidentiality of shielded notes. This MPS covers the
 complementary integrity problem, the authorization of unshielded spends and
 reward claims. It is solution agnostic. It records the current signing paths,
 the exposure classes, the measured cost of the standardised post quantum
@@ -178,7 +178,7 @@ outputs, and can set its timeline against public guidance such as NIST IR 8547.
 - NIST FIPS 204, Module-Lattice-Based Digital Signature Standard. https://csrc.nist.gov/pubs/fips/204/final
 - NIST FIPS 205, Stateless Hash-Based Digital Signature Standard. https://csrc.nist.gov/pubs/fips/205/final
 - NIST IR 8547 initial public draft, Transition to Post-Quantum Cryptography Standards. https://csrc.nist.gov/pubs/ir/8547/ipd
-- MPS #362, Post-Quantum Confidentiality for Zswap. https://github.com/midnightntwrk/midnight-improvement-proposals/pull/362
+- [MPS-0050: Post-Quantum Confidentiality for Zswap](/mps/mps-0050-post-quantum-confidentiality-zswap.md)
 - MPS-0027, Domain Separation for Midnight Hash Constructions.
 - midnight-ledger issue 798, post quantum spending authorization, with the measurements above. https://github.com/midnightntwrk/midnight-ledger/issues/798
 - Measurement and interoperability harness. https://github.com/quantova-inc/midnight-pq-signature-costs
