@@ -354,8 +354,12 @@ The emergency pause may prevent new Reserve releases but cannot spend, redirect,
 rewrite the Reserve and cannot invalidate already accepted releases. While paused, intervals keep
 ending; after resumption they are released in order, so a pause delays claims but does not change
 the schedule. Pausing is a safety action, not a recovery procedure; public monitoring MUST
-distinguish it from normal operation. A Pause and an Unpause are possible only before the freeze
-(**Freeze**).
+distinguish it from normal operation.
+
+A Pause and an Unpause need the withdrawal of the `auth` script that the main state of the two-stage
+upgrade names and, once `mitigation_auth` is set there, the withdrawal of that script too. Each
+changes only `paused`, and the state output is the transaction's first output. Both are possible
+only before the freeze (**Freeze**).
 
 Until the freeze, the two-stage Cardano governance procedure of MIP-0024's Reserve upgrade model
 remains applicable, so defects found in production can be fixed by an ordinary upgrade. Before any
@@ -756,6 +760,8 @@ Testing includes:
   permissionless submissions;
 - pause, resume, Cardano contract migration, the freeze transaction, and an upgrade, a pause and an
   unpause attempted after it, each of which must fail;
+- a pause or an unpause without the `auth` withdrawal, or without the `mitigation_auth` withdrawal
+  once it is set, each of which must fail;
 - an `Init` whose NIGHT reference input holds another amount or one other token, and an `Init` run a
   second time on one track, each of which must fail;
 - the bridge mirroring each release exactly once, and never a release it cannot recompute; and
