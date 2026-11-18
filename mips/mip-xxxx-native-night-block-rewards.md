@@ -255,8 +255,8 @@ Governance MUST reject a parameter set whose `distribution_rate_n/distribution_r
 equal that derivation. Every denominator, `expected_blocks_per_year`, and `B` MUST be non-zero, and
 `B + T` MUST be less than or equal to one.
 
-The distribution rate is derived from the `pi` this MIP recommends, fixed when the Reserve logic of
-the required Reserve MIP is installed, and changes only if `pi` changes. `R_a` is the only input to
+The distribution rate is derived from the `pi` this MIP recommends, settled before the Reserve logic
+of the required Reserve MIP is frozen, and changes only if `pi` changes. `R_a` is the only input to
 the Cardano release, so after the Reserve logic is frozen it is permanent. The initial subsidy ratio
 is 95/100. Under the current NIGHT MiCA white paper, monetary-policy parameters are outside the scope
 of today's governance authorities (Open Question 1), so `pi`, `R_a` and the subsidy ratio are not
@@ -1177,10 +1177,11 @@ Decides: authors, with the node maintainers. Blocks: `Proposed`.
 ### 8. The value of `pi`
 
 `pi` is the only input to the Cardano release rate, and once the required Reserve MIP's logic is
-frozen it is permanent. The tokenomics publication does not state a value. This MIP recommends
-`pi` = 3/100, which with the published `B` and `T` gives `R_a` = 21/250 (8.4% per year); the release
-interval and factor are derived from that `R_a`. The value is accepted with this MIP and MUST be
-settled before the freeze. Decides: Foundation and economics owner. Blocks: `Proposed`.
+frozen it is permanent. The tokenomics whitepaper says "The initial (annual) inflation rate on
+Midnight is set at π." and gives no number. This MIP recommends `pi` = 3/100, which with the
+published `B` and `T` gives `R_a` = 21/250 (8.4% per year); the release interval and factor are
+derived from that `R_a`. The value is accepted with this MIP and MUST be settled before the freeze.
+Decides: Foundation and economics owner. Blocks: `Proposed`.
 
 ## References (Optional)
 
