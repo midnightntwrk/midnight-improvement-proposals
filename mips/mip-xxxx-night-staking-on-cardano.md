@@ -447,7 +447,7 @@ No hard fork: the change is a node release, a Midnight runtime upgrade and three
 
 ## Security Considerations
 
-**Concentration.** Two entities hold just over half of NIGHT, and with no cap (Open Question 1) they could lock it behind pools of their own and take most of the registered seats. `cnight_weight` bounds the harm: governance keeps it low until the cNIGHT behind pools is diverse, the permissioned seats are untouched, and no seat class is added, so the finality bound is as today.
+**Concentration.** NIGHT is early in its decentralization, so cNIGHT starts with a low weight in block production. Governance sets `cnight_weight` and keeps it low until the cNIGHT behind pools is spread across many holders and pools. Locked cNIGHT competes for the `R` registered seats only, and the permissioned seats are untouched. Whether a cap applies to the cNIGHT behind one pool is Open Question 1.
 
 **Pool multiplication.** A per-pool cap is defeated by registering more pools, each at the cost of Cardano's pool deposit and a registration, so only a minimum of the pool's own stake makes pools costly to multiply. That is Open Question 1, and this proposal applies no minimum until it is decided.
 
