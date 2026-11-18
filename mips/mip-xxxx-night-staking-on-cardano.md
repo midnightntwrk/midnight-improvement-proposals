@@ -271,8 +271,10 @@ A lock that backs pool `O` with cNIGHT:
 
 ```
 DelegationLock {
+  owner:          VerificationKey(<28 bytes>),      -- or Script(<28 bytes>)
   pool_id:        <28-byte pool_id of O>,
   reward_address: <32-byte Midnight address>,
+  return_address: <Cardano address of the holder>,
   unbond_at:      None,
   attributes:     [],
 }
