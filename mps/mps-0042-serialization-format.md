@@ -52,3 +52,11 @@ The format is many-to-one. Distinct Compact objects can produce the same seriali
 ## **Expected Outcomes**
 
 Cross-chain and other integrating teams build against a committed, reproducible target, removing the reverse-engineering risk and the class of security bugs it creates. persistentHash guarantees become meaningful, because unifying the two encodings makes it immaterial which one is hashed, and versioning makes any format change explicit rather than silent. Incompatibilities are caught at testnet rather than in production. Efficient in-circuit encoding keeps the format viable as data volumes grow. Midnight gains an official serialization standard, avoiding the risk of an inefficient or insecure implementation becoming the default.
+
+## **Acceptance Criteria**
+
+1. a MIP for MPS-0042 submitted to the MIP process with all template sections completed;
+2. a versioned serialization specification published in the midnightntwrk repositories with conformance test vectors;
+3. a tagged compiler release producing encodings that pass those vectors.
+
+Not included in Q4: migration of already-deployed contracts, efficient in-circuit encoding, and inclusion in a stable toolchain release.

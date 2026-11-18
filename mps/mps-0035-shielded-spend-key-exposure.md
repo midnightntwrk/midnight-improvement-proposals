@@ -113,9 +113,25 @@ The ledger becomes internally consistent, with one authorization model across sh
 
 ## Recommended MIPs
 
+One direction looks promising for the stated goals: a VRF-based nullifier combined with signature-based authorization, as designed in [MIP-0017: Signature-Authorized Shielded Spends with VRF Nullifiers](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0017-shielded-spend-auth/mip-0017-shielded-spend-auth.md). Whether it meets every goal, Goal 4 in particular, needs analysis, so further MIPs are recommended alongside it.
+
+Recommended MIPs should also be compatible with solutions to other custody- and compliance-related Problem Statements, because many of them imply changes to how shielded tokens are implemented. A unified Zswap upgrade plan across these Problem Statements would limit the impact on users and wallets.
+
 **MIP: VRF-based nullifier and signature-authorized shielded spend.** Redefine the nullifier so it is verifiable against public-key material rather than computed from a secret witness, and authorize the spend with a locally produced signature that also certifies the nullifier. Addresses the root cause in the Problem section and Goals 1, 2, 3, and 5. Should specify note commitment, address format, nullifier derivation, the wallet-side signing procedure, the circuit constraint set, and the validator changes required, and should include a benchmark gate against the v1 circuit.
 
+**MIP: Alternative to the VRF-based nullifier.** Goal 4 asks that authorization work be confinable to a secure element. Analyze whether the VRF-based construction meets that goal on the secure elements that hardware wallets use today and, if the analysis shows it does not, propose an alternative construction that meets every goal of this MPS, Goal 4 included.
+
+**MIP: Issuer-authorized spend path.** Specify how an issuer authorizes spends of coins it issued, for the seizure and lost-key recovery that [MPS-0013: zswap business logic](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0013-zswap-business-logic.md) requires, while every coin keeps one canonical nullifier. If the analysis concludes that no such path should be supported, the MIP should give its reasons, as that conclusion constrains how MPS-0013's seizure and recovery goals can be met. Issuer authorization remains a non-goal of this MPS. The entry is listed because such a path changes the Zswap spend circuit and nullifier computation that a solution to this MPS also changes, so that solution must leave room for it.
+
 **MIP: Hardware wallet signing interface for shielded spends.** Specify the device-side interface: what the secure element holds, what it emits, what the host may request without gaining spend authority, and the transcript and encoding rules a vendor firmware app must implement. Addresses Goal 4.
+
+## References
+
+- [MPS-0024: Custodian-Safe Native Shielded Asset Transfer](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0024-custodian-safe-shielded-spends.md) — same root cause: shielded spends are proof-authorized, not signature-authorized. A signature-authorized spend lets a custodian authorize through its existing signing infrastructure, one route to the custody-safe spend MPS-0024 asks for.
+- [MPS-0016: Custodian-Compatible Shielded Wallet Generation](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0016-custodian-shielded-wallet-generation.md) — any change a solution makes to the address format determines how custodians generate shielded addresses, so it must stay compatible with threshold-controlled generation.
+- [MPS-0013: zswap business logic](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0013-zswap-business-logic.md) — custom spend logic also changes the Zswap spend circuit and note format. Solutions to both should converge on a shared technical design and follow the unified Zswap upgrade plan.
+- [MIP-0017: Signature-Authorized Shielded Spends with VRF Nullifiers](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0017-shielded-spend-auth/mip-0017-shielded-spend-auth.md) — designs the VRF-based nullifier and signature-authorized spend recommended above.
+- [MPS-0006: Institutional Custody for Native Shielded Assets (ZSwap)](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0006-shielded-asset-custody.md) — the umbrella custody problem. This MPS addresses two of its core problem areas: spending requires proof generation over private witness material, and proof generation becomes part of the custody boundary.
 
 ## Acknowledgements
 

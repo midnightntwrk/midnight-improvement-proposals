@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "MIP-0031 test vectors: publicly known test keys, never real credentials"
+paths = ['''^mips/mip-0031-message-signing/vectors\.json$''']
