@@ -1099,9 +1099,9 @@ governance authorities, the Technical Authority (6 of 9) and the Council (4 of 6
 decentralized on-chain governance system may cover "elements that are not currently within the
 federated committee's scope, such as monetary-policy parameters". This MIP therefore adopts option
 (b) of the earlier draft: the monetary parameters (base-rate inputs and subsidy ratio) stay fixed
-until decentralized on-chain governance exists, keeping only the emergency pause (see **Tokenomics
-parameters**). With the release rate a constant of the frozen Reserve logic, it needs no change
-unless `pi` changes.
+until decentralized on-chain governance exists, keeping only the emergency pause, which ends when
+the Reserve logic is frozen (see **Tokenomics parameters**). With the release rate a constant of the
+frozen Reserve logic, it needs no change unless `pi` changes.
 
 ### 2. Delegator rewards and "the successful block producer"
 

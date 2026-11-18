@@ -337,8 +337,8 @@ The emergency pause may prevent new Reserve releases but cannot spend, redirect,
 rewrite the Reserve and cannot invalidate already accepted releases. While paused, intervals keep
 ending; after resumption they are released in order, so a pause delays claims but does not change
 the schedule. Pausing is a safety action, not a recovery procedure; public monitoring MUST
-distinguish it from normal operation. The pause authority and its scope are part of the logic that
-is frozen.
+distinguish it from normal operation. A Pause and an Unpause are possible only before the freeze
+(**Freeze**).
 
 Until the freeze, the two-stage Cardano governance procedure of MIP-0024's Reserve upgrade model
 remains applicable, so defects found in production can be fixed by an ordinary upgrade. Before any
@@ -350,8 +350,8 @@ changed through the native-rewards MIP's procedure.
 
 The governance action that installs the reward Reserve logic MUST be followed, within 90 days of
 `anchor_posix_ms`, by the governance action that freezes it: setting the two-stage upgrade's
-`mitigation_auth` to the `always_fails` validator, so that no later upgrade of the Reserve logic is
-possible. The freeze is a commitment of this MIP, not a later option.
+`mitigation_auth` to the `always_fails` validator, so that no later upgrade of the Reserve logic and
+no later pause of releases is possible. The freeze is a commitment of this MIP, not a later option.
 
 Before the freeze, the following MUST be settled and published, because the freeze makes them
 permanent:
@@ -362,10 +362,13 @@ permanent:
 - an external audit of the logic with no unresolved critical or high findings, and legal
   confirmation that the frozen behavior is consistent with the notified disclosures.
 
-If one of these cannot be settled within the window, releases MUST be paused until it is, and the
-freeze follows before releases resume. After the freeze, a defect in the Reserve logic can be
-mitigated only by the pause, and corrected only by a superseding MIP that migrates nothing out of the
-frozen Reserve.
+If one of these cannot be settled within the window, releases MUST be paused until it is. Releases
+MUST be unpaused before the freeze, because no transaction changes `paused` after it.
+
+After the freeze, the Reserve logic is permanent and independent of governance. A Pause and an
+Unpause need `mitigation_auth`, which the freeze sets to always fail, so no governance session can
+pause releases after the freeze. A defect in the frozen logic is corrected only by a superseding MIP
+that migrates nothing out of the frozen Reserve.
 
 ### Handover of release timing to Midnight
 
@@ -473,9 +476,12 @@ POSIX time and derived from `R_a`, does not move. A staged-policy mechanism woul
 governance raise the rate at any time, including after a freeze, because staging is a transition the
 frozen validator would still accept.
 
-The freeze is committed rather than permitted. While the logic is upgradable, the governance keys
-are the attack surface for a quarter of the NIGHT supply. The window before the freeze lets the
-release run in production while defects can still be fixed by an ordinary upgrade.
+The freeze is committed rather than permitted. Its purpose is to keep a rogue governance session
+from locking the Reserve for good. While the logic is upgradable, the governance keys can replace it
+or pause releases without end, and they are the attack surface for a quarter of the NIGHT supply.
+The freeze removes both powers: an upgrade, a Pause and an Unpause each need `mitigation_auth`,
+which always fails after it. The window before the freeze lets the release run in production while
+defects can still be fixed by an ordinary upgrade.
 
 The two Reserves are not moved in one transaction because Cardano and Midnight are separate ledgers
 with no shared commit. The protocol fixes the order instead. Cardano moves value first, from `C.R`
@@ -655,8 +661,8 @@ compromise of Midnight consensus or its committee cannot release Reserve NIGHT o
 
 **Governance keys.** No transition changes the release rate. Until the freeze, holders of enough
 Technical Authority and Council keys could install different Reserve logic through the two-stage
-upgrade; the freeze within 90 days removes that path permanently. After it, governance can only
-pause releases.
+upgrade; the freeze within 90 days removes that path permanently. After it, no governance action
+changes the Reserve logic, and none pauses or unpauses releases.
 
 **Compromised keeper.** A submitter can delay or censor its own submissions but cannot change a
 release amount, interval, or destination. Other keepers and permissionless submission provide a
@@ -722,8 +728,8 @@ Testing includes:
 - attempts to release more than one interval, or the whole Reserve, which Cardano must reject;
 - keeper censorship, outage, catch-up of many intervals, fee exhaustion, and competing
   permissionless submissions;
-- pause, resume, Cardano contract migration, the freeze transaction, and an upgrade attempted after
-  it, which must fail;
+- pause, resume, Cardano contract migration, the freeze transaction, and an upgrade, a pause and an
+  unpause attempted after it, each of which must fail;
 - the bridge mirroring each release exactly once, and never a release it cannot recompute; and
 - end-to-end release, stable observation, native settlement, and claim.
 
@@ -740,8 +746,8 @@ Midnight network" (section H.5), keeps "the base distribution rate is a system c
 "monetary-policy parameters" among the elements outside the federated governance committee's current
 scope, for a future decentralized on-chain governance system (section G.3). This MIP therefore
 adopts option (b) of the earlier draft: the monetary parameters are constants, and no governance
-action changes them; only the emergency pause remains. Logic upgrades before the freeze fix defects
-only.
+action changes them; only the emergency pause remains, and only until the freeze. Logic upgrades
+before the freeze fix defects only.
 
 ### 2. Which MiCA document is normative
 
