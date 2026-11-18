@@ -228,6 +228,12 @@ ReserveRewardState {
 }
 ```
 
+The Reserve is two UTXOs at the Reserve's forever address, which has the forever script as its
+payment credential and no stake part. The *state UTXO* holds ADA and the forever NFT, with
+`ReserveRewardState` as its inline datum. The *NIGHT UTXO* holds ADA and the Reserve's NIGHT.
+Neither holds any other token. The Reserve logic runs once for a transaction, in its withdrawal, and
+the redeemer names the transition: `ReserveAction = Init | Release | Pause | Unpause`.
+
 No transition of the Reserve logic changes a constant. The release rate changes only by replacing
 the logic through the two-stage upgrade, and not at all once the logic is frozen (**Freeze**).
 `max_validity_window_ms` bounds the width of a release transaction's validity interval.
@@ -240,13 +246,24 @@ Anyone MAY submit a release. The validator accepts it only if:
    bound is no earlier than the end of the interval starting at `next_interval_start_ms`, that is
    `next_interval_start_ms + release_interval_ms`;
 4. `release_delta` is calculated as in **Release schedule** with checked arithmetic;
-5. the transaction reduces `C.R` by exactly `release_delta` and increases `C.L` at
-   `release_destination` by exactly the same amount;
-6. the continuing state reduces `curve_remaining_star` and increases `cumulative_released_star` by
+5. the transaction's first three outputs are, in this order, the destination output, the NIGHT
+   output and the state output. The destination output is at `release_destination` with no stake
+   part, has an inline datum, and holds ADA and exactly `release_delta` of NIGHT and no other token.
+   The NIGHT output is at the forever address and holds ADA and the NIGHT that remains and no other
+   token. No other output is at the forever address or at `release_destination`, and the transaction
+   spends no input at `release_destination`, so it reduces `C.R` by exactly `release_delta` and
+   increases `C.L` by exactly the same amount;
+6. the state output is at the forever address and holds ADA and the forever NFT and no other token,
+   and its datum reduces `curve_remaining_star` and increases `cumulative_released_star` by
    `release_delta`, advances `next_interval_start_ms` by `release_interval_ms`, and changes no other
    field;
-7. the NIGHT asset and the Reserve input match the compiled constants; and
-8. no NIGHT or value is paid to the submitter from the Reserve.
+7. the transaction spends the state UTXO and one NIGHT UTXO, which holds ADA and NIGHT and no other
+   token, and the NIGHT asset matches the compiled constants; and
+8. no NIGHT or value is paid to the submitter from the Reserve: the NIGHT output and the state
+   output each hold at least the ADA of their inputs.
+
+The Reserve logic checks the outputs by their position, so a transaction builder and the bridge can
+rely on the order of rule 5.
 
 Each transaction releases one interval. After an outage, the missed intervals are released by
 consecutive transactions, in order, and none can be released before it has ended. Rule 3 ties every
@@ -724,6 +741,10 @@ Testing includes:
 - exhaustion of `curve_remaining`, overflow, and boundary rounding;
 - Cardano forks before stability;
 - wrong script, asset, datum, destination, metadata, or Reserve input;
+- a release whose first three outputs are in another order, or with a second output at the
+  destination or at the forever address;
+- one other token in the NIGHT input, the NIGHT output, the state output or the destination output
+  of a release;
 - validity intervals that are too wide or start before the interval ends, which Cardano must reject;
 - attempts to release more than one interval, or the whole Reserve, which Cardano must reject;
 - keeper censorship, outage, catch-up of many intervals, fee exhaustion, and competing
