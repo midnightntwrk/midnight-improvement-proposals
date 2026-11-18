@@ -442,11 +442,12 @@ Operations MUST define and monitor:
 - the native-rewards MIP's settlement backlog and coverage status; and
 - alert and pause procedures.
 
-Operations MUST also publish a claimability objective: the number of epochs within which a finalized
-entitlement normally becomes claimable, ratified with the Reserve logic. Under normal operation it
-is at most one release interval, plus the Cardano stability window, plus the settlement backlog. It
-is a service target, not a protocol rule. No transition may relax a release, observation, or
-settlement check to meet it, and missing it triggers the alert and escalation procedures above.
+Operations MUST also publish a claimability objective: the number of Cardano epochs within which a
+finalized entitlement normally becomes claimable, ratified with the Reserve logic. Under normal
+operation it is at most one release interval, plus the Cardano stability window, plus the settlement
+backlog. It is a service target, not a protocol rule. No transition may relax a release,
+observation, or settlement check to meet it, and missing it triggers the alert and escalation
+procedures above.
 
 The keeper is not trusted for safety: it cannot change a release amount, interval or destination.
 Failure delays claimability but does not change entitlement ownership or amount. An empty funding
@@ -623,7 +624,7 @@ This MIP may move from Accepted to Active only when:
    and exercised.
 6. The Reserve logic and the bridge's release path pass independent security audit with no
    unresolved critical or high findings.
-7. A public test network completes at least two committee rotations, a Cardano rollback exercise,
+7. A public test network completes at least two full Cardano epochs, a Cardano rollback exercise,
    and a keeper outage followed by catch-up release, with published results.
 8. The freeze governance action is prepared, and its preconditions and the 90-day window are
    recorded in the activation decision.

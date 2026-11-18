@@ -857,7 +857,7 @@ mainnet:
     interruption, runtime upgrade, and replay do not move rewards away from their payee,
     duplicate, destroy, or strand them.
 11. Supply-invariant, migration, performance, and adversarial test suites pass, and the feature has
-   completed at least two full epochs on a public test network.
+   completed at least two full Cardano epochs on a public test network.
 
 ### Implementation Plan
 
@@ -1083,8 +1083,7 @@ Testing includes:
 * fault injection between every ledger operation proving all-or-nothing chunk behavior;
 * maximum-delegator-count benchmarks for runtime weight, queue lag, storage growth, indexer load, and
   query latency; and
-* at least two full epochs on a public test network with published reconciliation
-  results.
+* at least two full Cardano epochs on a public test network with published reconciliation results.
 
 ## Open Questions
 
