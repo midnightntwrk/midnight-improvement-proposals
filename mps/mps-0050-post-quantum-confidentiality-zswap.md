@@ -3,12 +3,12 @@ MPS: "0050"
 Title: Post-Quantum Confidentiality for Zswap
 Authors:
 - David Nevado (davidnevadoc)
-Status: Accepted
+Status: Proposed
 Category: Core
 Created: 06-Oct-2026
 Requires: none
 Replaces: none
-
+MIP: none
 ---
 
 <!--
