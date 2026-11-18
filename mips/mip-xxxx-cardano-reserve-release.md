@@ -364,8 +364,8 @@ only before the freeze (**Freeze**).
 Until the freeze, the two-stage Cardano governance procedure of MIP-0024's Reserve upgrade model
 remains applicable, so defects found in production can be fixed by an ordinary upgrade. Before any
 such upgrade, implementations MUST publish the new script hashes, state migration, audit evidence,
-and rollback plan. An upgrade MUST NOT change the release schedule's constants, except to set the
-release rate that is settled before the freeze (**Freeze**).
+and rollback plan. An upgrade MUST NOT change the release schedule's constants unless `pi` has
+changed, and a change of `pi` MUST be made before the freeze (**Freeze**).
 
 ### Freeze
 
