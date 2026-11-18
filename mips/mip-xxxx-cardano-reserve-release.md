@@ -659,7 +659,12 @@ Existing circulating NIGHT, ordinary cross-chain transfers, DUST generation, and
 UTXOs are unchanged. Existing Reserve state must be migrated into `ReserveRewardState` without
 changing its NIGHT amount, and that amount MUST equal `initial_reward_reserve`. The migrated state
 starts with `curve_remaining_star` equal to `initial_reward_reserve`, `cumulative_released_star`
-zero, and `next_interval_start_ms` equal to `anchor_posix_ms`.
+zero, `next_interval_start_ms` equal to `anchor_posix_ms`, and `paused` false. The `Init` transition
+writes this state. It does not read the datum that the state UTXO held before. It reads the NIGHT
+UTXO as a reference input, and that UTXO must hold ADA and exactly `initial_reward_reserve` of NIGHT
+and no other token. `Init` runs once for each track of the two-stage upgrade, main and staging: each
+track has one init token, minted once in a transaction that spends a one-shot seed UTXO, and `Init`
+burns it.
 
 The bridge's handling of Reserve transfers keeps its positive classification by Reserve-validator
 input. Classification based on absent metadata is not reused.
@@ -751,6 +756,8 @@ Testing includes:
   permissionless submissions;
 - pause, resume, Cardano contract migration, the freeze transaction, and an upgrade, a pause and an
   unpause attempted after it, each of which must fail;
+- an `Init` whose NIGHT reference input holds another amount or one other token, and an `Init` run a
+  second time on one track, each of which must fail;
 - the bridge mirroring each release exactly once, and never a release it cannot recompute; and
 - end-to-end release, stable observation, native settlement, and claim.
 
