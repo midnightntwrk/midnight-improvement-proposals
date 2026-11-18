@@ -409,7 +409,8 @@ by the schedule rather than by the other chain:
    `delta` is a settlement margin covering one release interval, `max_validity_window_ms`, and an
    allowance for keepers. Midnight enforces this locally, without observation.
 3. The bridge invariant and the per-chain sums are unchanged: `C.U <= M.L`, and on each chain
-   `R + L + U = S`.
+   `R + L + U = S`, where `R`, `L`, `U` and `S` are the Reserve, the protocol-locked NIGHT, the
+   unlocked NIGHT and the supply of that one chain.
 
 The supply guarantee follows from 3 and Midnight's sum alone: `M.U + C.U <= M.U + M.L = S - M.R <=
 S`. It uses neither cross-chain Reserve inequality, so it does not depend on how the two Reserves
