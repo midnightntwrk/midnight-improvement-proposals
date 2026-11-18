@@ -227,7 +227,7 @@ NightStakeSnapshotV1 {
 | --- | --- | --- | --- |
 | `lock_deposit_lovelace` | 2,000,000 | `night_staking`, compile time | The least ADA a lock holds, Cardano's stake key deposit; a lock MAY hold more, and holds more when the ledger's minimum for the UTXO is higher; returned on unlock |
 | `UNBONDING_DELAY` | 4 Cardano epochs of the network, in ms (20 days on mainnet) | `night_staking`, compile time, per network | Rule 4, Burn, checks it against the transaction's validity interval |
-| `NODE_DATUM_MAX` | 4,000 bytes | `night_registration`, compile time | The most the datum of a node holds (rule 9, Nodes); a Create writes three nodes into one Cardano transaction of at most 16,384 bytes |
+| `NODE_DATUM_MAX` | 4,500 bytes | `night_registration`, compile time | The most the datum of a node holds (rule 9, Nodes); a Create writes three nodes into one Cardano transaction of at most 16,384 bytes |
 | `night_registration` policy | per network | `night_staking`, compile time | The reference input of rule 2, Output, names the set by its policy, so the set is deployed before the lock script is built (Implementation Plan, step 1) |
 | `cnight_weight` | 1 at activation, placeholder (Open Question 6) | pallet\_system\_parameters, by governance | Lovelace of virtual stake per STAR; a change counts from the next snapshot |
 | Snapshot boundary | The start of Cardano epoch E − 3, the ADA snapshot of data epoch E − 2 | Partner Chains `DATA_MC_EPOCH_OFFSET` | Not changed by this proposal |
@@ -359,7 +359,7 @@ A fixed contract cannot know the keys a later node release will require, so it c
 
 ### Why a size limit for a node, and no key length?
 
-A fixed contract cannot know the key scheme of a later runtime, so it checks no length for `crch` or `crch_signature`, and a new scheme registers in the same set. It does limit the datum of a node, because a Create writes its two anchors and the new node in one Cardano transaction of at most 16,384 bytes, and a node is never removed: one oversized node would close the place beside it in the list for good. Three datums of `NODE_DATUM_MAX` bytes take 12,000 bytes, so every Create fits. A node at the limit cannot take a longer link, so a pool whose `crch` would follow it registers with another `crch`.
+A fixed contract cannot know the key scheme of a later runtime, so it checks no length for `crch` or `crch_signature`, and a new scheme registers in the same set. It does limit the datum of a node, because a Create writes its two anchors and the new node in one Cardano transaction of at most 16,384 bytes, and a node is never removed: one oversized node would close the place beside it in the list for good. Three datums of `NODE_DATUM_MAX` bytes take 13,500 bytes, so every Create fits. A node at the limit cannot take a longer link, so a pool whose `crch` would follow it registers with another `crch`.
 
 ### Why does every session key sign, and why does only Midnight check?
 
