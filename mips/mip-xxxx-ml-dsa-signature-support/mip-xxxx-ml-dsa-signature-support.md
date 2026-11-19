@@ -243,9 +243,8 @@ wrong, and MPS-0051 rules it out.
    with the ledger context string and sends change to ML-DSA-65 addresses when enabled.
 3. **DApp Connector.** A released `@midnight-ntwrk/dapp-connector-api` accepts `ml_dsa_65` in the
    `scheme` discriminator.
-4. **Test vectors.** Vectors for seed derivation, address derivation and signing are published and
-   consumed by the Rust and TypeScript stacks, and both pass the NIST ACVP ML-DSA-65 keyGen, sigGen
-   and sigVer vectors.
+4. **Test vectors.** The Rust and TypeScript stacks reproduce [`vectors.json`](./vectors.json), and
+   both pass the NIST ACVP ML-DSA-65 keyGen, sigGen and sigVer vectors.
 5. **Network deployment.** A network upgrade activates the new format and the live network validates
    ML-DSA-65 authorized transactions.
 
@@ -302,6 +301,14 @@ point at which their current signature still proves they are the owner.
   beyond decoding.
 
 ## Testing
+
+[`vectors.json`](./vectors.json) holds three keys derived from a 32 byte and a 64 byte wallet seed,
+including a nonzero account and index. Each entry gives `ξ`, the verifying key, the address, a
+ledger signature under `midnight:mldsa65-tx[v1]` and a MIP-0031 message signature under
+`midnight:mldsa65-msg[v1]`, both made with the deterministic signing variant of FIPS 204 so that
+any implementation can reproduce them. It also holds eight cases that must be rejected. The file was
+generated with RustCrypto `ml-dsa` 0.1.2 and every value, including each signature, was reproduced
+byte for byte with `@noble/post-quantum` 0.7.1.
 
 All existing tests should pass. New tests cover
 
