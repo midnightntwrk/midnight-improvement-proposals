@@ -48,8 +48,8 @@ it out of NIGHT released that way. Cardano needs no knowledge of Midnight for th
 uses the existing signed reward-claim transaction to create a spendable unshielded NIGHT UTXO on
 Midnight. No Cardano per-recipient payout contract, batcher, or virtual account is required.
 
-The pool registration, the lock in which a recipient names its Midnight reward address, and the
-stake snapshot are those of the required staking MIP; this proposal reads the snapshot record and
+Pool registration, the lock that carries a recipient's Midnight reward address, and the stake
+snapshot all come from the required staking MIP; this proposal only reads the snapshot record and
 defines none of them. Runtime, RPC, indexer, CLI, and SDK interfaces expose reward addresses,
 forecasts, accrued and release-gated balances, per-block calculations, epoch splits, and
 withdrawals. Independent implementations can recompute payouts from finalized public data and
