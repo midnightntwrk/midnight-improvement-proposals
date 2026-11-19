@@ -183,8 +183,8 @@ be retroactive.
 A pool leaves block production with a Deactivate of its registration node, which is permanent for
 that node (staking rule 10, Changes), and it is no operator at a later snapshot until it creates
 another node. Rewards calculated for earlier epochs settle as before. A delegator whose lock no
-longer counts (staking rule 14, Effective lock) keeps the rewards already credited, and its later
-ADA share is held in escrow.
+longer counts (staking rule 14, Effective lock) keeps the rewards already credited, and the share
+that its ADA delegation earns later is held in escrow.
 
 This MIP reads the record as the required staking MIP adopts it (staking rule 17, Snapshot
 finality), and that MIP bounds how Midnight reads locks and registrations from Cardano and returns
