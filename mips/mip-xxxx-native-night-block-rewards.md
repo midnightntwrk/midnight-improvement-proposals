@@ -99,6 +99,14 @@ Succinct verification without a full node is outside this proposal.
 * The *required staking MIP* is NIGHT Staking on Cardano (`mip-xxxx-night-staking-on-cardano.md`).
   This MIP cites its rules as "staking rule N, Name", and takes from it the pool registration, the
   lock, `cnight_weight` and the stake snapshot record. It defines none of them.
+* The *required Reserve MIP* is Native NIGHT Block Production Rewards: Cardano Reserve Release
+  (`mip-xxxx-cardano-reserve-release.md`). It defines the release of Reserve NIGHT on Cardano and
+  the record that the bridge writes for each mirrored release.
+* `cnight_weight` is the rational `w_n/w_d` that the snapshot record carries: the lovelace of stake
+  per STAR of cNIGHT (staking rule 25, cnight\_weight).
+* *Virtual stake* is a pool's stake in lovelace with its locked cNIGHT counted: its ADA stake plus
+  `floor(cnight * w_n / w_d)` for each lock that counts and names it (staking rule 19, Virtual
+  stake). The split uses the same term for each lock (see **Epoch reward split**).
 * *cNIGHT* is NIGHT on Cardano. A *lock* is the delegation lock of the required staking MIP: a UTXO
   at its staking contract whose datum names an owner credential, one pool and a `reward_address`,
   and which holds the cNIGHT it stakes, which may be none.
