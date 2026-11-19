@@ -277,10 +277,10 @@ be transferable except as block production rewards following the rules described
 
 ### Release destination and classification
 
-The destination is the configured protocol-locked Cardano credential used by the native NIGHT
-cross-chain system, such as the ICS credential selected for deployment. The exact script hash,
-asset policy, asset name, and datum encoding are activation parameters published with the contract
-artifacts.
+The destination is the credential of the illiquid circulation supply (ICS) validator, the
+protocol-locked Cardano credential used by the native NIGHT cross-chain system. A test deployment
+MAY configure another credential. The exact script hash, asset policy, asset name, and datum
+encoding are activation parameters published with the contract artifacts.
 
 Release classification MUST positively identify the Reserve input, the Reserve validator, the NIGHT
 asset, the continuing state datum, and the configured destination. Absence of metadata is never
@@ -301,7 +301,7 @@ value that has changed by then replaces the one shown here.
 | Reserve validator | `addr1w950c5zxn5fhwlauvpy3ssk287q0qlwz6e2zc4gaj62vaxsy3s9p0`, script hash `68fc50469d13777fbc60491842ca3f80f07dc2d6542c551d9694ce9a` |
 | Reserve two-stage upgrade policy | `d24b012f7b2a99a671b7e1196847f183982d70db02ed37068e4e49e9` |
 | Reserve NIGHT | 6,000,000,000,873,988 STAR in UTXO `03b5d301678204ee48c7f93d3446fd4ad0427da6d1966e8d3df423c720657b0e#0`, unspent |
-| Illiquid circulation supply (ICS) validator, the candidate release destination | `addr1wyczfpxfnf5hvp36mrn655ye4k2cwluvlez6phx8jx46k6s2ttdaq`, script hash `302484c99a6976063ad8e7aa5099ad95877f8cfe45a0dcc791abab6a` |
+| Illiquid circulation supply (ICS) validator, the release destination | `addr1wyczfpxfnf5hvp36mrn655ye4k2cwluvlez6phx8jx46k6s2ttdaq`, script hash `302484c99a6976063ad8e7aa5099ad95877f8cfe45a0dcc791abab6a` |
 | ICS two-stage upgrade policy | `8f2c043f857c6acb716d27d67e9cb609c9c9814b7d7b938d6c410733` |
 
 The Reserve UTXO is the one from which Midnight's genesis set its `reserve_pool` to the same
@@ -812,14 +812,14 @@ release transaction. Decides: authors, with the Cardano contract maintainers. Bl
 
 ### 5. Released NIGHT in the ICS and bridge accounting
 
-A release moves Reserve NIGHT into the protocol-locked destination, for which the illiquid
-circulation supply (ICS) validator is the candidate (see **Mainnet reference values**). If the
-existing NIGHT bridge redeems Midnight-to-Cardano transfers from the ICS, released NIGHT is what
-backs reward NIGHT that a holder later moves to Cardano. This MIP names the destination but not how
-the ICS validator and the bridge account for released NIGHT: whether it is pooled with NIGHT locked
-by ordinary bridge transfers, whether undrawn release can be used for such redemptions before it is
-earned, and whether any ICS or bridge invariant must change to admit it. Decides: authors, with the
-bridge and ICS contract maintainers. Blocks: `Proposed`.
+A release moves Reserve NIGHT into the protocol-locked destination, the illiquid circulation supply
+(ICS) validator (see **Mainnet reference values**). If the existing NIGHT bridge redeems
+Midnight-to-Cardano transfers from the ICS, released NIGHT is what backs reward NIGHT that a holder
+later moves to Cardano. This MIP names the destination but not how the ICS validator and the bridge
+account for released NIGHT: whether it is pooled with NIGHT locked by ordinary bridge transfers,
+whether undrawn release can be used for such redemptions before it is earned, and whether any ICS or
+bridge invariant must change to admit it. Decides: authors, with the bridge and ICS contract
+maintainers. Blocks: `Proposed`.
 
 ## References (Optional)
 
