@@ -171,8 +171,14 @@ export type Signature = {
 };
 ```
 
-For `ml_dsa_65` the wallet signs with the context string `midnight:mldsa65-msg[v1]`, so a message
-signature can never verify as a ledger signature and the reverse.
+For `ml_dsa_65` the wallet signs the full message `M` that
+[MIP-0031](/mips/mip-0031-message-signing/mip-0031-message-signing.md) builds, prefix included, with
+pure ML-DSA and the context string `midnight:mldsa65-msg[v1]`. It does not sign `SHA-256(M)` as the
+two classical schemes do. ML-DSA already hashes the message with SHAKE256, and signing a SHA-256
+digest would cap a signature over a message the DApp chose at SHA-256 collision resistance, which is
+NIST category 2. The context string means a message signature can never verify as a ledger
+signature and the reverse. Encoded as MIP-0031 requires, `signature` is 6,618 hexadecimal characters
+and `verifyingKey` is 3,904.
 
 ### Moving to post quantum ownership
 
@@ -319,6 +325,7 @@ and these cases, which must be rejected
 - [MPS-0051, Post Quantum Spending Authorization for Unshielded Outputs](/mps/mps-0051-post-quantum-spending-authorization.md)
 - [MIP-0003, ECDSA signature support](/mips/mip-0003-ecdsa-support.md)
 - [MIP-0021, Domain-Separation Convention](/mips/mip-0021-domain-separation.md)
+- [MIP-0031, Midnight Message Signing](/mips/mip-0031-message-signing/mip-0031-message-signing.md)
 - [FIPS 204, Module-Lattice-Based Digital Signature Standard](https://csrc.nist.gov/pubs/fips/204/final)
 - [NIST ACVP ML-DSA test vectors](https://github.com/usnistgov/ACVP-Server/tree/master/gen-val/json-files)
 - [BIP-32, Hierarchical Deterministic Wallets](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
