@@ -59,9 +59,10 @@ normative vectors.
 
 As Midnight decentralizes block production, Cardano stake-pool operators need a defined way to
 register for rewards, forecast likely returns, observe accrual, verify calculations, and withdraw
-spendable NIGHT on Midnight. Delegators, and holders of cNIGHT locked behind a pool, need to see how
-a pool's reward is divided between the operator and stake-based recipients under the terms the
-pool's operator has set. None of those workflows is complete today.
+spendable NIGHT on Midnight. Delegators, and holders of cNIGHT locked behind a pool, need a defined
+way to name where their rewards are paid, to see how a pool's reward is divided between the operator
+and stake-based recipients under the terms the pool's operator has set, and to withdraw their share
+as spendable NIGHT on Midnight. None of those workflows is complete today.
 
 The current codebase already contains most of the native payout substrate. The Midnight ledger has
 `block_reward_pool`, `unclaimed_block_rewards`, `DistributeReserve`,
