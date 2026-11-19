@@ -672,9 +672,9 @@ starts with `curve_remaining_star` equal to `initial_reward_reserve`, `cumulativ
 zero, `next_interval_start_ms` equal to `anchor_posix_ms`, and `paused` false. The `Init` transition
 writes this state. It does not read the datum that the state UTXO held before. It reads the NIGHT
 UTXO as a reference input, and that UTXO must hold ADA and exactly `initial_reward_reserve` of NIGHT
-and no other token. `Init` runs once for each track of the two-stage upgrade, main and staging: each
-track has one init token, minted once in a transaction that spends a one-shot seed UTXO, and `Init`
-burns it.
+and no other token. `Init` runs once for each track of the two-stage upgrade, main and staging: the
+Reserve logic's own policy mints the two init tokens, `main` and `staging`, in one transaction that
+spends a one-shot seed UTXO, and `Init` burns the token of its track.
 
 The bridge's handling of Reserve transfers keeps its positive classification by Reserve-validator
 input. Classification based on absent metadata is not reused.
