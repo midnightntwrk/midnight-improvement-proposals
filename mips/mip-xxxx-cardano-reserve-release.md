@@ -735,7 +735,9 @@ The expected components are:
   continuing state, positive destination classification, pause, migration, freeze, and the funding
   pool. The reserve-contracts spike (`midnightntwrk/midnight-reserve-contracts`, branch
   `block-rewards-validators`) already keeps the release factor and interval as compile-time
-  constants.
+  constants. On the staging track of the two-stage upgrade, the logic reads the forever script, the
+  NIGHT asset and the destination from a test-only reference input, `reserve_staging_params`; on the
+  main track it uses the compiled constants.
 - **Midnight runtime/node:** the bridge's Reserve-transfer handler, extended with release
   recomputation and the observation record; public APIs.
 - **Release keeper:** interval tracking, funded submission, confirmation tracking, retries, and no
