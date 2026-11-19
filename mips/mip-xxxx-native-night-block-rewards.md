@@ -208,7 +208,8 @@ committee.
 
 ### Tokenomics parameters
 
-The runtime stores a versioned `RewardParametersV1` containing:
+The Midnight runtime stores the reward parameters as a versioned `RewardParametersV1`. A Midnight
+governance action writes a new version, within the limits of this section. The record contains:
 
 ```
 RewardParametersV1 {
