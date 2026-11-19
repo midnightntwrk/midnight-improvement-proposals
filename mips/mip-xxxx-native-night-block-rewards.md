@@ -41,12 +41,12 @@ Cardano pool registration certificate, plus any fixed cost in NIGHT that its Mid
 declares.
 
 Rewards accrue automatically as NIGHT entitlements in runtime state and settle into Midnight's
-existing ledger reward balances. While Reserve control remains on Cardano, Midnight's existing
-bridge mirrors each finalized scheduled release from the Cardano Reserve into its block-reward pool,
-and an entitlement becomes claimable only when settlement pays it out of NIGHT released that way.
-Cardano needs no knowledge of Midnight for this. A recipient then uses the
-existing signed reward-claim transaction to create a spendable unshielded NIGHT UTXO on Midnight.
-No Cardano per-recipient payout contract, batcher, or virtual account is required.
+existing ledger reward balances, from which the recipient claims them. While Reserve control remains
+on Cardano, Midnight's existing bridge mirrors each finalized scheduled release from the Cardano
+Reserve into its block-reward pool, and an entitlement becomes claimable only when settlement pays
+it out of NIGHT released that way. Cardano needs no knowledge of Midnight for this. A recipient then
+uses the existing signed reward-claim transaction to create a spendable unshielded NIGHT UTXO on
+Midnight. No Cardano per-recipient payout contract, batcher, or virtual account is required.
 
 The pool registration, the lock in which a recipient names its Midnight reward address, and the
 stake snapshot are those of the required staking MIP; this proposal reads the snapshot record and
