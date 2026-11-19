@@ -283,10 +283,12 @@ MAY configure another credential. The exact script hash, asset policy, asset nam
 encoding are activation parameters published with the contract artifacts.
 
 Release classification MUST positively identify the Reserve input, the Reserve validator, the NIGHT
-asset, the continuing state datum, and the configured destination. Absence of metadata is never
-sufficient to classify a transaction as a Reserve release. Wrong-script, wrong-asset, ambiguous, or
-partially matching transactions are not releases. A spend of the Reserve that is not a valid
-release, pause, unpause, or published upgrade or freeze transition is an unexpected Reserve spend,
+asset, the continuing state datum, and the configured destination, and MUST find that no NIGHT
+leaves the Reserve in the transaction but `release_delta` to that destination. Absence of metadata
+is never sufficient to classify a transaction as a Reserve release. Wrong-script, wrong-asset,
+ambiguous, or partially matching transactions are not releases. A spend of the Reserve that is not a
+valid `Init`, release, pause, unpause, or published upgrade or freeze transition, and is not the
+merge that precedes `Init` (**Backwards Compatibility Assessment**), is an unexpected Reserve spend,
 which the native-rewards MIP treats as a halt condition.
 
 ### Mainnet reference values
