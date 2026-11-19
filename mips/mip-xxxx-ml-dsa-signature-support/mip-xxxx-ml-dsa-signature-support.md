@@ -230,8 +230,8 @@ under its address for repeat spends. That is a local optimization with no effect
 this MIP does not specify it.
 
 **Dormant exposed outputs.** Outputs whose keys are already public and whose holders never move
-are left as they are. A freeze, sweep or deadline would remove funds from holders who did nothing
-wrong, and MPS-0051 rules it out.
+are left as they are. A freeze, sweep or deadline would take funds from holders without their
+consent, and MPS-0051 rules it out.
 
 ## Path to Active
 
