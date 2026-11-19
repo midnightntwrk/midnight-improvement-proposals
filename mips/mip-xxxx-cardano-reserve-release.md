@@ -232,7 +232,9 @@ The Reserve is two UTXOs at the Reserve's forever address, which has the forever
 payment credential and no stake part. The *state UTXO* holds ADA and the forever NFT, with
 `ReserveRewardState` as its inline datum. The *NIGHT UTXO* holds ADA and the Reserve's NIGHT.
 Neither holds any other token. The Reserve logic runs once for a transaction, in its withdrawal, and
-the redeemer names the transition: `ReserveAction = Init | Release | Pause | Unpause`.
+the redeemer names the transition: `ReserveAction = Init | Release | Pause | Unpause`. The Reserve
+logic's stake credential accepts its registration and no other certificate, so no unregistration can
+block that withdrawal.
 
 No transition of the Reserve logic changes a constant. The release rate changes only by replacing
 the logic through the two-stage upgrade, and not at all once the logic is frozen (**Freeze**).
