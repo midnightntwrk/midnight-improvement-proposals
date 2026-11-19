@@ -34,11 +34,12 @@ MPS: MPS-0019
 This proposal defines native Midnight block-production rewards. The protocol records each block
 producer, applies the published tokenomics formula, and accumulates the result for the producing
 operator. An operator is a Cardano stake pool registered for Midnight under the required staking
-MIP, NIGHT Staking on Cardano. Once per Cardano epoch, the stake snapshot that selected that epoch's
-committees also supplies the inputs to a public, reproducible split of the pool's reward between its
-operator, its ADA delegators and the holders of cNIGHT locked behind it, on the margin in its
-Cardano pool registration certificate, plus any fixed cost in NIGHT that its Midnight registration
-declares.
+MIP, [NIGHT Staking on
+Cardano](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/421). Once per Cardano
+epoch, the stake snapshot that selected that epoch's committees also supplies the inputs to a
+public, reproducible split of the pool's reward between its operator, its ADA delegators and the
+holders of cNIGHT locked behind it, on the margin in its Cardano pool registration certificate, plus
+any fixed cost in NIGHT that its Midnight registration declares.
 
 Rewards accrue automatically as NIGHT entitlements in runtime state and settle into Midnight's
 existing ledger reward balances, from which the recipient claims them. While Reserve control remains
