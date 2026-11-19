@@ -33,7 +33,7 @@ Widen mint amounts from `Uint<64>` to `Uint<128>`, the width coins already carry
 
 ## Motivation
 
-ERC-20 amounts are `uint256`. When a contract mints a token for the outcome of an EVM swap, the amount has to fit the mint's `Uint<64>`, so we round it down. How much is lost depends on the token's decimals. LINK has 18, so a `Uint<64>::MAX` is about 18.4 LINK.
+ERC-20 amounts are `uint256`. When a contract mints a token for the outcome of an EVM swap, the amount has to fit the mint's `Uint<64>`, so we round it down. How much is lost depends on the token's decimals. LINK has 18, so a `Uint<64>::MAX` is about 18.4 LINK. So today our contracts can mint at most about 18.44 LINK at a time unless we round amounts down to a coarser unit. Rounding is painful and does not work well, because the amounts that come back from the EVM are not rounded, which leaves a remainder to deal with and is a little messy.
 
 ## Specification
 
