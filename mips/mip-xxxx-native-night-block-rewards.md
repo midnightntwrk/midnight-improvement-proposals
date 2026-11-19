@@ -201,7 +201,10 @@ For a registered producer, the committee record provides `operator_id`, its `poo
 terms. An ineligible producer generates an attribution record with zero reward; if it has no
 operator identity, the record's `operator_id` is empty. Failure to map an eligible consensus author
 to the immutable committee and operator identity is an invalid block transition; it does not pay a
-fallback recipient or create an unowned escrow entry.
+fallback recipient or create an unowned escrow entry. The committee record holds the pool key of
+every registered member, so the mapping can fail only when consensus state is inconsistent. Every
+honest node then rejects the block, and block production stops when the fault covers the whole
+committee.
 
 ### Tokenomics parameters
 
