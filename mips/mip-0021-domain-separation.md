@@ -30,15 +30,15 @@ License: Apache-2.0
 
 ## Abstract
 
-Midnight separates its hash use sites by hand. `persistentHash` (SHA-256) and `persistentCommit` take no domain argument, so a caller keeps one hashed object distinct from another only by prepending a tag to the preimage. [MPS-0027](/mps/mps-0027-domain-separation.md) documents that this discipline is applied without coordination: roughly 28 use sites carry about 25 tags under three prefix schemes (`midnight:`, `mdn:`, and a spec-only `ni`), with inconsistent form and no shared definition, so a contract author has nothing to conform to.
+Midnight separates its hash use sites by hand. `persistentHash` (SHA-256), `persistentCommit`, and their transient counterparts take no domain argument, so a caller keeps one hashed object distinct from another only by prepending a tag to the preimage. [MPS-0027](/mps/mps-0027-domain-separation.md) documents that this discipline is applied without coordination: roughly 28 use sites carry about 25 tags under three prefix schemes (`midnight:`, `mdn:`, and a spec-only `ni`), with inconsistent form and no shared definition, so a contract author has nothing to conform to.
 
-This MIP specifies one convention for a domain separator: a `midnight:` prefix, colon-delimited segments naming the construction, a `[vN]` version suffix, and a 64-byte maximum length. It requires that a hash needing per-contract uniqueness bind the contract address as a separate field of the preimage, following the pattern the ledger already uses to derive token colors, so two contracts implementing the same standard produce different hashes from the same separator string. It proposes `midnight:` as the standard prefix, because that is what the ledger and wallet already use across their subsystems, and it treats domain separators as frozen at network deployment.
+This MIP specifies one convention for a domain separator, matching the form the ledger already uses: a namespace prefix (`midnight:` for the protocol, `mip-NNNN:` for a construction a MIP defines), colon-delimited segments naming the construction, a `[vN]` version suffix, and a maximum length of 32 bytes, placed unpadded at the start of the hashed value. It requires that a hash needing per-contract uniqueness bind the contract address as a separate field of the preimage, following the pattern the ledger already uses to derive token colors, so two contracts implementing the same standard produce different hashes from the same separator string. A hash needing per-operation uniqueness binds the operation. Domain separators are frozen at network deployment, so the convention governs new separators and changes no existing hash.
 
 ## Motivation
 
 Midnight's hash primitives take no domain argument. Separation between what they hash exists only because each caller prepends a tag. For the commitment and nullifier of a single secret this tag is the only thing keeping the two hashes distinct, so without it a coin's commitment would equal its nullifier. The primitives are fixed protocol functions and will not gain a domain parameter, so the separation has to be standardized at the tag the caller prepends. Nothing in the toolchain or any published document tells an author this discipline exists or how to apply it.
 
-MPS-0027 inventoried the shipped ledger and the standard library and found the discipline applied inconsistently. Two prefix schemes appear in code, `midnight:` and `mdn:`, and a third, `ni`, appears in the wallet specification. Tag form varies: some carry a `[v1]` suffix, some a trailing colon, most are plain. Few tags are named constants; the rest are inline literals. No shared definition enumerates the tags in use, so a reviewer cannot confirm that every site is tagged, a new contract cannot check its separator against what exists, and the specification and the code already disagree on the separator for the coin public key.
+MPS-0027 inventoried the shipped ledger and the standard library and found the discipline applied inconsistently. Two prefix schemes appear in code, `midnight:` and `mdn:`, and a third, `ni`, appears in the wallet specification. Tag form varies: some carry a `[v1]` suffix, some a trailing colon, most are plain. Few tags are named constants; the rest are inline literals. No shared definition enumerates the tags in use, so a reviewer cannot confirm that every site is tagged, and a new contract cannot check its separator against what exists.
 
 ## Specification
 
@@ -47,61 +47,83 @@ MPS-0027 inventoried the shipped ledger and the standard library and found the d
 A conforming domain separator is a byte string of the form:
 
 ```
-midnight:<segment>[:<segment>...][vN]
+<namespace>:<segment>[:<segment>...][vN]
 ```
 
-1. **Prefix.** The separator begins with `midnight:`, the prefix the ledger and wallet already use across their subsystems (see Rationale).
-2. **Segments.** After the prefix come one or more colon-delimited segments, ordered from the owning component to the specific construction. The first segment names the owner: a ledger subsystem (`zswap`, `dust`, `intent`), or, for a contract, the contract standard (`native-unshielded`). Later segments name the construction and role (`cc` for a coin commitment, `cn` for a nullifier, `minter` for a mint-authorization commitment). Segments use ASCII lowercase letters, digits, and hyphens. Examples: `midnight:zswap-cc[v1]`, `midnight:native-unshielded:minter[v1]`.
-3. **Version.** The separator ends with a version tag `[vN]`, where `N` is a positive integer starting at `v1`, bounded only by the length maximum below. The version identifies the preimage format the separator commits to, so a change to the hashed structure increments the version and the two formats stay distinct.
-4. **Length.** The complete separator string is at most 64 UTF-8 bytes, and MUST NOT end in a zero byte. The 64-byte maximum is a standardization choice, not a hard technical limit (Compact permits far longer byte strings), chosen so every real tag fits with room to spare while bounding circuit cost and preventing abuse (see Rationale). The trailing-zero rule follows Compact's field-aligned-binary validity requirement, under which a value ending in a zero byte is invalid for a `bytes<n>` encoding.
+1. **Namespace.** The separator begins with a namespace and a colon. The following namespaces are reserved:
+   - `midnight` and `mdn`, for separators the protocol computes in the ledger, the wallet, and the compiler's standard library, including those a MIP specifies (for example MIP-0003's `midnight:ecdsa:`). How the protocol uses them is up to its maintainers (see Rationale).
+   - `mip-NNNN`, for a construction defined by MIP number NNNN and computed by contracts. A draft uses the literal placeholder `mip-xxxx`, which is replaced throughout the document when the editors assign its number.
+
+   Every other namespace is open to the community. A contract SHOULD use a namespace that names its project, and MUST NOT use `midnight`, `mdn`, or a namespace beginning with `mip-`.
+2. **Segments.** After the namespace come one or more colon-delimited segments, ordered from the owning component to the specific construction. The first segment names the owner: a ledger subsystem (`zswap`, `dust`, `intent`), or, for a contract, the component that owns the construction (`grant`). Later segments name the construction and role (`cc` for a coin commitment, `cn` for a nullifier, `request` for a request digest). Segments use ASCII lowercase letters, digits, hyphens, and underscores. Examples: `midnight:zswap-cc[v1]`, `mip-0033:grant:request[v1]`.
+3. **Version.** The separator ends with a version tag `[vN]`, where `N` is a positive integer starting at `v1`, bounded only by the length maximum below. The version identifies the preimage format the separator commits to, so a change to the hashed structure increments the version and the two formats stay distinct. The `]` of the version tag is the only `]` in the separator and is its final byte.
+4. **Length.** The separator is ASCII and MUST be at most 32 bytes, including the version suffix, so that it fits in a single field element (see Encoding and Rationale).
 5. **Uniqueness of construction.** A separator uniquely identifies the construction being hashed. Two different constructions do not share a separator string.
+
+### Encoding
+
+The separator is the first element of the value passed to `persistentHash`, `persistentCommit`, `transientHash`, or `transientCommit`, unpadded and without a length prefix, as the ledger does. In Compact it is a `Bytes<n>` element whose length is exactly the separator's length, for example `persistentHash<[Bytes<21>, Bytes<32>]>(["midnight:zswap-cc[v1]", x])`. For `transientHash` and `transientCommit` it may instead be converted to a field element with `as Field`; the two encodings give the same hash for a separator of up to 31 bytes but different hashes for one of 32 bytes, so a construction's specification states which one it uses. It never goes in a commitment's opening, which must be random or secret; a hash meant to be deterministic and public uses `persistentHash` or `transientHash`, not a commitment with a fixed opening. A separator used as a key-derivation `info` string is used as its bytes. A separator stored in a fixed-width field that is not hashed, such as MIP-0018's event name, is padded as that field requires.
+
+Because the separator contains exactly one `]`, as its final byte, the boundary between the separator and the data that follows is unambiguous. No separator is a prefix of another, so two different separators never produce the same leading bytes, whatever data follows them. Because the final byte is `]`, a separator of at most 32 bytes always fits in a field element, and different separators give different field elements.
 
 ### Per-contract uniqueness
 
 A domain separator names a construction, not an instance. The same separator string is expected to appear in every contract that implements a given standard, and that is safe, because per-contract uniqueness comes from a separate field of the preimage rather than from the separator string.
 
-This follows the pattern the ledger already uses to derive token colors. `tokenType` commits to the pair `(domainSep, contractAddress)` under a fixed inner separator (`midnight:derive_token`), so the separator is a shared label and the contract address, hashed in alongside it, is what makes two contracts' results differ. A hash that must be unique per contract instance MUST bind the contract address (`kernel.self()`) as its own field in the preimage, the same way. A hash meant to produce the same value across instances does not. The address is never encoded into the separator string: it is a 32-byte value known only at execution time, and the separator is a compile-time label.
+This follows how the ledger derives token colors: `tokenType` binds the contract address as its own field, so the same `domainSep` used by two contracts yields two different colors. (Its separator, `midnight:derive_token`, sits in the commitment opening, a placement that predates this convention and is not followed here. Its `domainSep` parameter is a token identifier, not a domain separator in this MIP's sense.) A hash that must be unique per contract instance MUST bind the contract address (`kernel.self()`) as its own field in the preimage, the same way. A hash meant to produce the same value across instances does not. The address is never encoded into the separator string: it is a 32-byte value known only at execution time, and the separator is a compile-time label.
+
+### Per-operation uniqueness
+
+A separator and an address separate constructions and instances, not operations within one contract. When one construction serves several operations whose results must not be interchangeable, such as signature challenges for different circuits, the operation MUST be bound, either as the final segment of the separator when it fits within the length limit, or as a separate field of the preimage.
 
 ### Conformance
 
 A construction conforms when:
 
-1. Every `persistentHash` and `persistentCommit` use site that needs domain separation uses a separator matching the convention. A site that needs none is documented as such, with the reason.
+1. Every `persistentHash`, `persistentCommit`, `transientHash`, and `transientCommit` use site that needs domain separation uses a separator matching the convention. A site that needs none is documented as such, with the reason.
 2. Every separator it uses matches the convention above.
 3. A hash that must be unique per contract instance binds the contract address as a separate preimage field.
+4. A hash that must be unique per operation binds the operation.
+
+### Versioning
+
+Until this MIP is Accepted, it is versioned by its revision history. After acceptance, a change to the convention or the binding rules requires a new MIP that lists this one in `Replaces`.
 
 ## Rationale
 
-### Why `midnight:` is the standard prefix
+### Why these namespaces
 
-MPS-0027 leaves the prefix open among `midnight:`, `mdn:`, and `ni`. Inspection of the shipped ledger and wallet settles it for `midnight:`.
+MPS-0027 leaves the prefix open among `midnight:`, `mdn:`, and `ni`. The shipped ledger and wallet use `midnight:` for most separators and `mdn:` for a few. Both belong to the protocol, so this MIP reserves them for it and leaves their use to its maintainers. A construction that a MIP defines and contracts compute uses `mip-NNNN:` instead, as [MIP-0018](/mips/mip-0018-on-chain-token-metadata.md) already does for its event name. Editors assign MIP numbers, so the namespace is unique without a registry; the separator names the specification that defines it; and it cannot collide with data the ledger hashes. Contracts outside MIPs use their own namespace, and per-contract binding keeps them apart from each other.
 
 `midnight:` is the prefix the core subsystems already use. In the ledger, `serialize/src/serializable.rs` defines the serialization tag constant as `midnight:`, and `coin-structure/src/coin.rs` hashes the Zswap coin commitment and nullifier under `midnight:zswap-cc[v1]` and `midnight:zswap-cn[v1]`. In the wallet, `key-derivation-reference.ts` derives every key under a `midnight:` separator: `midnight:esk`, `midnight:csk`, `midnight:zswap-pk[v1]`, and `midnight:dsk`.
 
-`mdn:` appears only in Dust, and only for its coin commitment and nullifier and the Merkle leaf; Dust's own key derivation uses `midnight:dsk`. It is a localized inconsistency inside a subsystem that otherwise uses `midnight:`. Choosing `midnight:` reconciles those tags toward the prefix everything else already uses.
-
-The `midnight:` prefix is longer than `mdn:`, and a domain separator is a hashed input, so it costs a few bytes per use. The Rationale below measures that cost and finds it negligible.
+`mdn:` is used for the Merkle tree leaf hash (`mdn:lh`), shared by the ledger's Merkle trees and Compact's `merkleTreePathRoot`, and for Dust's public key, commitment, and nullifier (`mdn:dust:pk`, `mdn:dust:cm`, `mdn:dust:nul`).
 
 ### Why the `[vN]` version suffix
 
-The ledger already versions its tags this way (`midnight:zswap-cc[v1]`), so `[vN]` matches existing practice. It gives a construction a safe way to change its hashed format: increment the version, and the two versions are distinct objects.
+The ledger already versions its tags this way (`midnight:zswap-cc[v1]`), so `[vN]` matches existing practice. It gives a construction a safe way to change its hashed format: increment the version, and the two versions are distinct objects. Because the suffix closes the separator, it also marks where the separator ends, so a separator can be placed unpadded without ambiguity.
 
-### Why 64 bytes, and what length actually costs
+### Why 32 bytes, and what length costs
 
-Compact imposes no meaningful cap on a byte string (the language limit is 16,777,216 bytes), so any length rule is a standardization choice rather than a technical necessity. The 64-byte maximum was chosen against measured circuit cost and the real tag inventory.
+A field element holds at most 32 bytes. `transientHash` and `transientCommit` hash field elements, and a byte string longer than 32 bytes converted `as Field` compiles but fails at runtime (compactc 0.36.1). One limit for every separator means a construction can use any of the four primitives without changing its separator. Because a conforming separator ends in `]`, one of at most 32 bytes always converts. A longer operation name is bound as a separate field instead (see Per-operation uniqueness).
 
-The circuit cost of a domain separator was measured by compiling `persistentHash` circuits over tags of several widths (Compact 0.31, the reported circuit rows):
+`persistentHash` is SHA-256, whose circuit cost grows with the number of 64-byte blocks in the whole preimage. A separator therefore adds cost only when it pushes the preimage into another block. Measured with compactc 0.36.1 (`zkir-v3 mock-compile`), for a separator followed by 32 bytes of data:
 
-- 21-byte tag: 2293 rows
-- 32-byte tag: 4168 rows
-- 64-byte tag: 4200 rows
-- 128-byte tag: 6128 rows
+| Separator | Circuit rows |
+|---|---|
+| 21 bytes | 2018 |
+| 31 bytes | 3870 |
+| 32 bytes | 3872 |
 
-All four compile to the same circuit-size parameter (`k=13`). Two facts follow. First, the meaningful cost step is at 31 bytes: a tag of 31 bytes or fewer fits a single field element, while anything larger occupies two, which is the jump from 2293 to ~4200 rows. Between 32 and 64 the cost is almost flat (4168 versus 4200, under one percent), because both occupy two field elements. Second, cost scales with the number of hashes a circuit performs, not with tag width: a circuit chaining eight hashes measured 31370 rows at 32-byte tags and 31626 at 64-byte tags, the same one-percent gap multiplied through, with both landing at the same `k`.
+All compile to the same circuit-size parameter (`k=13`).
 
-So 64 costs essentially the same as 32 while fitting every tag in the shipped inventory (the longest non-composite tag is 21 bytes) and the longer composite tags a contract standard may build (for example a per-circuit authorization tag that appends a circuit name). A lower cap such as 32 would exclude those composites for no measured saving; a higher cap buys headroom no real tag needs and lets circuit cost climb (128 bytes already costs about 50 percent more than 64). 64 is the smallest round bound that clears every real tag while holding cost flat.
+Placing the separator unpadded is never more expensive than zero-padding it to a fixed width, and is sometimes cheaper. Measured on existing constructions:
 
-These measurements are on the `persistentHash` (SHA-256) path, which is where long composite tags occur; the `transientHash` path in the shipped code uses only short tags (for example the 19-byte `midnight:field_hash`), so the cap does not bind there.
+| Construction | Padded to 32 bytes | Unpadded |
+|---|---|---|
+| MIP-0013 device entry | 6109 rows | 6105 rows |
+| Three 32-byte fields | 3978 rows | 3975 rows |
+| MIP-0032 namespace (10-byte tag) | 5932 rows | 4072 rows |
 
 ### Why the contract address is a preimage field, not part of the separator
 
@@ -110,31 +132,35 @@ Per-contract uniqueness is bound into a separate preimage field so the separator
 ### Alternatives considered
 
 - **Length or structural prefixes.** MPS-0027 raised, and the ledger team rejected, length-prefixing and self-describing structural prefixes, on the grounds that Midnight's serialization is prefixed with an identifier that names the format (ledger commit `2bce7b0`, addressing an audit suggestion). This MIP follows that decision: a separator names the format, with no length or structure prefix.
-- **A central registry of every tag.** Rejected: the per-contract binding prevents contract-to-contract collisions with no registry, the shared ledger and standard-library tags already live in their source, and a hand-maintained list would be a standing maintenance burden that adds nothing conformance depends on.
+- **A central registry of every tag.** Rejected: the per-contract binding prevents contract-to-contract collisions with no registry, the shared ledger and standard-library tags already live in their source, and a hand-maintained list would be a standing maintenance burden that adds nothing conformance depends on. The `mip-NNNN:` namespace makes each separator a MIP defines unique and traceable to its specification without a list.
 - **Adding a domain argument to the hash primitives.** Rejected: the primitives are fixed protocol functions, and adding a parameter is a ledger crypto change outside the scope of a naming convention.
-- **A 32-byte cap.** Rejected: it would exclude the longer composite tags a contract standard legitimately builds, and the measurements show no cost saving over 64 (a 32-byte and a 64-byte tag cost within one percent of each other and share the same circuit-size parameter).
-- **No length cap.** Rejected: Compact permits multi-kilobyte byte strings, which would bloat circuits and invite abuse, and an unbounded separator serves no real tag.
-- **Standardizing on `mdn:` for its shorter length.** Rejected: the byte saving is negligible against the measurements and is outweighed by consistency with the prefix the ledger and wallet already use.
+- **A 64-byte maximum.** Rejected: a separator over 32 bytes cannot be converted to a field element, and a longer operation name can be bound as a separate field.
+- **Zero-padded separators with a `:vN` segment**, the form several draft MIPs use. Rejected: padding needs its own rules to keep a separator's boundary unambiguous (no zero bytes, one width per separator), it differs from the form the ledger uses for hashed values, and it is never cheaper than placing the separator unpadded.
+- **A shared readable namespace for standards, or a name per standard.** Rejected: the names would have to be reserved and checked across MIPs, and a separator would not identify the specification that defines it.
 
 ## Path to Active
 
 ### Acceptance Criteria
 
 - The convention is ratified through the MIP process.
-- The prefix decision (`midnight:`), the 64-byte maximum, and the freeze-at-deployment position are accepted, or amended, by the working group.
-- At least one downstream standard (for example the token standards) references the convention rather than an ad-hoc literal, and binds the contract address where per-instance uniqueness is required.
+- The namespace reservation, the 32-byte maximum, and the freeze-at-deployment position are accepted, or amended, by the working group.
+- At least one of the MIPs listed under Backwards Compatibility aligns its separators with the convention, and binds the contract address where per-instance uniqueness is required.
 
 ### Implementation Plan
 
 1. Ratify the convention through the MIP process.
 2. Reference the convention from downstream standards as they are written or revised, and apply the per-contract binding rule in each.
-3. Bring existing separators into conformance where doing so is not consensus-affecting, and record the ones that are as candidates for the conditional migration MIP MPS-0027 anticipates.
+3. Align separators that MIPs define but that are not yet deployed on mainnet before those constructions deploy.
 
 ## Backwards Compatibility Assessment
 
 A domain separator that is an input to an on-chain hash cannot be changed without changing the hash, so reconciling an existing non-conforming tag is a consensus-affecting change. The ledger team's audit remediation that moved coin-structure separators to the versioned prefix form described that work as a far-reaching breaking change with knock-on effects for the wallet and Compact (commit `2bce7b0`). This MIP therefore treats domain separators as frozen at network deployment: the convention governs new constructions, and existing separators that already match (the `midnight:...[vN]` ledger tags) conform as they are.
 
-Whether the non-conforming tags (`mdn:` in the standard library, the `ni` separators in the wallet specification) can be reconciled, and whether doing so is a documentation fix or a hard fork, depends on a question this MIP does not resolve: whether a given `mdn:` tag and its `midnight:` counterpart denote the same on-chain object or two distinct ones. That reconciliation is deferred to the conditional migration MIP MPS-0027 names. This MIP is prescriptive for new constructions and does not alter any shipped on-chain hash.
+Existing protocol separators, including those in the `mdn:` namespace and MIP-0003's unversioned `midnight:ecdsa:`, stay as deployed, and separators already deployed by contracts stay valid. The coin commitment and nullifier that MPS-0027 asked about now use the ledger's `midnight:zswap-cc[v1]` and `midnight:zswap-cn[v1]` in the Compact standard library as well.
+
+MIP-0012, MIP-0013, MIP-0022, MIP-0030, MIP-0032 and MIP-0033 define `:vN` separators, most of them zero-padded and some longer than 32 bytes. None of these constructions is deployed on mainnet, so they align with this convention before deployment. All move to `mip-NNNN:`: most from the `midnight:` namespace, which this MIP reserves for the protocol, and MIP-0032 from `mipa:`. Segments that repeat the MIP's subject can be dropped: `midnight:account:grant:request:v1` (33 bytes) becomes `mip-0033:grant:request[v1]` (26 bytes). That means updating their separators, test vectors, and reference implementations, binding long operation names as separate fields, and redeploying any test-network instances that used the old separators.
+
+This MIP is prescriptive for new constructions and does not alter any shipped on-chain hash.
 
 ## Security Considerations
 
@@ -142,9 +168,9 @@ Domain separation prevents hash collision. Two distinct objects that hash under 
 
 Three further points:
 
-- **A separator is public and adds no secrecy.** Its inputs are knowable: the separator string is published in the standard, and the contract address, where bound, is on-chain. A hash whose preimage holds only public values can be reproduced by anyone, which is correct for a public identifier such as a token color but wrong for anything meant to hide a value or authenticate a caller. Those constructions derive that property from a secret in the preimage, or from a `persistentCommit` opening (a random value), not from the separator. Where the set of secret inputs is small, `persistentCommit`'s opening is what prevents an observer who knows the other inputs from guessing and checking.
+- **A separator is public and adds no secrecy.** Its inputs are knowable: the separator string is published in the standard, and the contract address, where bound, is on-chain. A hash whose preimage holds only public values can be reproduced by anyone, which is correct for a public identifier such as a token color but wrong for anything meant to hide a value or authenticate a caller. Those constructions derive that property from a secret in the preimage, or from a commitment's opening (a random or secret value), not from the separator. Where the set of secret inputs is small, a commitment's opening is what prevents an observer who knows the other inputs from guessing and checking.
 - **Versioning.** Because a version tag distinguishes preimage formats, an implementation MUST treat `midnight:x[v1]` and `midnight:x[v2]` as unrelated separators and never accept one where the other is expected. A construction that migrates versions retires the old separator rather than reinterpreting it in place.
-- **Contract address as the binding field.** The per-contract binding relies on `kernel.self()` returning the real deployed address. A constructor runs before the contract has a deployed address, so a hash that binds the address MUST be computed in a circuit that runs after deployment, not in the constructor, where `kernel.self()` is a placeholder.
+- **Contract address as the binding field.** The per-contract binding relies on `kernel.self()` returning the real deployed address. A contract's address is the hash of its deploy data, which includes the constructor's initial state (`ContractDeploy::address` in the ledger; MIP-0013 section 3; MIP-0032 Rationale), so inside a constructor `kernel.self()` does not return the deployed address. A hash that binds the address MUST be computed in a circuit that runs after deployment. A construction that needs instance separation at construction time MAY take a deployer-supplied salt instead, and MUST state that the salt's uniqueness is the deployer's responsibility.
 
 ## Implementation
 
@@ -152,8 +178,8 @@ The convention is a specification the ledger, the standard library, the wallet, 
 
 ## Testing
 
-- **Convention parser.** A check that a separator string matches the convention: `midnight:` prefix, segment form, `[vN]` suffix, 64-byte maximum, and no trailing zero byte. The known non-conforming tags are flagged as migration candidates.
-- **Length bound.** A compile test confirming a 64-byte separator compiles in a `persistentHash` circuit and costs no more than a small margin above a 32-byte separator, pinning the length choice to toolchain behaviour.
+- **Convention parser.** A check that a separator string matches the convention: namespace, segment form, and a single `[vN]` suffix as the final bytes, within the 32-byte maximum. Existing separators that predate the convention are reported, not rejected.
+- **Length bound.** A test confirming a 32-byte separator converts `as Field` and a 33-byte one fails, pinning the limit to toolchain behaviour.
 - **Per-contract uniqueness.** A test deploying two instances of the same contract standard and confirming that a hash which binds the contract address produces different outputs under the same separator string.
 - **Round-trip agreement.** For an object computed in more than one implementation (for example a coin commitment in the ledger and in a Compact contract), a test that both use the same separator and produce the same hash.
 
@@ -162,14 +188,16 @@ The convention is a specification the ledger, the standard library, the wallet, 
 - [MPS-0027: Domain Separation for Midnight Hash Constructions](/mps/mps-0027-domain-separation.md), the problem statement this MIP answers, including the tag inventory.
 - [MIP-0001: Midnight Improvement Proposal Process](/mips/mip-0001-mip-process.md).
 - [MIP-0003: ECDSA support](/mips/mip-0003-ecdsa-support.md), precedent for separators frozen at network deployment.
-- Ledger source (`midnightntwrk/midnight-ledger`): `serialize/src/serializable.rs` (the `midnight:` serialization tag); `coin-structure/src/coin.rs` (`midnight:zswap-cc[v1]`, `midnight:zswap-cn[v1]`, and `tokenType` committing `(domainSep, contractAddress)` under `midnight:derive_token`); commit `2bce7b0`, "[PM-20171] Address audit Suggestion 4," which moved coin-structure separators to the versioned prefix form.
+- [MIP-0013: Account Authorisation](/mips/mip-0013-account-authorisation.md) and [MIP-0032: Private Credential Registry](/mips/mip-0032-private-credential-registry.md), on the contract address being unavailable in a constructor.
+- [MIP-0018: On-Chain Token Metadata Emission](/mips/mip-0018-on-chain-token-metadata.md), precedent for the `mip-NNNN:` namespace.
+- Ledger source (`midnightntwrk/midnight-ledger`): `serialize/src/serializable.rs` (the `midnight:` serialization tag); `coin-structure/src/coin.rs` (`midnight:zswap-cc[v1]`, `midnight:zswap-cn[v1]`, and `tokenType` committing `(domainSep, contractAddress)` under `midnight:derive_token`); commit `2bce7b0`, "[PM-20171] Address audit Suggestion 4," which moved coin-structure separators to the versioned prefix form; `ledger/src/structure.rs` (`ContractDeploy::address`).
 - Wallet source (`midnightntwrk/midnight-wallet`): `packages/spec-reference/src/key-derivation-reference.ts` (`midnight:esk`, `midnight:csk`, `midnight:dsk`, `midnight:zswap-pk[v1]`).
-- Compact documentation: the `pad` construct, the `persistentHash` hashing pattern, the field-aligned-binary field representation (the 31-byte field element and the trailing-zero validity rule), and the implementation-specific byte-vector limit; the security guide's domain-separation guidance for commitments and nullifiers.
+- Compact documentation: the `persistentHash` hashing pattern; the security guide's domain-separation guidance for commitments and nullifiers.
 - Prior art: BIP-340 tagged hashes; RFC 9380 hash-to-curve domain separation tags; NIST SP 800-185 cSHAKE customization strings.
 
 ## Acknowledgements
 
-This MIP builds on the inventory and framing in MPS-0027 by Hector Bulgarini and Nicolas Di Prima, and on the ledger and cryptography reviewers whose audit remediation established the versioned-prefix separator form.
+This MIP builds on the inventory and framing in MPS-0027 by Hector Bulgarini and Nicolas Di Prima, on review comments from Nicolas Di Prima and Nick Stanford, and on the ledger and cryptography reviewers whose audit remediation established the versioned-prefix separator form.
 
 ## Copyright Waiver
 

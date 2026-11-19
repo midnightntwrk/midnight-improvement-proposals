@@ -69,6 +69,8 @@ MPS-0017: governance-observability (in review)
 [MPS-0047: multi-environment-compact-releases](/mps/mps-0047-multi-environment-compact-releases.md)  
 [MPS-0048: enabling-light-clients](/mps/mps-0048-enabling-light-clients.md)  
 [MPS-0049: soulbound-shielded-attestations](/mps/mps-0049-soulbound-shielded-attestations.md)  
+[MPS-0050: post-quantum-confidentiality-zswap](/mps/mps-0050-post-quantum-confidentiality-zswap.md)  
+[MPS-0051: post-quantum-spending-authorization](/mps/mps-0051-post-quantum-spending-authorization.md)  
 
 # MIPs
 
@@ -104,3 +106,4 @@ MIP-0028: custom-spend-logic (in review)
 [MIP-0030: ecdsa-account-authorisation](/mips/mip-0030-ecdsa-account-authorisation.md)  
 [MIP-0031: message-signing](/mips/mip-0031-message-signing/mip-0031-message-signing.md)  
 [MIP-0032: private-credential-registry](/mips/mip-0032-private-credential-registry.md)  
+[MIP-0033: scoped-grants](/mips/mip-0033-scoped-grants.md)  
