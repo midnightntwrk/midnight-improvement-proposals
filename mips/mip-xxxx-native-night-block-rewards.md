@@ -91,53 +91,54 @@ Succinct verification without a full node is outside this proposal.
 
 ### Terminology and units
 
-* `STAR` is the smallest NIGHT unit. Consensus arithmetic uses whole STAR.
+* *cNIGHT* is NIGHT on Cardano.
+* `cnight_weight` is the rational `w_n/w_d` that the snapshot record carries: the lovelace of stake
+  per STAR of cNIGHT (staking rule 25, cnight\_weight).
+* `epoch` is a Cardano epoch `E`. A block belongs to epoch `E` when its committee was selected from
+  the stake snapshot of epoch `E` (staking rule 24, Selection). Rewards are calculated per block,
+  and are split and settled once per epoch. A *Midnight epoch* is one committee session, and one
+  Cardano epoch holds many of them.
+* A *lock* is the delegation lock of the required staking MIP: a UTXO at its staking contract whose
+  datum names an owner credential, one pool and a `reward_address`, and which holds the cNIGHT it
+  stakes, which may be none.
+* `operator_id` identifies an operator and is its `pool_id` (see **Operators and payees**).
 * `pool_id` is the 28-byte Blake2b-224 hash of a Cardano stake-pool verification key.
-* `stake_address` is the network-tagged Cardano reward address for a stake credential. The snapshot
-  record gives a stake credential as a kind byte and a 28-byte hash, and on one network the two
-  forms name the same credential.
-* The *required staking MIP* is NIGHT Staking on Cardano (`mip-xxxx-night-staking-on-cardano.md`).
-  This MIP cites its rules as "staking rule N, Name", and takes from it the pool registration, the
-  lock, `cnight_weight` and the stake snapshot record. It defines none of them.
 * The *required Reserve MIP* is Native NIGHT Block Production Rewards: Cardano Reserve Release
   (`mip-xxxx-cardano-reserve-release.md`). It defines the release of Reserve NIGHT on Cardano and
   the record that the bridge writes for each mirrored release.
-* `cnight_weight` is the rational `w_n/w_d` that the snapshot record carries: the lovelace of stake
-  per STAR of cNIGHT (staking rule 25, cnight\_weight).
-* *Virtual stake* is a pool's stake in lovelace with its locked cNIGHT counted: its ADA stake plus
-  `floor(cnight * w_n / w_d)` for each lock that counts and names it (staking rule 19, Virtual
-  stake). The split uses the same term for each lock (see **Epoch reward split**).
-* *cNIGHT* is NIGHT on Cardano. A *lock* is the delegation lock of the required staking MIP: a UTXO
-  at its staking contract whose datum names an owner credential, one pool and a `reward_address`,
-  and which holds the cNIGHT it stakes, which may be none.
-* `operator_id` identifies an operator and is its `pool_id` (see **Operators and payees**).
+* The *required staking MIP* is NIGHT Staking on Cardano (`mip-xxxx-night-staking-on-cardano.md`).
+  This MIP cites its rules as "staking rule N, Name", and takes from it the pool registration, the
+  lock, `cnight_weight` and the stake snapshot record. It defines none of them.
+* `reserve_pool` is Midnight's actual `M.R` balance. It moves only when the bridge mirrors a
+  finalized Cardano Reserve release.
 * `reward_address` is a Midnight `UserAddress`, 32 bytes, that a pool names in its Midnight
   registration and a recipient names in a lock. It holds the ledger balance of the unclaimed reward
   and receives the claimed NIGHT, and a withdrawal is signed by the key from which the ledger
   derives it. Rewards are paid in NIGHT on Midnight and remain on Midnight; this MIP provides no
   transfer to Cardano.
-* `epoch` is a Cardano epoch `E`. A block belongs to epoch `E` when its committee was selected from
-  the stake snapshot of epoch `E` (staking rule 24, Selection). Rewards are calculated per block,
-  and are split and settled once per epoch. A *Midnight epoch* is one committee session, and one
-  Cardano epoch holds many of them.
-* `snapshot_id` identifies the stake snapshot record of an epoch, `NightStakeSnapshotV1` (staking
-  rule 23, Snapshot record): the one record per Cardano epoch that lists the operators, the locks
-  and the ADA delegators, and from which that epoch's committees are selected.
 * `reward_reserve_outstanding` is the canonical economic balance used to calculate future base
   rewards. It corresponds to `B_o` in the tokenomics whitepaper and decreases by `N_b` when each
   reward-eligible block executes. At the best-chain head it also reflects draws by blocks not yet
   finalized, which fork choice may roll back; in finalized state it reflects exactly the finalized
   reward-eligible blocks.
-* `unsettled_draw` is finalized base draw not yet paid out by native settlement, `P` in **Settlement
-  gate and supply invariant**.
-* `unassigned_released` is released NIGHT available to settle: the balance of `block_reward_pool`
-  less its balance at activation and less all escrow. A Cardano transaction or release is
-  *finalized* in this MIP when it is stable under the network's Cardano stability rule.
-* `reserve_pool` is Midnight's actual `M.R` balance. It moves only when the bridge mirrors a
-  finalized Cardano Reserve release.
+* `snapshot_id` identifies the stake snapshot record of an epoch, `NightStakeSnapshotV1` (staking
+  rule 23, Snapshot record): the one record per Cardano epoch that lists the operators, the locks
+  and the ADA delegators, and from which that epoch's committees are selected.
+* `stake_address` is the network-tagged Cardano reward address for a stake credential. The snapshot
+  record gives a stake credential as a kind byte and a 28-byte hash, and on one network the two
+  forms name the same credential.
+* `STAR` is the smallest NIGHT unit. Consensus arithmetic uses whole STAR.
 * `STAR_PER_NIGHT` is a network constant equal to 1,000,000; the required Reserve MIP uses the same
   denomination. It is not a governable parameter and MUST be published with the tokenomics
   parameters.
+* `unassigned_released` is released NIGHT available to settle: the balance of `block_reward_pool`
+  less its balance at activation and less all escrow. A Cardano transaction or release is
+  *finalized* in this MIP when it is stable under the network's Cardano stability rule.
+* `unsettled_draw` is finalized base draw not yet paid out by native settlement, `P` in **Settlement
+  gate and supply invariant**.
+* *Virtual stake* is a pool's stake in lovelace with its locked cNIGHT counted: its ADA stake plus
+  `floor(cnight * w_n / w_d)` for each lock that counts and names it (staking rule 19, Virtual
+  stake). The split uses the same term for each lock (see **Epoch reward split**).
 
 No consensus calculation uses floating-point arithmetic.
 
