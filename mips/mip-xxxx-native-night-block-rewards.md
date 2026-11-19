@@ -167,11 +167,11 @@ and a balance already credited stays with the address that holds it: no rule mov
 balance to another address, so a recipient that loses the key of an address loses the balance
 credited to it.
 
-A holder of locked cNIGHT is paid at the `reward_address` of its lock. An ADA delegator names its
-address in a lock whose owner is its stake credential and which names the pool that it delegates to,
-and that lock may hold no cNIGHT. A stake credential that is delegated to a pool and owns no lock
-for that pool still earns, and the runtime holds its share in escrow keyed by `stake_address`;
-**Bounded native settlement** states when that escrow moves to a reward address.
+Rewards on locked cNIGHT go to the `reward_address` of the lock that holds it. An ADA delegator's
+rewards go to the `reward_address` of a lock owned by its stake credential that names the pool it
+delegates to; that lock need not hold any cNIGHT. A delegator with no such lock still earns: the
+runtime keeps its share in escrow under its `stake_address` until **Bounded native settlement**
+releases it.
 
 Every committee entry carries a consensus `reward_eligible` flag. In accordance with the tokenomics
 whitepaper, the initial trusted permissioned producers are ineligible and their blocks draw no
