@@ -66,8 +66,10 @@ as spendable NIGHT on Midnight. None of those workflows is complete today.
 
 The current codebase already contains most of the native payout substrate. The Midnight ledger has
 `block_reward_pool`, `unclaimed_block_rewards`, `DistributeReserve`,
-`DistributeNight(Reward)`, `ClaimRewardsTransaction`, a minimum claim amount, replay protection, and
-a supply-conservation check. The node exposes a runtime query for an unclaimed amount. The indexer
+`DistributeNight` with the claim kind `Reward`, which moves NIGHT from `block_reward_pool` into
+`unclaimed_block_rewards`, the signed `ClaimRewardsTransaction` with a minimum claim amount, replay
+protection for each distributed output and each claim, and a supply-conservation check. The node's
+runtime API `get_unclaimed_amount` returns the ledger's unclaimed amount for an address. The indexer
 records block authors and reward-claim transactions.
 
 The production path is nevertheless inactive. The node runtime's block-reward pallet and block
