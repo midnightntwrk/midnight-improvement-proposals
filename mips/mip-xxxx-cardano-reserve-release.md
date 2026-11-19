@@ -381,7 +381,9 @@ permanent:
 
 - the release rate: `R_a`, derived from the `pi` the native-rewards MIP recommends, and the release
   factor and interval derived from it;
-- the release destination; and
+- the release destination;
+- an empty `mitigation_logic` in the two-stage upgrade, because every spend of the Reserve needs its
+  withdrawal while it is set; and
 - an external audit of the logic with no unresolved critical or high findings, and legal
   confirmation that the frozen behavior is consistent with the notified disclosures.
 
