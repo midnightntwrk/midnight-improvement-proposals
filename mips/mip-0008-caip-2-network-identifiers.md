@@ -1,8 +1,9 @@
 ---
-MIP: "0008"
+MIP: 0008
 Title: CAIP-2 Network Identifiers for Midnight
 Authors:
   - alba-press (alba-press)
+  - Mahesh Sashital (mbs-midnight)
 Status: Draft
 Category: Standards
 Created: 2026-05-30
@@ -11,37 +12,19 @@ Replaces: none
 MPS: MPS-0003
 ---
 
-<!--
- Copyright Midnight Foundation
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-     https://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
--->
-
 ## Abstract
 
 Midnight currently identifies networks using unqualified lowercase strings such as `mainnet`, `preprod`, and `preview`. These values appear in wallet SDKs, indexers, and DApp connector APIs. They are not globally unique: the string `mainnet` is shared by hundreds of blockchains and cannot be used safely in multi-chain wallet registries, CAIP chain-ID fields in wallet policy/audit surfaces, or cross-chain tooling without additional context.
 
-This MIP proposes adopting [CAIP-2](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md) as the **external** network identification format for Midnight, using the proposed namespace `midnight` and a reference portion defined in this specification.
+This MIP adopts [CAIP-2](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md) as the **external** network identification format for Midnight, using the namespace `midnight`.
 
-**Working recommendation (not canonical):** human-readable network names (Cosmos-style), for example `midnight:mainnet` and `midnight:preprod`, mapped one-to-one from existing Midnight `NetworkId` strings verified in [midnight-wallet `NetworkId.ts`](https://github.com/midnightntwrk/midnight-wallet/blob/main/packages/abstractions/src/NetworkId.ts). These examples are **illustrative** until Midnight core engineering ratifies the reference format and network registry.
+The reference portion is the existing Midnight network name, for example `midnight:mainnet` and `midnight:preprod`, mapped one-to-one from Midnight's `NetworkId` strings in [midnight-wallet `NetworkId.ts`](https://github.com/midnightntwrk/midnight-wallet/blob/main/packages/abstractions/src/NetworkId.ts). Each registered name is paired with a published genesis identifier, which clients use to verify that they are connected to the intended chain instance. The genesis identifier is verification metadata: it does not appear in the CAIP-2 identifier, in addresses or in transactions.
 
-**Open core decision:** whether human-readable network names are sufficient, or whether genesis-hash or hybrid references are required for consensus-verifiable uniqueness.
+The specification covers CAIP-2 grammar constraints, parsing rules, a canonical network registry, reset and reuse rules for registered names, chain-instance verification, and a backwards-compatible transition strategy (dual acceptance of legacy and CAIP-2 forms, canonicalizing to CAIP-2 in new APIs). Genesis-hash, numeric, and hybrid reference formats were considered and are documented as alternatives. Scope is limited to CAIP-2 chain identifiers; account IDs (CAIP-10), address encoding, bridge semantics, and ledger consensus are out of scope.
 
-The specification covers CAIP-2 grammar constraints, parsing rules, an illustrative network registry (pending core ratification), resolution guidance, and a backwards-compatible transition strategy (dual acceptance of legacy and CAIP-2 forms, canonicalizing to CAIP-2 in new APIs). It documents genesis-hash, numeric, and hybrid reference formats as alternatives. Scope is limited to CAIP-2 chain identifiers; account IDs (CAIP-10), address encoding, bridge semantics, and ledger consensus are out of scope unless Midnight core engineering determines they are required.
+This MIP responds to [MPS-0003: CAIP-2 Compliant Network Identifiers for Wallet Ecosystem Integration](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0003-caip-support.md). The reference-format decision was reached in [Discussion #195](https://github.com/midnightntwrk/midnight-improvement-proposals/discussions/195).
 
-This MIP responds to [MPS-0003: CAIP-2 Compliant Network Identifiers for Wallet Ecosystem Integration](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0003-caip-support.md).
-
-**Submission scope:** This draft is intended for review in [midnight-improvement-proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) only. ChainAgnostic namespace registration and third-party wallet registry updates (e.g. OWS) are **explicitly deferred** until this MIP is Accepted and core ratifies identifiers.
+**Submission scope:** This MIP is for review in [midnight-improvement-proposals](https://github.com/midnightntwrk/midnight-improvement-proposals) only. ChainAgnostic namespace registration and third-party wallet registry updates (e.g. OWS) are **deferred** until this MIP is Accepted.
 
 ## Motivation
 
@@ -49,7 +32,7 @@ This MIP responds to [MPS-0003: CAIP-2 Compliant Network Identifiers for Wallet 
 
 Midnight network identifiers today are simple strings defined in wallet abstractions and consumed across the stack. Verified against the live wallet SDK source ([`NetworkId.ts`](https://github.com/midnightntwrk/midnight-wallet/blob/main/packages/abstractions/src/NetworkId.ts), 2026-05-30):
 
-```typescript
+```ts
 export const NetworkId = {
   MainNet: 'mainnet',
   TestNet: 'testnet',
@@ -66,16 +49,13 @@ Applications set these via `@midnight-ntwrk/midnight-js-network-id` (`setNetwork
 ### Why existing capabilities are inadequate
 
 1. **Namespace collision:** `mainnet`, `testnet`, and similar strings are ambiguous without chain context. Multi-chain wallets cannot register Midnight in a chain registry alongside Ethereum (`eip155:1`) or Solana (`solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`) using bare strings.
-
 2. **Standards incompatibility:** [CAIP-2](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md) (status: Final) defines identifiers as `namespace:reference`. Midnight does not conform, forcing each integrator to build ad hoc translation layers.
-
 3. **Wallet ecosystem friction:** Multi-chain wallet standards use CAIP-2/CAIP-10 in wallet files, policy contexts, audit logs, and API parameters. As of community discussion in [OWS #222](https://github.com/open-wallet-standard/core/issues/222), no `midnight` namespace is registered at [ChainAgnostic/namespaces](https://github.com/ChainAgnostic/namespaces).
-
 4. **Developer experience:** DApp and wallet developers familiar with multi-chain patterns expect CAIP-2 identifiers in configuration and chain registries. Midnight-specific string handling increases integration cost and error rates.
 
 ### Stakeholder context
 
-Cross-chain wallet interoperability research—including work at **Ura Labs** that informed discussion in [OWS #222](https://github.com/open-wallet-standard/core/issues/222)—highlighted integrator friction with unqualified Midnight network strings. That research motivated follow-on specification work; it does not define canonical identifiers.
+Cross-chain wallet interoperability research, including work at **Ura Labs** that informed discussion in [OWS #222](https://github.com/open-wallet-standard/core/issues/222), highlighted integrator friction with unqualified Midnight network strings. That research motivated follow-on specification work; it does not define canonical identifiers.
 
 **Midnight Foundation, MIP editors, and Midnight core engineering retain sole authority** over reference format, registry contents, and acceptance of this MIP.
 
@@ -86,14 +66,16 @@ Cross-chain wallet interoperability research—including work at **Ura Labs** th
 This MIP specifies:
 
 - CAIP-2 grammar constraints applicable to Midnight
-- The **proposed** CAIP-2 namespace `midnight`
-- The format of the CAIP-2 `reference` portion (working recommendation and documented alternatives)
-- An **intended** mapping between CAIP-2 identifiers and legacy Midnight network strings (pending core ratification)
+- The CAIP-2 namespace `midnight`
+- The format of the CAIP-2 `reference` portion
+- A canonical registry mapping CAIP-2 identifiers to legacy Midnight network strings and genesis identifiers
+- Reset and reuse rules for registered names
+- How clients verify that they are connected to the intended chain instance
 - Parsing, validation, and canonical serialization rules
-- Resolution method guidance for a future ChainAgnostic namespace registration
+- The resolution method for a future ChainAgnostic namespace registration
 - Backwards-compatible transition requirements for APIs and SDKs
 
-This MIP does **not** specify bridge protocols, CAIP-10 account IDs, address formats, or ledger-embedded `network_id` serialization except where Midnight core engineering confirms a consensus-level change is required.
+This MIP does **not** specify bridge protocols, CAIP-10 account IDs, address formats, or ledger-embedded `network_id` serialization.
 
 ### Non-goals
 
@@ -101,12 +83,12 @@ The following are explicitly out of scope:
 
 - Bridge semantics, cross-chain deposit/claim/refund flows, or application-specific routing
 - CAIP-10 account identifier adoption
-- Changes to Bech32m address encoding (`mn_addr1…`, `mn_addr_preprod1…`, shielded address formats) unless Midnight core requires it for security
-- Ledger consensus, block production, or ZK circuit changes unless Midnight core confirms they are required to adopt CAIP-2
-- Renaming or consolidating Midnight test environments (`qanet`, `devnet`, etc.)—register as-is unless core decides otherwise
+- Changes to Bech32m address encoding (`mn_addr1…`, `mn_addr_preprod1…`, shielded address formats)
+- Ledger consensus, block production, ZK circuit, or transaction-format changes
+- Renaming or consolidating Midnight test environments (`qanet`, `devnet`, etc.)
 - WalletConnect / CAIP-25 session protocol details beyond registering chain IDs
-- **ChainAgnostic namespace PRs** — deferred until this MIP is Accepted
-- **Third-party wallet registry updates** (including OWS) — deferred until identifiers are ratified here
+- **ChainAgnostic namespace PRs**, deferred until this MIP is Accepted
+- **Third-party wallet registry updates** (including OWS), deferred until this MIP is Accepted
 
 ### CAIP-2 baseline
 
@@ -123,15 +105,15 @@ Properties relevant to Midnight:
 - Identifiers are **case-sensitive**.
 - Design goals include ecosystem-wide uniqueness, partial human-readability, on-chain storage feasibility, hardware-wallet display, and URL-path safety.
 - The reference's **semantics and resolution method** are delegated to a per-namespace specification at [ChainAgnostic/namespaces](https://github.com/ChainAgnostic/namespaces).
-- CAIP-2 sets grammar only; it does **not** mandate genesis hash vs network name—the namespace spec decides.
+- CAIP-2 sets grammar only; it does **not** mandate genesis hash vs network name. The namespace specification decides.
 
-**Midnight grammar check:** `midnight` is a legal namespace (8 characters, at the CAIP-2 maximum of the 3–8 limit). All reference candidates under consideration—`mainnet`, a truncated genesis hash, a numeric id, or a `mainnet-<hashprefix>` hybrid—fit the 1–32 character reference rule.
+**Midnight grammar check:** `midnight` is a legal namespace (8 characters, the CAIP-2 maximum). Every registered and unregistered Midnight network name fits the 1–32 character reference rule.
 
 Implementations MUST reject malformed identifiers at API boundaries (invalid namespace, empty reference, illegal characters).
 
 ### Namespace
 
-The **proposed** CAIP-2 namespace for Midnight blockchains is:
+The CAIP-2 namespace for Midnight blockchains is:
 
 ```
 midnight
@@ -143,36 +125,18 @@ Properties:
 - Lowercase only
 - Refers to the Midnight blockchain platform and its deployed networks
 
-Registration of this namespace at [ChainAgnostic/namespaces](https://github.com/ChainAgnostic/namespaces) is a prerequisite for ecosystem-wide interoperability and SHOULD follow **Acceptance** of this MIP (or a successor with the same namespace and reference rules). **No ChainAgnostic PR is proposed as part of this submission.**
-
-### Core Review Decision (reference format)
-
-> **This is the primary open decision for Midnight core engineering.** Most other elements of this MIP can be specified from public standards and existing Midnight SDK strings. The reference format choice is not fully settled by MPS-0003 (a problem statement, not a normative decision).
-
-**Core engineering review required:** Confirm whether **human-readable network names** (Option A) are canonical enough for Midnight's CAIP-2 references, or whether **genesis-hash** (Option B) or **hybrid name + hash prefix** (Option D) references are required for stronger consensus-verifiable uniqueness.
-
-Dependent question: Can Midnight expose a **stable public genesis-hash constant** per network (and encoding rules) if genesis-hash or hybrid references are chosen?
-
-Until core confirms, this MIP treats **Option A (network name)** as the **working recommendation only—not canonical**.
+Registration of this namespace at [ChainAgnostic/namespaces](https://github.com/ChainAgnostic/namespaces) is a prerequisite for ecosystem-wide interoperability and SHOULD follow **Acceptance** of this MIP. **No ChainAgnostic PR is proposed as part of this submission.**
 
 ### Reference format
 
-> **Review gate:** The choice of reference format below is a **working recommendation** for community review. **Final canonical reference format is subject to Midnight core engineering review** and may change before this MIP reaches Accepted status.
-
-#### Working recommendation: network name (Option A)
-
-The reference portion **may** be the existing Midnight network name string, lowercase, matching the well-known `NetworkId` values in [midnight-wallet `NetworkId.ts`](https://github.com/midnightntwrk/midnight-wallet/blob/main/packages/abstractions/src/NetworkId.ts).
-
-Syntax:
+The reference portion is the existing Midnight network name string, lowercase, matching the `NetworkId` values in [midnight-wallet `NetworkId.ts`](https://github.com/midnightntwrk/midnight-wallet/blob/main/packages/abstractions/src/NetworkId.ts).
 
 ```
 reference = network-name
 where network-name matches [-_a-zA-Z0-9]{1,32} per CAIP-2
 ```
 
-In practice, all well-known Midnight network names observed today are lowercase ASCII and fit the direct reference pattern without hashing.
-
-**Illustrative examples only—not canonical until ratified:**
+Examples:
 
 ```
 midnight:mainnet
@@ -180,55 +144,71 @@ midnight:preprod
 midnight:preview
 ```
 
-Additional illustrative mappings from verified SDK strings (also **not canonical**):
+This follows the Cosmos namespace pattern (`cosmos:cosmoshub-4`) and MPS-0003 Appendix B.
 
-```
-midnight:testnet
-midnight:qanet
-midnight:devnet
-midnight:undeployed
-```
+**What the name provides.** The network name is already part of ledger state, appears in every Bech32m address, and is checked in every transaction. Using it as the reference keeps the CAIP-2 identifier consistent with everything Midnight already emits, without a mapping table.
 
-This follows the Cosmos namespace pattern (`cosmos:cosmoshub-4`) and aligns with MPS-0003 Appendix B. Other ecosystems use human-readable network-name references in a similar style; those precedents are informative only and not normative for Midnight.
+**What the name does not provide.** A name does not fingerprint a chain instance. Different genesis instances can carry the same string, for example after a test network reset, or in a private or local deployment that reuses a public name. This MIP closes that gap with published genesis identifiers (*Canonical network registry*), rules for what happens to a name when its network is reset (*Reset and reuse rules*), and a procedure clients follow to check the instance (*Chain-instance verification*).
 
-#### Documented alternatives (not selected in this draft)
+#### Documented alternatives (not adopted)
 
-Reviewers MUST understand the following alternatives evaluated in MPS-0003 Open Question #1. Core engineering may adopt one instead of, or in combination with, Option A.
+The following alternatives from MPS-0003 Open Question #1 were considered and are not adopted. They are kept for the record.
 
 | Option | Example | Ecosystem precedent | Summary |
-|--------|---------|---------------------|---------|
-| **B. Genesis hash** | `midnight:91b171bb158e2d38…` | Solana, Bitcoin, Polkadot | Truncated genesis hash; cryptographically verifiable; poor UX. Polkadot uses first 16 bytes of genesis hash as lowercase hex, resolved via `chain_getBlockHash(0)`. Midnight does not currently expose a public genesis-hash constant (MPS-0003). |
+|---|---|---|---|
+| **B. Genesis hash** | `midnight:1941ca8e2bb88146c14dea08…` | Solana, Bitcoin, Polkadot | Truncated genesis hash as the reference. Verifiable, but not human-readable and not aligned with the strings Midnight already uses. This MIP uses the genesis hash as verification metadata instead. |
 | **C. Numeric ID** | `midnight:1`, `midnight:109` | EIP-155 (`eip155:1`) | Familiar to EVM developers; no established public Midnight numeric chain ID; internal values risk confusion with unrelated numeric namespaces. |
-| **D. Hybrid name + hash prefix** | `midnight:mainnet-91b171bb` | — | Readability + verifiability; complex parsing; 32-char reference limit constrains hash prefix length. |
-| **E. Hashed fallback** | `midnight:hashed-0204c92a0388779d` | Cosmos (long `chain_id`s) | Only needed if a reference exceeds 32 characters. |
+| **D. Hybrid name + hash prefix** | `midnight:mainnet-1941ca8e` | — | Readability plus verifiability, but complex parsing, and the 32-character limit constrains the hash prefix. |
+| **E. Hashed fallback** | `midnight:hashed-0204c92a0388779d` | Cosmos (long `chain_id`s) | Only needed if a reference exceeds 32 characters. No Midnight network name does. |
 
-Midnight core should confirm whether Midnight's CAIP-2 reference should optimize for **wallet readability and SDK alignment** (Option A) or **consensus-verifiable uniqueness** (Options B/D).
+### Canonical network registry
 
-If core selects Option B, D, or E, this MIP MUST be amended before namespace registration. If Option C is selected, Midnight Foundation MUST publish an authoritative numeric ID table distinct from internal WASM/ledger constants unless explicitly aliased.
+Registered references:
 
-### Illustrative network registry (pending core ratification)
+| CAIP-2 identifier | Legacy `NetworkId` | Chain name (`system_chain`) | Genesis identifier (current instance) | Verified |
+|---|---|---|---|---|
+| `midnight:mainnet` | `mainnet` | `Midnight Mainnet` | `0x1941ca8e2bb88146c14dea084d3be7eb6e96ca7135429c543848b628124f2854` | 2026-11-20 |
+| `midnight:preprod` | `preprod` | `Midnight Preprod` | `0xdf831b09a8baa92badf47762ce5ac439b7e47e3ed3d39600cfdd44fad552361b` | 2026-11-20 |
+| `midnight:preview` | `preview` | `Midnight Preview` | `0x3c096de209e06a1a8c52be7bda109ee8c891a42288c0a9db5495f9616dd13796` | 2026-11-20 |
 
-> **No CAIP-2 identifier in this table is canonical.** Identifiers such as `midnight:mainnet` and `midnight:preprod` are **working recommendations for review** until Midnight core publishes a ratified registry as part of MIP acceptance or amendment.
+The genesis identifier is the hash of block 0, as returned by the node's `chain_getBlockHash(0)` RPC: 32 bytes, written as `0x` followed by 64 lowercase hex digits.
 
-The following rows are derived from verified [midnight-wallet `NetworkId.ts`](https://github.com/midnightntwrk/midnight-wallet/blob/main/packages/abstractions/src/NetworkId.ts) (seven well-known values). Additional environments (e.g. `govnet` in operator tooling) are reserved for core amendment.
+Superseded instances: none recorded. When a registered test network is reset under *Reset and reuse rules*, its previous genesis identifier is listed here with the date it stopped being current.
 
-| CAIP-2 identifier (illustrative) | Legacy `NetworkId` | Notes |
-|----------------------------------|-------------------|-------|
-| `midnight:mainnet` | `mainnet` | Production Midnight network |
-| `midnight:preprod` | `preprod` | Pre-production testnet |
-| `midnight:preview` | `preview` | Preview testnet |
-| `midnight:testnet` | `testnet` | Legacy/generic label; inclusion pending core decision on whether `testnet` remains distinct from `preprod`/`preview` |
-| `midnight:qanet` | `qanet` | QA environment |
-| `midnight:devnet` | `devnet` | Development environment |
-| `midnight:undeployed` | `undeployed` | Local emulator / undeployed ledger parameters |
-| *(reserved)* | `govnet`, others | To be added by core amendment |
+| CAIP-2 identifier | Genesis identifier | Current until |
+|---|---|---|
+| — | — | — |
 
-**If Option A is adopted and this registry is ratified**, the following mapping rules apply:
+Unregistered names. These are valid CAIP-2 strings, but no uniqueness is guaranteed for them, and a chain using one is not a registered reference:
 
-1. CAIP-2 identifier = `midnight:` + legacy string (both lowercase).
-2. No two legacy strings map to the same CAIP-2 identifier.
-3. Silent aliasing (e.g. mapping `qanet` → `preview`) is forbidden; distinct environments receive distinct CAIP-2 IDs even when operator tooling maps multiple environments to shared off-chain infrastructure **(environment naming only; no bridge or settlement semantics)**.
-4. **After Active:** the ratified registry is authoritative for translation between CAIP-2 and legacy forms. **Before Active:** the table is illustrative for integration planning only.
+| Name | Use |
+|---|---|
+| `undeployed` | Local and emulated chains. Every local chain uses this name, so it never identifies one instance |
+| `stagenet` | Midnight's staging network. It may be reset or redeployed without notice |
+| `qanet`, `devnet` | Internal environments |
+| `testnet` | Legacy label with no current public network. It MUST NOT be treated as an alias for `preprod` or `preview` |
+| `govnet` and other operator environments | Reserved; may be registered by amendment |
+
+Mapping rules:
+
+1. CAIP-2 identifier = `midnight:` + the legacy string, both lowercase.
+2. Each legacy string maps to exactly one CAIP-2 identifier, and the reverse.
+3. Distinct environments always have distinct identifiers. Silent aliasing (for example `qanet` → `preview`) is forbidden, even when operator tooling maps several environments to shared off-chain infrastructure.
+4. A registered name can be added, or an unregistered one promoted, only by amending this MIP. Recording a new genesis identifier for an existing registered name follows *Reset and reuse rules*: it is a registry update to this document, not a new MIP.
+
+### Reset and reuse rules
+
+A registered name identifies a network's role. Its genesis identifier identifies the current chain instance in that role.
+
+1. **A name survives a reset.** When a registered test network is reset, it keeps its name. `midnight:preprod` still means "the Preprod network" after the reset.
+2. **A reset MUST produce a new genesis identifier.** Whoever performs the reset changes the genesis, for example the chain specification's genesis timestamp or a reset nonce in the genesis configuration, so that block 0 differs from every previous instance. Relaunching a registered network from an unchanged chain specification reproduces the old genesis hash, so clients cannot detect the reset. That is not a permitted reset of a registered network.
+3. **An upgrade is not a reset.** A runtime or ledger upgrade applied in place keeps the chain's history and its block 0, so the genesis identifier does not change. For example, Mainnet and Preprod kept their genesis identifiers through the ledger 9 upgrade in November 2026.
+4. **Each reset is recorded.** The Midnight Foundation records the new genesis identifier in the canonical registry, with the date it takes effect, no later than the date the reset network accepts its first public transaction. The previous identifier moves to *Superseded instances* with its end date, so historical references remain interpretable.
+5. **Nothing carries across a reset.** Contracts, balances, channels and other state of a superseded instance do not exist on its successor. An application that stores a CAIP-2 identifier alongside state SHOULD also store the genesis identifier it observed, so that a reset is detectable rather than silently misread.
+6. **`mainnet` is never reset or reused.** A new production genesis would be a new network. It requires an amendment to this MIP and a new registered name.
+7. **Names are never reassigned to another role.** A retired name stays retired. For example, `preview` cannot later be used for the network now known as `preprod`.
+8. **Other chains using a registered name are not that network.** Any chain can set its network ID to a registered string, for example a private deployment or a fork. Only the instance whose genesis identifier is the registry's current entry is the registered network. *Chain-instance verification* is how a client tells them apart.
+9. **Unregistered names carry no guarantees.** Any number of chains may use `undeployed`, `stagenet` or the other unregistered names at once. Tools MUST NOT present them as registered references, and production builds SHOULD reject them.
 
 ### Parsing and validation
 
@@ -237,56 +217,61 @@ Implementations MUST:
 1. Split on the first `:` only: `namespace`, `reference`.
 2. Verify `namespace === "midnight"`.
 3. Verify `reference` matches `[-_a-zA-Z0-9]{1,32}` per CAIP-2.
-4. **After Active:** verify `reference` against the **ratified** registry. **Before Active:** implementations SHOULD NOT treat unratified illustrative IDs as canonical.
+4. Verify `reference` against the canonical registry. Unregistered names are accepted only in explicit development or local modes.
 
 Canonical serialization:
 
 - Namespace MUST be lowercase `midnight`.
-- Reference MUST use the ratified registry spelling (all observed Midnight network names today are lowercase).
+- Reference MUST use the registry spelling (all lowercase).
 
 Legacy parsing (transition period):
 
 - A bare legacy string `mainnet` (no colon) MAY be accepted at API boundaries where historically supported.
-- When accepted, implementations SHOULD canonicalize to the ratified CAIP-2 form (e.g. `midnight:mainnet` if Option A is adopted) for storage in new APIs and external-facing responses.
+- When accepted, implementations SHOULD canonicalize to the CAIP-2 form (e.g. `midnight:mainnet`) for storage in new APIs and external-facing responses.
 
 #### Reference implementation sketch (non-normative)
 
-```typescript
+```ts
 // Illustrative API surface for wallet/SDK integrators
 parseCaip2Midnight(id: string): { namespace: 'midnight'; reference: string } | Error
-legacyToCaip2(legacy: string): string   // e.g. 'preprod' → 'midnight:preprod' when ratified
-caip2ToLegacy(id: string): string        // inverse when reference is registry-known
+legacyToCaip2(legacy: string): string    // e.g. 'preprod' → 'midnight:preprod'
+caip2ToLegacy(id: string): string        // inverse when the reference is registry-known
+expectedGenesis(id: string): string      // current genesis identifier from the registry
 ```
 
-### Resolution method
+### Chain-instance verification
 
-For a future ChainAgnostic namespace registration, the Midnight namespace specification MUST document how a client resolves a `reference` to a live blockchain.
+A client resolves `midnight:<name>` to a live chain, and checks that it is the intended instance, as follows:
 
-**Working resolution method (Option A):**
+1. Connect to a node, or to an indexer that reports its node, for the intended network.
+2. **Check the network name.** Read the network ID the indexer or connector configuration reports, and check that `midnight:` + that ID equals the expected CAIP-2 identifier. A client with only node RPC access MAY instead check that `system_chain` equals the registry's chain name. This is the same network the ledger checks in every transaction and that appears in addresses.
+3. **Check the chain instance.** Read the genesis identifier with `chain_getBlockHash(0)`, and check that it equals the registry's current entry for that name. A client connected through an indexer MAY read the hash of the indexer's block at height 0 instead, and SHOULD check that it matches the node's. An all-zero hash means the read failed: it never matches, and the client treats it as a failed check, not as an unknown network.
+4. If either check fails, the client MUST NOT sign or submit value-bearing transactions for that identifier. It SHOULD tell the user which check failed: a name mismatch is a wrong network, and a genesis mismatch on a matching name is a reset, a fork or a private deployment.
 
-1. Client connects to a Midnight node or indexer for the intended environment.
-2. Client queries the network identifier returned by the service (indexer GraphQL network field, node configuration, or equivalent—**exact endpoint subject to core confirmation**).
-3. Client maps the returned legacy string to CAIP-2 via the ratified registry.
-4. Client verifies the constructed CAIP-2 identifier matches the expected value before signing or submitting transactions.
+Requirements by context:
 
-**Working resolution method (Option B, if adopted):** query genesis block hash from node (analogous to Polkadot `chain_getBlockHash(0)` or Solana `getGenesisHash`), truncate/encode per namespace rules, compare to expected reference.
+- Wallets and any service that holds or moves value MUST perform both checks before the first value-bearing operation on a connection, and SHOULD repeat step 3 on reconnect.
+- Read-only tools MAY skip step 3.
+- For unregistered names there is no registry entry, so step 3 does not apply. Such connections are development use only.
 
-Optional hardening (future amendment): compare against a published genesis hash even when Option A is canonical.
+**Existing practice.** Step 3 codifies what Midnight's wallet SDK already does. Its node client compares the node's genesis hash with the indexer's block at height 0 and treats a mismatch as `WrongNetwork` ([`NodeClient.ts`](https://github.com/midnightntwrk/midnight-wallet/blob/main/packages/node-client/src/effect/NodeClient.ts)). This MIP adds the published registry value as the reference both are checked against. It reuses existing plumbing, with no ledger, address or transaction-format changes.
 
-Clients MUST NOT rely solely on a DApp-supplied chain ID without corroborating against node/indexer state.
+**What the genesis identifier is not.** It is not part of the CAIP-2 identifier and does not change Bech32m addresses, transaction serialization, `network_id` in ledger state, or proofs.
+
+**For the ChainAgnostic namespace profile:** the reference is the network name, and the resolution method is the two checks above, with the canonical registry as the source of chain names and genesis identifiers.
 
 ### API surfaces
 
 The following Midnight components SHOULD accept CAIP-2 identifiers in new API versions while maintaining legacy support during transition:
 
 | Surface | Current behavior | Target behavior |
-|---------|------------------|-----------------|
+|---|---|---|
 | `@midnight-ntwrk/midnight-js-network-id` | `setNetworkId('preprod')` | Accept CAIP-2; canonicalize internally |
-| Wallet SDK / facade | Legacy `networkId` string | Dual-parse; document canonical form |
+| Wallet SDK / facade | Legacy `networkId` string; genesis check against the indexer | Dual-parse; check the genesis identifier against the registry |
 | DApp connector `connect(networkId)` | Plain `'mainnet'` | Accept CAIP-2 and legacy during transition |
 | Indexer GraphQL | Lowercase legacy string | Accept CAIP-2 in filters; return CAIP-2 in new schema fields |
 
-Downstream wallet registries and standards such as OWS may use the ratified Midnight CAIP-2 identifiers after this MIP reaches consensus. Specific OWS metadata, signer, and wallet integration changes are out of scope for this MIP.
+Downstream wallet registries and standards such as OWS may use the Midnight CAIP-2 identifiers after this MIP is Accepted. Specific OWS metadata, signer, and wallet integration changes are out of scope for this MIP.
 
 Deprecation:
 
@@ -295,7 +280,7 @@ Deprecation:
 
 ### Versioning
 
-The specification version is `0.1.0-draft`. Amendments that change the reference format or registry mappings require a MIP revision or superseding MIP.
+The specification version is `0.2.0-draft`. Changes to the reference format, to the set of registered names, or to the reset rules require a MIP revision or superseding MIP. Recording a new genesis identifier after a reset is a registry update under *Reset and reuse rules* and does not change the specification version.
 
 ## Rationale
 
@@ -312,38 +297,42 @@ The specification version is `0.1.0-draft`. Amendments that change the reference
 ### How other ecosystems structure references
 
 | Camp | Examples | Reference style | Resolution |
-|------|----------|-----------------|------------|
+|---|---|---|---|
 | Network name | Cosmos (`cosmos:cosmoshub-4`), Tron, Sui, NEAR | Human-readable name | Node status / registry table |
 | Numeric | EVM (`eip155:1`) | Chain ID integer | `eth_chainId` |
 | Genesis hash | Solana, Bitcoin (BIP-122), Polkadot | Truncated genesis hash | `getGenesisHash`, block 0 hash, etc. |
 
-Cosmos resolves via Tendermint `/status` → `chain_id`, hashing only if the name exceeds 32 characters. Polkadot deliberately uses genesis block hash (first 16 bytes, lowercase hex) because genesis hash is load-bearing in network/consensus and resolution is the consumer's job.
+Cosmos resolves via Tendermint `/status` → `chain_id`, hashing only if the name exceeds 32 characters. Polkadot deliberately uses the genesis block hash (first 16 bytes, lowercase hex) because the genesis hash is load-bearing in network and consensus.
 
-Midnight core should confirm whether Midnight's CAIP-2 reference should optimize for wallet readability or consensus-verifiable uniqueness.
+### Why a network name, with genesis identifiers as metadata
 
-### Why network-name references (Option A) as working recommendation
+The decision was reached in [Discussion #195](https://github.com/midnightntwrk/midnight-improvement-proposals/discussions/195):
 
-| Criterion | Option A (name) | Option B (genesis) | Option C (numeric) | Option D (hybrid) |
-|-----------|-----------------|--------------------|--------------------|-------------------|
-| Matches verified SDK strings | Yes | No | No | Partial |
+- The network ID string points back to the genesis and ledger state, is part of every wallet address, and is checked in every transaction. As a reference it is consistent with why it was introduced and how it is used today, and it is human-readable.
+- It is not a genesis fingerprint: different genesis instances can use the same string, particularly across resets or private deployments. Identifying the chain instance needs a separate check.
+- Publishing genesis identifiers as verification metadata provides that check without changing Midnight's internal network IDs, address serialization or transaction serialization.
+
+| Criterion | Option A (name + genesis metadata) | Option B (genesis) | Option C (numeric) | Option D (hybrid) |
+|---|---|---|---|---|
+| Matches existing SDK strings | Yes | No | No | Partial |
 | Human-readable | Yes | No | Moderate | Yes |
-| Self-verifying from node | No (requires registry) | Yes | Yes (if IDs published) | Partial |
-| MPS-0003 alignment | Appendix B soft recommendation | Open Question #1 | Open Question #1 | Open Question #1 |
-| Ledger / ZK impact if metadata-only | Minimal | Minimal | Minimal | Minimal |
+| Verifies the chain instance | Yes, against the registry | Yes | Only if IDs are published | Partial |
+| MPS-0003 alignment | Appendix B recommendation | Open Question #1 | Open Question #1 | Open Question #1 |
+| Ledger / ZK impact | None | None | None | None |
 
-**Reasons for Option A as working recommendation (not final decision):**
+### Why a reset must change the genesis
 
-1. **MPS-0003** leans network-name in Appendix B while keeping Open Question #1 formally open.
-2. **Migration:** deterministic 1:1 mapping from verified `NetworkId.ts` strings minimizes SDK, indexer, and DApp breakage.
-3. **Cosmos** and similar ecosystems provide readable precedents.
+The genesis check only detects a reset if the reset produces a new block 0. Relaunching a Substrate chain from an unchanged chain specification reproduces the same genesis hash even though all history is gone. This has happened on Midnight: Preview was relaunched as a new chain in November 2026 with no history carried over, and its `chain_getBlockHash(0)` result is the same as before the relaunch. Rule 2 of *Reset and reuse rules* makes a changed genesis part of what a reset of a registered network is, so the existing `WrongNetwork` check keeps working without a second checkpoint.
 
-Option B remains appropriate if Midnight core prioritizes trustless verification and can publish stable genesis constants. Option D mitigates the readability/verification tradeoff. Option C should not be adopted without a published official numeric ID scheme.
+### Why the name survives a reset
+
+Giving each reset a new name (for example `preprod-2`) would make every reference instance-unique, but it breaks the one-to-one mapping with Midnight's internal network IDs and forces every integrator to re-key configuration after each reset. Keeping the name and changing the genesis identifier preserves the mapping, while the registry history keeps old references interpretable.
 
 ### Downstream wallet standards (informational only)
 
 Multi-chain wallet tooling expects `namespace:reference` chain IDs per [CAIP-2](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md). Community discussion in [OWS #222](https://github.com/open-wallet-standard/core/issues/222) surfaced integrator interest in Midnight identifiers; that discussion is **context only** and does not define canonical identifiers.
 
-Downstream wallet registries and standards such as OWS may use the ratified Midnight CAIP-2 identifiers after this MIP reaches consensus. Specific OWS metadata, signer, and wallet integration changes are out of scope for this MIP. **No OWS or ChainAgnostic PR is proposed as part of this submission.**
+**No OWS or ChainAgnostic PR is proposed as part of this submission.**
 
 ### Why dual support during transition
 
@@ -360,73 +349,91 @@ Bech32m address HRPs (`mn_addr_preprod1…`) already encode network context for 
 This MIP reaches **Accepted** when:
 
 1. MIP editors assign a number and merge the draft after community commentary (≥2 weeks per MIP-1).
-2. Midnight core engineering confirms the reference format (Option A or amended alternative)—see **Core Review Decision**.
-3. The illustrative network registry is ratified or amended by core.
-4. No unresolved security objections from reviewers regarding chain-spoofing or migration windows.
+2. Midnight core engineering confirms the reference format. See *Resolved core decisions*.
+3. The canonical network registry and the reset and reuse rules are confirmed by core.
+4. No unresolved security objections from reviewers regarding chain spoofing or migration windows.
+5. The MIP Editors vote to accept.
 
 This MIP reaches **Active** when:
 
-1. Reference format and ratified registry are implemented in released wallet SDK and indexer versions designated by Midnight Foundation.
+1. The reference format, registry and chain-instance verification are implemented in released wallet SDK and indexer versions designated by Midnight Foundation.
 2. At least one first-party wallet connector documents CAIP-2 acceptance.
-3. Migration guide published for wallet and DApp developers.
+3. A migration guide is published for wallet and DApp developers.
+4. The Midnight Foundation has named the owner responsible for recording genesis identifiers after resets (*Reset and reuse rules*, rule 4).
 
-Downstream ecosystem work may include ChainAgnostic namespace registration, wallet registry updates, and OWS chain metadata once Midnight core ratifies the identifier format. That work is **not** a blocking condition for this MIP reaching Active.
+Downstream ecosystem work may include ChainAgnostic namespace registration, wallet registry updates, and OWS chain metadata. That work is **not** a blocking condition for this MIP reaching Active.
 
 ### Implementation Plan
 
-1. **Phase 0 — Specification (this MIP):** Community review in midnight-improvement-proposals; finalize reference format and registry with core review.
-2. **Phase 1 — Adapter layer:** Add parse/canonicalize helpers in `midnight-js-network-id` and wallet abstractions; no ledger changes.
+1. **Phase 0 — Specification (this MIP):** Community review in midnight-improvement-proposals; reference format, registry and reset rules confirmed by core.
+2. **Phase 1 — Adapter layer:** Add parse/canonicalize helpers and the registry, including genesis identifiers, to `midnight-js-network-id` and wallet abstractions. Extend the wallet's existing genesis check to compare against the registry. No ledger changes.
 3. **Phase 2 — API exposure:** Indexer and connector return/accept CAIP-2; deprecation warnings for legacy-only clients.
 4. **Phase 3 — Deprecation:** Remove legacy bare-string acceptance in a coordinated major SDK release after the transition period.
 
-Downstream ecosystem work (ChainAgnostic namespace registration, third-party wallet registries, OWS chain metadata) follows **after** Midnight core ratifies identifiers and is out of scope for this MIP's implementation plan.
-
-Ledger-embedded `network_id` changes, if required, MUST be scheduled as a separate network upgrade with explicit fork coordination—not silently bundled into Phase 1.
+Downstream ecosystem work (ChainAgnostic namespace registration, third-party wallet registries, OWS chain metadata) follows **after** acceptance and is out of scope for this MIP's implementation plan.
 
 ## Backwards Compatibility Assessment
 
 ### Impact summary
 
 | Area | Hard fork required? | Compatibility approach |
-|------|---------------------|------------------------|
+|---|---|---|
 | SDK `setNetworkId` | No | Dual-parse legacy and CAIP-2 |
 | Persisted wallet config | No | Migrate on read; canonicalize on write |
+| Wallet genesis check | No | Existing check, compared against the published registry value |
 | Indexer queries | No | Additive schema fields; legacy filters supported during transition period |
 | Bech32m addresses | No | Unchanged |
-| ZK proofs / ledger state | Unlikely if metadata-only | Prefer metadata-layer adoption; avoid changing serialized `network_id` unless core requires |
+| ZK proofs / ledger state | No | Unchanged; `network_id` serialization untouched |
 | Third-party DApps | Low–medium | Continue working via legacy strings during transition period |
 
-### Proposed legacy ↔ CAIP-2 mappings (illustrative)
-
-Derived from verified `NetworkId.ts`; **not canonical** until registry ratification:
+### Legacy ↔ CAIP-2 mappings
 
 ```
-mainnet     ↔ midnight:mainnet     (illustrative)
-preprod     ↔ midnight:preprod     (illustrative)
-preview     ↔ midnight:preview     (illustrative)
-testnet     ↔ midnight:testnet     (illustrative)
-qanet       ↔ midnight:qanet       (illustrative)
-devnet      ↔ midnight:devnet       (illustrative)
-undeployed  ↔ midnight:undeployed   (illustrative)
+mainnet     ↔ midnight:mainnet     (registered)
+preprod     ↔ midnight:preprod     (registered)
+preview     ↔ midnight:preview     (registered)
+testnet     ↔ midnight:testnet     (unregistered)
+qanet       ↔ midnight:qanet       (unregistered)
+devnet      ↔ midnight:devnet      (unregistered)
+undeployed  ↔ midnight:undeployed  (unregistered)
 ```
 
-Implementations MUST NOT treat `testnet` as an alias for `preprod` or `preview` unless Midnight core explicitly deprecates `testnet` and documents the alias in an amendment.
+Implementations MUST NOT treat `testnet` as an alias for `preprod` or `preview`.
 
 ### User impact
 
-End users SHOULD NOT need manual migration if wallets auto-canonicalize on upgrade. Developers SHOULD update configuration docs and environment examples to show CAIP-2 as preferred form once the registry is ratified.
+End users SHOULD NOT need manual migration if wallets auto-canonicalize on upgrade. Developers SHOULD update configuration docs and environment examples to show CAIP-2 as the preferred form.
 
 ## Security Considerations
 
 ### Chain spoofing
 
-**Risk:** A malicious DApp or RPC endpoint supplies `midnight:mainnet` while the wallet is connected to `midnight:preprod`, inducing wrong-chain signing.
+**Risk:** A malicious DApp or RPC endpoint supplies `midnight:mainnet` while the wallet is connected to `midnight:preprod`, or to a different chain that reports the name `mainnet`, inducing wrong-chain signing.
 
 **Mitigations:**
 
-- Wallets MUST corroborate CAIP-2 identifiers against node/indexer-reported network strings before high-value operations.
-- Wallets SHOULD display human-readable network names prominently in confirmation UI.
-- **After Active:** registry lookups MUST reject unknown `midnight:{reference}` values in production builds unless explicitly in dev/local mode.
+- Wallets MUST perform *Chain-instance verification* before value-bearing operations. A DApp- or RPC-supplied identifier is never sufficient on its own.
+- Wallets SHOULD display the human-readable network name prominently in confirmation UI.
+- Production builds MUST reject `midnight:` references that are not in the canonical registry, except in explicit development or local modes.
+- A node that reports a registered name with a different genesis identifier is treated as a different chain, whatever name it reports.
+
+### Undetectable resets
+
+**Risk:** A registered test network is relaunched from an unchanged chain specification. Its genesis identifier is unchanged, so clients that stored state against the previous instance cannot tell that state is gone.
+
+**Mitigations:**
+
+- *Reset and reuse rules*, rule 2: a reset of a registered network MUST produce a new genesis identifier.
+- Applications store the genesis identifier with any state they persist (rule 5).
+
+### Registry integrity
+
+**Risk:** A tampered or stale copy of the registry leads clients to accept the wrong chain instance.
+
+**Mitigations:**
+
+- This MIP is the canonical registry. SDKs SHOULD ship the registry values as constants and update them only through releases.
+- Genesis identifiers SHOULD be confirmed against more than one node operator before they are recorded.
 
 ### Identifier injection
 
@@ -435,7 +442,7 @@ End users SHOULD NOT need manual migration if wallets auto-canonicalize on upgra
 **Mitigations:**
 
 - Strict CAIP-2 regex validation at parse time.
-- Split on first `:` only; validate reference separately (inputs like `midnight:mainnet:extra` yield reference `mainnet:extra`, which fails CAIP-2 length/character rules or registry lookup).
+- Split on first `:` only; validate reference separately (inputs like `midnight:mainnet:extra` yield reference `mainnet:extra`, which fails CAIP-2 character rules or registry lookup).
 
 ### Migration window
 
@@ -456,83 +463,98 @@ Network identifier format changes MUST NOT alter zero-knowledge proof structures
 ### Components to modify (expected)
 
 | Component | Change |
-|-----------|--------|
-| `midnight-wallet` / `NetworkId.ts` | Add CAIP-2 parse, format, registry lookup; retain legacy constants |
+|---|---|
+| `midnight-wallet` / `NetworkId.ts` | Add CAIP-2 parse, format, registry lookup including genesis identifiers; retain legacy constants |
+| `midnight-wallet` / node client | Compare the genesis hash against the registry, in addition to the existing node/indexer comparison |
 | `@midnight-ntwrk/midnight-js-network-id` | Accept CAIP-2 in `setNetworkId`; document canonical form |
 | Wallet SDK facade | Dual-parse at initialization |
 | Indexer | Expose CAIP-2 in API; validate incoming chain filters |
 | DApp connector | Document and accept CAIP-2 in `connect()` |
-| Documentation site | Update configure-providers guide with CAIP-2 examples |
+| Documentation site | Update network and provider guides with CAIP-2 examples and the registry |
 
 ### Components explicitly deferred
 
 | Component | Condition for inclusion |
-|-----------|-------------------------|
+|---|---|
 | ChainAgnostic namespace registration | After MIP Accepted; separate downstream work |
-| Third-party wallet registry updates | After registry ratified; separate downstream work |
-| Ledger `StandardTransaction.network_id` | Only if core confirms embedding CAIP-2 in consensus-critical state |
-| Bech32m encoder | Only if core mandates address/chain ID unification |
+| Third-party wallet registry updates | After MIP Accepted; separate downstream work |
 | Bridge / cross-chain contracts | Out of scope |
 
 ### Dependencies
 
 - [MPS-0003](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0003-caip-support.md) (problem statement)
 - [CAIP-2](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md)
-- Midnight core ratification of reference format and registry (blocking for downstream work)
 
-### Open items for Midnight core engineering
+### Resolved core decisions
 
-1. **Reference format (primary):** Confirm Option A (network name), Option B (genesis hash), Option D (hybrid), or another MPS-0003 alternative—and whether genesis-hash verification is required even if Option A is canonical.
-
-2. **Genesis hash availability (dependent):** If Option B or D is chosen, publish stable genesis-hash constants per network and encoding/truncation rules for the namespace spec.
-
-3. **Registry ratification:** Confirm the authoritative network list (including whether `testnet` remains distinct and whether local-only `undeployed` appears in public registries).
+| Item | Decision |
+|---|---|
+| Reference format | Network name (Option A). Genesis identifiers are published as verification metadata, not used as the reference |
+| Genesis hash availability | Read from each network's node with `chain_getBlockHash(0)` and published in the canonical registry. This reuses existing plumbing, with no ledger, address or transaction-format changes: the wallet SDK already reads the genesis hash for its `WrongNetwork` check |
+| Registry | `mainnet`, `preprod` and `preview` registered. `testnet`, `qanet`, `devnet`, `stagenet` and `undeployed` unregistered. `govnet` reserved |
+| Resets | Name survives; a reset MUST produce a new genesis identifier; superseded identifiers are kept in the registry (*Reset and reuse rules*) |
+| Ledger, addresses, internal IDs | Unchanged. CAIP-2 is an external format applied at API, SDK and connector boundaries |
 
 ## Testing
 
 ### Unit tests
 
-- Parse valid CAIP-2 identifiers for all illustrative registry rows.
+- Parse valid CAIP-2 identifiers for every registered and unregistered name.
 - Reject invalid namespace, empty reference, overlong reference, illegal characters.
-- Round-trip: legacy → CAIP-2 → legacy for all illustrative registry rows (once ratified).
+- Round-trip: legacy → CAIP-2 → legacy for every name.
 - Reject silent aliasing (e.g. `qanet` must not map to `preview`).
+- Treat an all-zero genesis hash as a failed check.
 
 ### Integration tests
 
-- Wallet connects to Preprod node; corroborates illustrative `midnight:preprod` against indexer-reported network string (after ratification).
-- DApp connector accepts both `preprod` and ratified CAIP-2 form during transition.
+- A client connected to Preprod passes both verification checks against the registry.
+- A local chain started with network ID `preprod` fails the genesis check and is reported as a different chain.
+- After a registry update that records a new Preprod genesis identifier, a client that stored the old identifier detects the change.
+- DApp connector accepts both `preprod` and `midnight:preprod` during transition.
 
 ### Regression tests
 
-- Existing DApps using `setNetworkId('preprod')` continue to function unchanged during transition period.
+- Existing DApps using `setNetworkId('preprod')` continue to function unchanged during the transition period.
 - Address generation and validation unchanged for all networks.
-- ZK proof generation and verification unchanged (metadata-layer adoption only).
+- ZK proof generation and verification unchanged.
 
-### Test vectors (illustrative)
+### Test vectors
 
 ```
-# Valid grammar (illustrative references — not canonical until ratified)
+# Valid, registered
 midnight:mainnet
 midnight:preprod
+midnight:preview
+
+# Valid grammar, unregistered (development or local modes only)
 midnight:undeployed
+midnight:stagenet
 
 # Invalid
 Mainnet:mainnet          # wrong namespace case
 midnight:                # empty reference
 midnight:mainnet:extra   # reference becomes mainnet:extra — invalid or unknown
 ethereum:1               # wrong namespace
+
+# Genesis identifiers (chain_getBlockHash(0), verified 2026-11-20)
+midnight:mainnet  0x1941ca8e2bb88146c14dea084d3be7eb6e96ca7135429c543848b628124f2854
+midnight:preprod  0xdf831b09a8baa92badf47762ce5ac439b7e47e3ed3d39600cfdd44fad552361b
+midnight:preview  0x3c096de209e06a1a8c52be7bda109ee8c891a42288c0a9db5495f9616dd13796
 ```
 
 ## References
 
 - [CAIP-2: Blockchain ID Specification](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md) (Final)
 - [MPS-0003: CAIP-2 Compliant Network Identifiers for Wallet Ecosystem Integration](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0003-caip-support.md)
+- [Discussion #195: MIP-0008 CAIP-2 Compliant Network IDs](https://github.com/midnightntwrk/midnight-improvement-proposals/discussions/195)
 - [MIP-1: Midnight Improvement Proposal Process](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0001-mip-process.md)
 - [MIP template](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-template.md)
 - [ChainAgnostic/namespaces](https://github.com/ChainAgnostic/namespaces)
 - [Cosmos namespace (CAIP-2)](https://github.com/ChainAgnostic/namespaces/blob/main/cosmos/caip2.md)
 - [Solana namespace (CAIP-2)](https://github.com/ChainAgnostic/namespaces/blob/main/solana/caip2.md)
 - [midnight-wallet NetworkId.ts](https://github.com/midnightntwrk/midnight-wallet/blob/main/packages/abstractions/src/NetworkId.ts) (verified 2026-05-30)
+- [midnight-wallet NodeClient.ts](https://github.com/midnightntwrk/midnight-wallet/blob/main/packages/node-client/src/effect/NodeClient.ts) (genesis-hash `WrongNetwork` check)
+- [Midnight networks and environments](https://docs.midnight.network/guides/networks-and-environments)
 - [Midnight configure providers / network ID](https://docs.midnight.network/guides/configure-providers)
 - [Midnight Indexer v3.0.0 release notes (lowercase network ID)](https://docs.midnight.network/relnotes/midnight-indexer/midnight-indexer-3-0-0)
 - [Midnight DApp connector InitialAPI](https://docs.midnight.network/api-reference/dapp-connector/type-aliases/InitialAPI)
@@ -541,9 +563,9 @@ ethereum:1               # wrong namespace
 ## Acknowledgements
 
 - Bob Blessing-Hartley and Midnight Foundation contributors for [MPS-0003](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0003-caip-support.md)
+- kapke and NicolasDP for the review that settled the reference format and the chain-instance verification design
 - ChainAgnostic community for CAIP-2 and namespace specifications
 
 ## Copyright Waiver
 
-All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0.
-Submission to the official Midnight Improvement Proposals repository requires agreement to the Midnight Foundation Contributor License Agreement, which includes the assignment of copyright for contributions to the Foundation.
+All contributions (code and text) submitted in this MIP must be licensed under the Apache License, Version 2.0. Submission to the official Midnight Improvement Proposals repository requires agreement to the Midnight Foundation Contributor License Agreement, which includes the assignment of copyright for contributions to the Foundation.
