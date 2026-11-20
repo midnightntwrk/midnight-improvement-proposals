@@ -33,8 +33,8 @@ MPS: MPS-0019
 
 This proposal defines native Midnight block-production rewards. The protocol records each block
 producer, applies the published tokenomics formula, and accumulates the result for the producing
-pool. A producing pool is a candidate: a Cardano stake pool registered for Midnight and admitted
-at the stake snapshot under the required staking MIP, [NIGHT Staking on
+pool. A producing pool is a registered candidate: a Cardano stake pool registered for Midnight and
+admitted at the stake snapshot under the required staking MIP, [NIGHT Staking on
 Cardano](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/421). Once per Cardano
 epoch, the stake snapshot that selected that Cardano epoch's committees also supplies the inputs to
 a public, reproducible split of the pool's reward between its operator, its ADA delegators and the
@@ -93,10 +93,6 @@ Succinct verification without a full node is outside this proposal.
 
 ### Terminology and units
 
-* A *candidate* is a Cardano stake pool that the required staking MIP admits at a stake snapshot
-  (see **Candidates and payees**). Only a candidate can be selected for a committee, and only a
-  candidate earns. A *committee member* is a candidate that selection placed in a committee
-  (staking rule 24, Selection).
 * A *Cardano epoch* is five days on mainnet, and `E` is a Cardano epoch. A block belongs to Cardano
   epoch `E` when its committee was selected from the stake snapshot of Cardano epoch `E` (staking
   rule 24, Selection). Rewards are calculated per block, and are split and settled once per Cardano
@@ -114,12 +110,17 @@ Succinct verification without a full node is outside this proposal.
   stakes, which may be none.
 * A *Midnight epoch* is one committee session: 300 slots of 6 s today, 30 minutes, so a Cardano
   epoch of five days is as long as 240 Midnight epochs, and overlaps 240 or 241 of them.
-* The *operator* of a candidate is the SPO that runs it, the party paid the operator's amount in
-  **Epoch reward split**.
-* `operator_id` identifies a candidate and is its `pool_id` (see **Candidates and payees**).
+* The *operator* of a registered candidate is the SPO that runs it, the party paid the operator's
+  amount in **Epoch reward split**.
+* `operator_id` identifies a registered candidate and is its `pool_id` (see **Registered candidates
+  and payees**).
 * `pool_id` is the 28-byte Blake2b-224 hash of a Cardano stake-pool verification key.
 * `R` is the per-block base distribution rate, written `r_n/r_d` in formulas (see **Tokenomics
   parameters**).
+* A *registered candidate* is a Cardano stake pool that the required staking MIP admits at a stake
+  snapshot (see **Registered candidates and payees**). A registered candidate can be selected for a
+  committee, and only a registered candidate earns. A *committee member* is a registered or
+  permissioned candidate that selection placed in a committee (staking rule 24, Selection).
 * The *required Reserve MIP* is Native NIGHT Block Production Rewards: Cardano Reserve Release
   (`mip-xxxx-cardano-reserve-release.md`). It defines the release of Reserve NIGHT on Cardano and
   the record that the bridge writes for each mirrored release.
@@ -139,8 +140,9 @@ Succinct verification without a full node is outside this proposal.
   finalized, which fork choice may roll back; in finalized state it reflects exactly the finalized
   reward-eligible blocks.
 * `snapshot_id` identifies the stake snapshot record of a Cardano epoch, `NightStakeSnapshotV1`
-  (staking rule 23, Snapshot record): the one record per Cardano epoch that lists the candidates,
-  the locks and the ADA delegators, and from which that Cardano epoch's committees are selected.
+  (staking rule 23, Snapshot record): the one record per Cardano epoch that lists the registered
+  candidates, the locks and the ADA delegators, and from which that Cardano epoch's committees are
+  selected.
 * `stake_address` is the network-tagged Cardano reward address for a stake credential. The snapshot
   record gives a stake credential as a kind byte and a 28-byte hash, and on one network the two
   forms name the same credential.
@@ -159,21 +161,21 @@ Succinct verification without a full node is outside this proposal.
 
 No consensus calculation uses floating-point arithmetic.
 
-### Candidates and payees
+### Registered candidates and payees
 
-A candidate is a Cardano stake pool that the required staking MIP admits at the stake snapshot
-(staking rule 18, Pools at the snapshot): the registration set on Cardano holds an active and valid
-registration for its `pool_id`, and Cardano holds the pool as registered, with or without ADA
-delegated to it. `operator_id` is its `pool_id`. A pool that Cardano has retired, or whose
-registration is inactive or invalid at the snapshot, is not a candidate in that Cardano epoch and
-earns nothing in it. A candidate is not yet a producer: it produces blocks only in the committees
-that select it. This MIP reads the snapshot record (staking rule 23, Snapshot record) and nothing
-else about a pool, a lock or a delegator. For each candidate the record carries the `margin` and the
-`owners` of its Cardano pool registration certificate and the `fixed_cost` and `reward_address` of
-its Midnight registration, and it lists the locks and the ADA delegators that are the pool's payees
-(see **Epoch reward split**). The split needs the per-delegator rows of the record. The record
-carries those rows, and how they reach the runtime in bounded pages is Open Question 4 of the
-required staking MIP.
+A registered candidate is a Cardano stake pool that the required staking MIP admits at the stake
+snapshot (staking rule 18, Pools at the snapshot): the registration set on Cardano holds an active
+and valid registration for its `pool_id`, and Cardano holds the pool as registered, with or without
+ADA delegated to it. `operator_id` is its `pool_id`. A pool that Cardano has retired, or whose
+registration is inactive or invalid at the snapshot, is not a registered candidate in that Cardano
+epoch and earns nothing in it. A registered candidate is not yet a producer: it produces blocks only
+in the committees that select it. This MIP reads the snapshot record (staking rule 23, Snapshot
+record) and nothing else about a pool, a lock or a delegator. For each registered candidate the
+record carries the `margin` and the `owners` of its Cardano pool registration certificate and the
+`fixed_cost` and `reward_address` of its Midnight registration, and it lists the locks and the ADA
+delegators that are the pool's payees (see **Epoch reward split**). The split needs the
+per-delegator rows of the record. The record carries those rows, and how they reach the runtime in
+bounded pages is Open Question 4 of the required staking MIP.
 
 A recipient names the Midnight address at which it is paid in a lock, in a Cardano transaction that
 the lock's owner credential authorizes (staking rule 5, Owner authorization). The key behind a
@@ -198,10 +200,10 @@ activation is announced at least one complete Cardano epoch in advance; changing
 be retroactive.
 
 A pool leaves block production with a Deactivate of its registration node, which is permanent for
-that node (staking rule 10, Changes), and it is not a candidate at a later snapshot until it creates
-another node. Rewards calculated for earlier Cardano epochs settle as before. A delegator whose lock
-no longer counts (staking rule 14, Effective lock) keeps the rewards already credited, and the share
-that its ADA delegation earns later is held in escrow.
+that node (staking rule 10, Changes), and it is not a registered candidate at a later snapshot until
+it creates another node. Rewards calculated for earlier Cardano epochs settle as before. A delegator
+whose lock no longer counts (staking rule 14, Effective lock) keeps the rewards already credited,
+and the share that its ADA delegation earns later is held in escrow.
 
 This MIP reads the record as the required staking MIP adopts it (staking rule 17, Snapshot
 finality), and that MIP bounds how Midnight reads locks and registrations from Cardano and returns
@@ -481,8 +483,9 @@ The form is identified by `recipient_split_policy` and `recipient_policy_hash`. 
 fixed for version 1 of this MIP: they appear in `RewardParametersV1` so that records identify the
 form, not so that governance can change it, and changing them requires a superseding MIP. An SPO's
 change to its margin or fixed cost applies only from the first Cardano epoch whose snapshot records
-it and cannot alter a calculated Cardano epoch. A pool that is not a candidate at a snapshot holds
-no seat in that Cardano epoch, so neither the pool nor the cNIGHT locked behind it earns in it.
+it and cannot alter a calculated Cardano epoch. A pool that is not a registered candidate at a
+snapshot holds no seat in that Cardano epoch, so neither the pool nor the cNIGHT locked behind it
+earns in it.
 
 Every lock names a `reward_address` (staking rule 2, Output), and a lock without one is not a lock,
 so only an ADA delegation can be without an address. Its share is still allocated and is held in
@@ -643,8 +646,8 @@ credential owns one or more locks in its snapshot record that all name one `rewa
 release moves the whole of `escrow[stake_address]` to that address with the reward-chunk entry
 point, without changing `S`. The credential needs no share in that Cardano epoch, so a delegator
 that has left its pool collects its escrow with a lock that holds no cNIGHT. That lock must name a
-pool that is a candidate at the snapshot, because the record lists no other lock (staking rule 23,
-Snapshot record); a lock that names a retired pool releases nothing. Between chunks,
+pool that is a registered candidate at the snapshot, because the record lists no other lock (staking
+rule 23, Snapshot record); a lock that names a retired pool releases nothing. Between chunks,
 `block_reward_pool` equals its balance at activation plus the sum of all escrow balances plus
 `unassigned_released`.
 
@@ -880,9 +883,9 @@ Alternatives rejected are:
 
 This MIP requires Native NIGHT Block Production Rewards: Cardano Reserve Release, whose
 `ReserveReleaseObservationV1` records it consumes as the released NIGHT available to settle, and
-NIGHT Staking on Cardano, whose stake snapshot record supplies the candidates, the payees and their
-reward addresses. The Reserve MIP depends on no other MIP, and the staking MIP is accepted and
-activated together with this one. Reward calculation starts with the first Midnight block at or
+NIGHT Staking on Cardano, whose stake snapshot record supplies the registered candidates, the payees
+and their reward addresses. The Reserve MIP depends on no other MIP, and the staking MIP is accepted
+and activated together with this one. Reward calculation starts with the first Midnight block at or
 after the required Reserve MIP's `anchor_posix_ms`. *Activation* is the network upgrade that enables
 the feature; the MIP becomes `Active` once the criteria below hold.
 
