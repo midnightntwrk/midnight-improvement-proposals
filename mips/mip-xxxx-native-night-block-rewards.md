@@ -506,12 +506,13 @@ and let `M.R`, `M.L` and `M.U` be NIGHT in the Midnight Reserve, protocol-locked
 protocol-unlocked states. Per-block calculation and the split of a Cardano epoch create
 deterministic entitlements, but do not by themselves make those amounts claimable.
 
-Under the required Reserve MIP, the Cardano Reserve contract releases NIGHT from `C.R` to `C.L` on a
-fixed POSIX timer, and Midnight's existing bridge mirrors each finalized release: it moves the same
-amount from `reserve_pool` (`M.R`) to `block_reward_pool` with `DistributeReserve`, and records a
-`ReserveReleaseObservationV1`. The unassigned balance of `block_reward_pool` is protocol-locked
-(`M.L`) until settled: it is credited to no one, and only settlement pays it out. Settled amounts,
-whether to a recipient's unclaimed balance, to escrow, or to the Treasury, leave it.
+Under the [required Reserve MIP](./mip-xxxx-cardano-reserve-release.md), the Cardano Reserve
+contract releases NIGHT from `C.R` to `C.L` on a fixed POSIX timer, and Midnight's existing bridge
+mirrors each finalized release: it moves the same amount from `reserve_pool` (`M.R`) to
+`block_reward_pool` with `DistributeReserve`, and records a `ReserveReleaseObservationV1`. The
+unassigned balance of `block_reward_pool` is protocol-locked (`M.L`) until settled: it is credited
+to no one, and only settlement pays it out. Settled amounts, whether to a recipient's unclaimed
+balance, to escrow, or to the Treasury, leave it.
 
 **The settlement gate.** Settlement consumes one interface, *released NIGHT available to settle*,
 which is `unassigned_released`. While Cardano controls the Reserve, observation supplies it, through
