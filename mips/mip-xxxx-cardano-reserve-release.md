@@ -272,6 +272,11 @@ consecutive transactions, in order, and none can be released before it has ended
 release to elapsed POSIX time, so Cardano never releases more than the published curve's maximum for
 the time that has passed. A release never distributes per-recipient rewards on Cardano.
 
+The state datum bounds what the Reserve ever releases. The releases sum to the
+`curve_remaining_star` that `Init` writes, which is `initial_reward_reserve`, and no release is
+valid when it is zero. NIGHT that is sent to the forever address beyond that amount is never
+released: it stays there for good and is no part of `C.R`.
+
 No transition releases more than one interval's `release_delta`, and no transition, paused or not,
 moves the remaining Reserve in bulk. The NIGHT MiCA white paper states that Reserve NIGHT "will not
 be transferable except as block production rewards following the rules described in section H.5"
