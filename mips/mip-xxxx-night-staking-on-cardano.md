@@ -136,7 +136,7 @@ A lock holds ADA of at least `lock_deposit_lovelace`, the token, the cNIGHT it s
 
 Cardano's ledger accepts a withdrawal only from a registered account and only for its whole balance, which is normally zero for a credential that is never delegated (References, Conway ledger; Security Considerations, Reward account). The credential is registered before the first lock transaction (Implementation Plan, step 1). The ledger accepts a transaction that runs a Plutus script only if it can convert the bounds of the validity interval to times, which it cannot do beyond its forecast horizon, on mainnet the first Cardano epoch boundary at or after 36 hours past the tip. The `t` of an Unbond is therefore less than a week ahead of its transaction (rule 3, Output), and no Unbond holds a lock longer than that and `UNBONDING_DELAY`.
 
-`night_staking` MUST NOT be upgradable: its logic and its constants are fixed at compile time, it reads no input that a governance body controls, and only a lock's owner can move its cNIGHT (rule 5, Owner authorization). Its script hash is a per-network constant of the Midnight chain specification. The contract reads nothing inside `attributes`. It checks that `pool_id` names a registered pool only by the reference input of rule 2, Output, at the Lock and at a change of `pool_id`; Midnight checks it again at every snapshot under rule 18, Pools at the snapshot, and rule 19, Virtual stake, because a pool can deactivate or retire after the lock was made.
+`night_staking` MUST NOT be upgradable: its logic and its constants are fixed at compile time, it reads no input that a governance body controls, and only a lock's owner can move its cNIGHT (rule 5, Owner authorization). Its script hash is a per-network value in Midnight's runtime storage: the runtime upgrade that activates this proposal writes it, and the runtime MUST NOT have a call that sets it. The contract reads nothing inside `attributes`. It checks that `pool_id` names a registered pool only by the reference input of rule 2, Output, at the Lock and at a change of `pool_id`; Midnight checks it again at every snapshot under rule 18, Pools at the snapshot, and rule 19, Virtual stake, because a pool can deactivate or retire after the lock was made.
 
 ### The pool registration
 
@@ -233,8 +233,8 @@ NightStakeSnapshotV1 {
 | Snapshot point | The start of Cardano epoch E − 3, the ADA snapshot of Cardano epoch E − 2 | midnight-node, `DATA_MC_EPOCH_OFFSET` | Not changed by this proposal |
 | Registration point | The last block of Cardano epoch E − 2 | midnight-node, candidate data source | Not changed by this proposal |
 | Finality depth | `k + block_stability_margin`, 2160 + 30 blocks, for the reference an author names; `k` for the reference a node accepts | existing node configuration | About 12 hours (rule 11, Reading) |
-| `night_staking` script hash | per network | chain specification | Fixed; informational on Cardano |
-| night\_registration script hash | per network | chain specification | Fixed; informational on Cardano |
+| `night_staking` script hash | per network | Midnight storage, by runtime upgrade | Fixed; informational on Cardano |
+| `night_registration` script hash | per network | Midnight storage, by runtime upgrade | Fixed; informational on Cardano |
 | Registration set initialization UTXO | per network | night\_registration, compile time | Parameter of the script; its initialization transaction creates the Tail and the Reserved nodes (rule 9, Nodes) |
 | `night_staking` stake credential | registered once | Cardano, before activation | Any party may register it; the script allows registration only (rule 8, Certificates) |
 | cNIGHT policy | `0691b2fecca1ac4f53cb6dfb00b7013e561d1f34403b957cbb5af1fa` / `NIGHT` on mainnet | network configuration | Informational |
@@ -336,9 +336,9 @@ A lock holds the funds, where a Cardano stake key only points them, so a stolen 
 
 The spike's deposit UTXO held ADA for batcher fees and received NIGHT paid on Cardano. Rewards are now paid on Midnight by the companion rewards MIP, so nothing is paid into Cardano and nothing needs an ADA float, and the lock, the user zone of the spike with the cNIGHT inside it, is all that remains.
 
-### Why a fixed contract whose hash is a chain-spec constant?
+### Why a fixed contract whose hash has no setter?
 
-Midnight's DUST mapping address is runtime storage that a governance motion can replace at once, and if locks inherited that setter, one motion could point every holder's cNIGHT at a different contract; an upgradable lock script would likewise let a captured set of authorities take the locked cNIGHT. A hash fixed per network in the chain specification makes a change a runtime upgrade, which carries review, at the cost that a defect in the contract is fixed by a new contract and a migration, not by an edit.
+Midnight's DUST mapping address is runtime storage that a governance motion can replace at once, and if locks inherited that setter, one motion could point every holder's cNIGHT at a different contract; an upgradable lock script would likewise let a captured set of authorities take the locked cNIGHT. A hash that the runtime upgrade writes and that no call of the runtime sets changes only by a root action of both governance bodies, a runtime upgrade, which carries review, or a direct write to storage, at the cost that a defect in the contract is fixed by a new contract and a migration, not by an edit.
 
 ### Why one lock event per transaction?
 
@@ -420,7 +420,7 @@ This proposal and the companion NIGHT rewards MIP are accepted and activated tog
 
 This MIP moves from Accepted to Active when all of the following hold on Midnight mainnet:
 
-1. The `night_staking` contract is deployed, its stake credential is registered on Cardano, its hash is in the chain specification, and an independent audit of the contract reports no unresolved critical or high finding.
+1. The `night_staking` contract is deployed, its stake credential is registered on Cardano, the runtime upgrade of this proposal carries its hash, and an independent audit of the contract reports no unresolved critical or high finding.
 2. The contract and node tests of the Testing section pass, including every boundary vector: a 27-byte and a 29-byte `pool_id`; a 31-byte and a 33-byte `reward_address`; a node datum of `NODE_DATUM_MAX` bytes without its links, and one byte more; a Create of a node at `NODE_DATUM_MAX` whose two anchors are at `NODE_DATUM_MAX`, in one transaction; ADA of `lock_deposit_lovelace` and one lovelace less; an Update that keeps and one that reduces the cNIGHT; an Unbond whose `unbond_at` is one millisecond below and one millisecond above the validity upper bound; an Unlock one slot before and one slot after `UNBONDING_DELAY`; a Lock without the reference input of its pool's node.
 3. On a public test network, at least three pools register in the registration set and ten locks back them, and cNIGHT-weighted seats are held across at least ten consecutive Cardano epochs, as criterion 4 requires.
 4. For ten consecutive Cardano epochs, an implementation maintained outside the node runtime reproduces every `virtual_stake(O)`, every lock's `cnight` and every `snapshot_id` from Cardano and Midnight chain data alone, and a block whose committee was selected from different totals is rejected.
@@ -471,7 +471,7 @@ No hard fork: the change is a node release, a Midnight runtime upgrade and three
 
 **A compromised node owner.** The owner is a hot credential, a key or a script: a stolen owner key can change the pool's keys, terms and reward address, but it moves no cNIGHT, cannot change `owner` and cannot deactivate the node. The cold key MAY sign every change (rule 10, Changes), so the pool recovers by setting a new `owner` under its cold key.
 
-**Governance keys.** The contract hash is a chain-spec constant, so no runtime call redirects or opens locks. `cnight_weight` is set by the governance origin, so a captured governance can raise the weight of cNIGHT. The change counts from the next snapshot (rule 25, cnight\_weight), so it shifts seats toward cNIGHT-backed pools three to four Cardano epochs later, and it adds no seat class. The federated authorities already hold runtime-upgrade power, so this proposal adds no authority.
+**Governance keys.** The contract hash is in Midnight's runtime storage and has no setter call, so only a root action of both governance bodies, a runtime upgrade or a direct write to storage, redirects the locks that Midnight reads, and no action on Midnight opens a lock. `cnight_weight` is set by the governance origin, so a captured governance can raise the weight of cNIGHT. The change counts from the next snapshot (rule 25, cnight\_weight), so it shifts seats toward cNIGHT-backed pools three to four Cardano epochs later, and it adds no seat class. The federated authorities already hold runtime-upgrade power, so this proposal adds no authority.
 
 **Liveness.** A pool that is offline misses its slots, as a permissioned producer does today. cNIGHT changes the weight of registered candidates and nothing else, so the share of seats that finality needs is unchanged.
 
@@ -502,7 +502,7 @@ No hard fork: the change is a node release, a Midnight runtime upgrade and three
 - `pallet_cnight_observation`: the lock namespace keyed by the `night_staking` hash, transactions selected by their withdrawal from the script's stake credential (rule 12, Transaction filter), read in bounded units with a read position of their own (rule 27, Bounded units), the effective-lock rule (rule 14, Effective lock) and the DUST exclusion (rule 15, DUST generation).
 - Committee selection: a candidate data source that reads the registration set at the registration point, as it reads candidate registrations today, and each pool's `fixed_cost` and `reward_address` (rule 16, Snapshot points), the `Registration` datum and the signature entries in `filter_invalid_candidates`, verified with the runtime's verifiers (rule 20, Registration validity, and rule 21, Signature), and virtual stake in the candidate inputs (rule 24, Selection).
 - Snapshot and parameters: the stake snapshot at the `DATA_MC_EPOCH_OFFSET` boundary, each registered candidate's margin and owners from its certificate in that state, its delegators and their lovelace from the stake distribution of that boundary, `NightStakeSnapshotV1` storage, a runtime API that returns the record and `snapshot_id` for a Cardano epoch in pages (rule 27, Bounded units), and `cnight_weight` in `pallet_system_parameters` with its governance setter (rule 25, cnight\_weight).
-- Chain specification: the `night_staking` and `night_registration` hashes and the set's initialization UTXO per network.
+- Runtime storage: the `night_staking` and `night_registration` hashes and the set's initialization UTXO per network, written by the runtime upgrade, with no setter call.
 
 **`midnight-indexer`.** Locks, unbonds, snapshots, the pool list with its NIGHT terms, per-lock cNIGHT and seat history, queryable by owner and by `pool_id`.
 
