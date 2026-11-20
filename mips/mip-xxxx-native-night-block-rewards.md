@@ -36,8 +36,8 @@ producer, applies the published tokenomics formula, and accumulates the result f
 pool. A producing pool is a candidate: a Cardano stake pool registered for Midnight and admitted
 at the stake snapshot under the required staking MIP, [NIGHT Staking on
 Cardano](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/421). Once per Cardano
-epoch, the stake snapshot that selected that epoch's committees also supplies the inputs to a
-public, reproducible split of the pool's reward between its operator, its ADA delegators and the
+epoch, the stake snapshot that selected that Cardano epoch's committees also supplies the inputs to
+a public, reproducible split of the pool's reward between its operator, its ADA delegators and the
 holders of cNIGHT locked behind it, on the margin in its Cardano pool registration certificate, plus
 any fixed cost in NIGHT that its Midnight registration declares.
 
@@ -53,9 +53,9 @@ Midnight. No Cardano per-recipient payout contract, batcher, or virtual account 
 Pool registration, the lock that carries a recipient's Midnight reward address, and the stake
 snapshot all come from the required staking MIP; this proposal only reads the snapshot record and
 defines none of them. Runtime, RPC, indexer, CLI, and SDK interfaces expose reward addresses,
-forecasts, accrued and release-gated balances, per-block calculations, epoch splits, and
-withdrawals. Independent implementations can recompute payouts from finalized public data and
-normative vectors.
+forecasts, accrued and release-gated balances, per-block calculations, the split of each Cardano
+epoch, and withdrawals. Independent implementations can recompute payouts from finalized public data
+and normative vectors.
 
 ## Motivation
 
@@ -97,13 +97,13 @@ Succinct verification without a full node is outside this proposal.
   (see **Candidates and payees**). Only a candidate can be selected for a committee, and only a
   candidate earns. A *committee member* is a candidate that selection placed in a committee
   (staking rule 24, Selection).
+* A *Cardano epoch* is five days on mainnet, and `E` is a Cardano epoch. A block belongs to Cardano
+  epoch `E` when its committee was selected from the stake snapshot of Cardano epoch `E` (staking
+  rule 24, Selection). Rewards are calculated per block, and are split and settled once per Cardano
+  epoch.
 * *cNIGHT* is NIGHT on Cardano.
 * `cnight_weight` is the rational `w_n/w_d` that the snapshot record carries: the lovelace of stake
   per STAR of cNIGHT (staking rule 25, cnight\_weight).
-* `epoch` is a Cardano epoch `E`. A block belongs to epoch `E` when its committee was selected from
-  the stake snapshot of epoch `E` (staking rule 24, Selection). Rewards are calculated per block,
-  and are split and settled once per epoch. A *Midnight epoch* is one committee session, and one
-  Cardano epoch holds many of them.
 * `initial_reward_reserve`, stored as `initial_reward_reserve_star`, is the NIGHT in the Reserve
   when reward calculation starts, in STAR. It is a constant of the Midnight chain specification and
   equals the required Reserve MIP's constant of the same name. It is not a field of
@@ -112,6 +112,8 @@ Succinct verification without a full node is outside this proposal.
 * A *lock* is the delegation lock of the required staking MIP: a UTXO at its staking contract whose
   datum names an owner credential, one pool and a `reward_address`, and which holds the cNIGHT it
   stakes, which may be none.
+* A *Midnight epoch* is one committee session: 300 slots of 6 s today, 30 minutes, so a Cardano
+  epoch of five days is as long as 240 Midnight epochs, and overlaps 240 or 241 of them.
 * The *operator* of a candidate is the SPO that runs it, the party paid the operator's amount in
   **Epoch reward split**.
 * `operator_id` identifies a candidate and is its `pool_id` (see **Candidates and payees**).
@@ -136,9 +138,9 @@ Succinct verification without a full node is outside this proposal.
   reward-eligible block executes. At the best-chain head it also reflects draws by blocks not yet
   finalized, which fork choice may roll back; in finalized state it reflects exactly the finalized
   reward-eligible blocks.
-* `snapshot_id` identifies the stake snapshot record of an epoch, `NightStakeSnapshotV1` (staking
-  rule 23, Snapshot record): the one record per Cardano epoch that lists the candidates, the locks
-  and the ADA delegators, and from which that epoch's committees are selected.
+* `snapshot_id` identifies the stake snapshot record of a Cardano epoch, `NightStakeSnapshotV1`
+  (staking rule 23, Snapshot record): the one record per Cardano epoch that lists the candidates,
+  the locks and the ADA delegators, and from which that Cardano epoch's committees are selected.
 * `stake_address` is the network-tagged Cardano reward address for a stake credential. The snapshot
   record gives a stake credential as a kind byte and a 28-byte hash, and on one network the two
   forms name the same credential.
@@ -163,15 +165,15 @@ A candidate is a Cardano stake pool that the required staking MIP admits at the 
 (staking rule 18, Pools at the snapshot): the registration set on Cardano holds an active and valid
 registration for its `pool_id`, and Cardano holds the pool as registered, with or without ADA
 delegated to it. `operator_id` is its `pool_id`. A pool that Cardano has retired, or whose
-registration is inactive or invalid at the snapshot, is not a candidate in that epoch and earns
-nothing in it. A candidate is not yet a producer: it produces blocks only in the committees that
-select it. This MIP reads the snapshot record (staking rule 23, Snapshot record) and nothing else
-about a pool, a lock or a delegator. For each candidate the record carries the `margin` and the `owners` of
-its Cardano pool registration certificate and the `fixed_cost` and `reward_address` of its Midnight
-registration, and it lists the locks and the ADA delegators that are the pool's payees (see **Epoch
-reward split**). The split needs the per-delegator rows of the record. The record carries those
-rows, and how they reach the runtime in bounded pages is Open Question 4 of the required staking
-MIP.
+registration is inactive or invalid at the snapshot, is not a candidate in that Cardano epoch and
+earns nothing in it. A candidate is not yet a producer: it produces blocks only in the committees
+that select it. This MIP reads the snapshot record (staking rule 23, Snapshot record) and nothing
+else about a pool, a lock or a delegator. For each candidate the record carries the `margin` and the
+`owners` of its Cardano pool registration certificate and the `fixed_cost` and `reward_address` of
+its Midnight registration, and it lists the locks and the ADA delegators that are the pool's payees
+(see **Epoch reward split**). The split needs the per-delegator rows of the record. The record
+carries those rows, and how they reach the runtime in bounded pages is Open Question 4 of the
+required staking MIP.
 
 A recipient names the Midnight address at which it is paid in a lock, in a Cardano transaction that
 the lock's owner credential authorizes (staking rule 5, Owner authorization). The key behind a
@@ -197,8 +199,8 @@ be retroactive.
 
 A pool leaves block production with a Deactivate of its registration node, which is permanent for
 that node (staking rule 10, Changes), and it is not a candidate at a later snapshot until it creates
-another node. Rewards calculated for earlier epochs settle as before. A delegator whose lock no
-longer counts (staking rule 14, Effective lock) keeps the rewards already credited, and the share
+another node. Rewards calculated for earlier Cardano epochs settle as before. A delegator whose lock
+no longer counts (staking rule 14, Effective lock) keeps the rewards already credited, and the share
 that its ADA delegation earns later is held in escrow.
 
 This MIP reads the record as the required staking MIP adopts it (staking rule 17, Snapshot
@@ -212,14 +214,14 @@ record for the block's Midnight epoch. It is never supplied by an environment va
 indexer, or other unverified inherent.
 
 For a registered producer, the committee record provides `operator_id`, its `pool_id` (staking rule
-24, Selection), and the epoch's snapshot record supplies the operator's `reward_address` and reward
-terms. An ineligible producer generates an attribution record with zero reward; if it has no
-operator identity, the record's `operator_id` is empty. Failure to map an eligible consensus author
-to the immutable committee and operator identity is an invalid block transition; it does not pay a
-fallback recipient or create an unowned escrow entry. The committee record holds the pool key of
-every registered member, so the mapping can fail only when consensus state is inconsistent. Every
-honest node then rejects the block, and block production stops when the fault covers the whole
-committee.
+24, Selection), and the snapshot record of the Cardano epoch supplies the operator's
+`reward_address` and reward terms. An ineligible producer generates an attribution record with zero
+reward; if it has no operator identity, the record's `operator_id` is empty. Failure to map an
+eligible consensus author to the immutable committee and operator identity is an invalid block
+transition; it does not pay a fallback recipient or create an unowned escrow entry. The committee
+record holds the pool key of every registered member, so the mapping can fail only when consensus
+state is inconsistent. Every honest node then rejects the block, and block production stops when the
+fault covers the whole committee.
 
 ### Tokenomics parameters
 
@@ -302,7 +304,7 @@ that only rescales `R` and `gamma` this way is not a monetary change. `initial_r
 the denomination are constants of the chain specification (**Terminology and units**), compiled into
 the client, and change only through a superseding MIP and a runtime upgrade. A later parameter version records the
 hash of its governing published source in `publication_hash` and that of its approved governance
-action in `governance_action_hash`; it cannot alter a finalized or settled epoch.
+action in `governance_action_hash`; it cannot alter a finalized or settled Cardano epoch.
 
 The parameters and their complete activation history are available through the runtime API and
 indexer. This MIP does not grant a new authority to change tokenomics.
@@ -364,10 +366,10 @@ that every possible next block would hit halts finalization rather than silently
 monetary calculation.
 
 Each block emits the following event. The event is deterministic, so every node emits the same one
-for the same block, but it is not kept in runtime state: the runtime keeps only the pool's epoch
-total and the treasury's (see below). The event exists for its readers. The indexer stores it to
-serve per-block reward queries (**Public query interface**), and a verifier compares it with its own
-recomputation (**Independent payout verification**).
+for the same block, but it is not kept in runtime state: the runtime keeps only the pool's total for
+the Cardano epoch and the treasury's (see below). The event exists for its readers. The indexer
+stores it to serve per-block reward queries (**Public query interface**), and a verifier compares it
+with its own recomputation (**Independent payout verification**).
 
 ```
 BlockRewardRecordV1 {
@@ -386,20 +388,21 @@ BlockRewardRecordV1 {
 ```
 
 The containing block hash identifies the event once the block is constructed; it is not a field of
-the event. The producing pool's `N_a` and the treasury's `N_t` are accumulated for the epoch in
-runtime state. The event, its containing block, the parent block's public reward state (`B_s`), and
-the identified parameter version are sufficient to recompute the calculation without consulting
+the event. The producing pool's `N_a` and the treasury's `N_t` are accumulated for the Cardano epoch
+in runtime state. The event, its containing block, the parent block's public reward state (`B_s`),
+and the identified parameter version are sufficient to recompute the calculation without consulting
 private or implementation-specific state.
 
 ### Epoch reward split
 
-The split for epoch `E` uses the stake snapshot record of epoch `E` (staking rule 23, Snapshot
-record), the record that `snapshot_id` identifies and from which the committees of epoch `E` were
-selected (staking rule 24, Selection), and no other source. When and how that record is taken is
-the required staking MIP's (staking rule 16, Snapshot point), and this MIP does not restate it.
-Nodes MUST NOT substitute a newer local snapshot. The split runs once per epoch, after the last
-block of the epoch is finalized, for each pool that produced a block in the epoch, on its producer
-total `P_pool`, the sum of `N_a` over those blocks.
+The split for Cardano epoch `E` uses the stake snapshot record of Cardano epoch `E` (staking rule
+23, Snapshot record), the record that `snapshot_id` identifies and from which the committees of the
+Midnight epochs of Cardano epoch `E` were selected (staking rule 24, Selection), and no other
+source. When and how that record is taken is the required staking MIP's (staking rule 16, Snapshot
+points), and this MIP does not restate it. Nodes MUST NOT substitute a newer local snapshot. The
+split runs once per Cardano epoch, after the last block of that Cardano epoch is finalized, for each
+pool that produced a block in it, on its producer total `P_pool`, the sum of `N_a` over those
+blocks.
 
 The tokenomics whitepaper establishes that participating SPOs and their enabling delegators can
 withdraw rewards, but it does not define how one pool's producer reward is divided among them. This
@@ -422,7 +425,7 @@ A pool's registration holds no cNIGHT (staking rule 9, Nodes), so registering fo
 nothing to `s_operator`. An SPO that locks cNIGHT behind its own pool stakes as any holder does: the
 lock is a payee below, paid at the lock's `reward_address`, and not part of `s_operator`.
 
-The payees of a pool in epoch `E` are fixed by the snapshot record:
+The payees of a pool in Cardano epoch `E` are fixed by the snapshot record:
 
 * each row of `delegators` that names the pool, except a row whose stake credential is the key
   credential of one of the pool's `owners`, with `s_i` its `lovelace`; and
@@ -477,9 +480,9 @@ of `shared`, and it is paid to the operator, so no STAR of `P_pool` is lost or c
 The form is identified by `recipient_split_policy` and `recipient_policy_hash`. Their values are
 fixed for version 1 of this MIP: they appear in `RewardParametersV1` so that records identify the
 form, not so that governance can change it, and changing them requires a superseding MIP. An SPO's
-change to its margin or fixed cost applies only from the first epoch whose snapshot records it and
-cannot alter a calculated epoch. A pool that is not a candidate at a snapshot holds no seat in that
-epoch, so neither the pool nor the cNIGHT locked behind it earns in that epoch.
+change to its margin or fixed cost applies only from the first Cardano epoch whose snapshot records
+it and cannot alter a calculated Cardano epoch. A pool that is not a candidate at a snapshot holds
+no seat in that Cardano epoch, so neither the pool nor the cNIGHT locked behind it earns in it.
 
 Every lock names a `reward_address` (staking rule 2, Output), and a lock without one is not a lock,
 so only an ADA delegation can be without an address. Its share is still allocated and is held in
@@ -487,18 +490,18 @@ escrow. The two assets differ on purpose: ADA is delegated on Cardano whether or
 knows of Midnight, so its share is kept until the holder names an address, while cNIGHT stakes only
 through a lock, and cNIGHT outside a lock is not stake and earns nothing.
 
-The epoch result records the gross pool reward, the split form's identifier and hash, the pool's
-fixed cost and margin, operator aggregate, delegator aggregate, lock aggregate, treasury amount,
-rounding remainder, snapshot ID, and reward-parameter version. Per-recipient entitlements record
-their payee, reward address, stake amount, and credited STAR.
+The result of a Cardano epoch records the gross pool reward, the split form's identifier and hash,
+the pool's fixed cost and margin, operator aggregate, delegator aggregate, lock aggregate, treasury
+amount, rounding remainder, snapshot ID, and reward-parameter version. Per-recipient entitlements
+record their payee, reward address, stake amount, and credited STAR.
 
 ### Settlement gate and supply invariant
 
 NIGHT is mirrored on Cardano and Midnight. During the initial reserve-control stage defined by the
 tokenomics whitepaper, let `C.R` and `C.L` be NIGHT in Cardano Reserve and protocol-locked states,
 and let `M.R`, `M.L` and `M.U` be NIGHT in the Midnight Reserve, protocol-locked and
-protocol-unlocked states. Per-block calculation and epoch splitting create deterministic
-entitlements, but do not by themselves make those amounts claimable.
+protocol-unlocked states. Per-block calculation and the split of a Cardano epoch create
+deterministic entitlements, but do not by themselves make those amounts claimable.
 
 Under the required Reserve MIP, the Cardano Reserve contract releases NIGHT from `C.R` to `C.L` on a
 fixed POSIX timer, and Midnight's existing bridge mirrors each finalized release: it moves the same
@@ -596,10 +599,11 @@ change who owns an entitlement, or reduce one, only through the actions in **Ent
 
 ### Bounded native settlement
 
-The number of delegators cannot determine the weight of one block. Epoch settlement therefore uses a
-deterministic queue. Each block processes no more than `max_updates_per_block` entries. Later epochs
-may accumulate while an earlier settlement is in progress, but queue order is fixed and cannot skip
-an entry. An entry of the queue is a `SettlementEntryV1` of one epoch:
+The number of delegators cannot determine the weight of one block. The settlement of a Cardano epoch
+therefore uses a deterministic queue. Each block processes no more than `max_updates_per_block`
+entries. Later Cardano epochs may accumulate while an earlier settlement is in progress, but queue
+order is fixed and cannot skip an entry. An entry of the queue is a `SettlementEntryV1` of one
+Cardano epoch:
 
 ```
 SettlementEntryV1 = enum {
@@ -615,9 +619,9 @@ RewardPayeeV1 = enum {
 }
 ```
 
-Entries sort by epoch, then by variant in the order shown, then by their fields in order, each
-compared by value. Within an epoch the treasury amount therefore comes before every pool and the
-escrow releases come after every pool, and within a pool the operator comes first, then its
+Entries sort by Cardano epoch, then by variant in the order shown, then by their fields in order,
+each compared by value. Within a Cardano epoch the treasury amount therefore comes before every pool
+and the escrow releases come after every pool, and within a pool the operator comes first, then its
 delegators, then its locks. `stake_credential` and `utxo` have the forms that the snapshot record
 gives them (staking rule 23, Snapshot record). Both types are encoded with SCALE like the other
 records of this MIP, so the codec writes the variant, and this MIP assigns no byte value by hand.
@@ -633,16 +637,16 @@ An operator's entry settles to the pool's `reward_address`, and a lock's entry t
 pool name. When the credential has no lock for the pool, or its locks for the pool name different
 addresses, the entry is settled to escrow: it stays in `block_reward_pool`, moves from the
 unassigned balance into `escrow[stake_address]`, and counts towards `S`. No entry is held at the
-head of the queue for lack of a lock. An epoch holds one escrow release for each stake address whose
-escrow is not empty once the pool entries of the epoch are settled, and whose credential owns one or
-more locks in the snapshot record of the epoch that all name one `reward_address`. The release moves
-the whole of `escrow[stake_address]` to that address with the reward-chunk entry point, without
-changing `S`.
-The credential needs no share in that epoch, so a delegator that has left its pool collects its
-escrow with a lock that holds no cNIGHT. That lock must name a pool that is a candidate at the
-snapshot, because the record lists no other lock (staking rule 23, Snapshot record); a lock that
-names a retired pool releases nothing. Between chunks, `block_reward_pool` equals its balance at
-activation plus the sum of all escrow balances plus `unassigned_released`.
+head of the queue for lack of a lock. A Cardano epoch holds one escrow release for each stake
+address whose escrow is not empty once the pool entries of that Cardano epoch are settled, and whose
+credential owns one or more locks in its snapshot record that all name one `reward_address`. The
+release moves the whole of `escrow[stake_address]` to that address with the reward-chunk entry
+point, without changing `S`. The credential needs no share in that Cardano epoch, so a delegator
+that has left its pool collects its escrow with a lock that holds no cNIGHT. That lock must name a
+pool that is a candidate at the snapshot, because the record lists no other lock (staking rule 23,
+Snapshot record); a lock that names a retired pool releases nothing. Between chunks,
+`block_reward_pool` equals its balance at activation plus the sum of all escrow balances plus
+`unassigned_released`.
 
 Each settlement chunk is a mandatory atomic runtime transition identified by
 `(epoch, chunk_index)`. Before changing state, the runtime validates the complete chunk, including
@@ -707,13 +711,14 @@ POST, so that wallets, explorers and test harnesses can port existing Cardano in
 | Midnight query | Koios counterpart | Fields, in Koios's names where one exists |
 |---|---|---|
 | Account status | `account_info` | `stake_address`, `status` (whether it owns a lock for its pool, and whether its locks for that pool name one reward address), `delegated_pool`, `rewards` (calculated entitlement), `withdrawals` (claims), `rewards_available` (claimable); plus its locks with their reward addresses, escrow, release-gated and unsettled amounts |
-| Reward history | `account_reward_history` | `earned_epoch`, `spendable_epoch` (the epoch the entitlement became claimable), `amount`, `type` (`leader` or `member`), `pool_id` |
-| Pool epoch totals | `pool_history` | `epoch_no`, `active_stake`, `block_cnt`, `delegator_cnt`, `margin`, `fixed_cost` (the fixed cost in NIGHT), `pool_fees` (operator aggregate), `deleg_rewards` (delegator aggregate); plus locked cNIGHT, `cnight_weight`, lock aggregate, treasury amount, rounding remainder, split form identifier and hash, snapshot identifier |
+| Reward history | `account_reward_history` | `earned_epoch`, `spendable_epoch` (the Cardano epoch in which the entitlement became claimable), `amount`, `type` (`leader` or `member`), `pool_id` |
+| Pool totals per Cardano epoch | `pool_history` | `epoch_no`, `active_stake`, `block_cnt`, `delegator_cnt`, `margin`, `fixed_cost` (the fixed cost in NIGHT), `pool_fees` (operator aggregate), `deleg_rewards` (delegator aggregate); plus locked cNIGHT, `cnight_weight`, lock aggregate, treasury amount, rounding remainder, split form identifier and hash, snapshot identifier |
 | Pool delegators | `pool_delegators` | `stake_address`, `amount`, `active_epoch_no`; plus the pool's locks, each with its owner, cNIGHT and reward address |
 | Lock and claim history | `account_update_history` | `action_type` (lock, update, unbond, unlock, claim), `tx_hash`, `epoch_no`, `block_time`; the claim history takes the place of Cardano withdrawals |
 
-Amounts are in STAR and epochs are Cardano epochs, as in Koios. The Koios API version mirrored is fixed with the
-normative vectors. Further queries, with no Koios counterpart, return:
+Amounts are in STAR, and `epoch_no`, `earned_epoch`, `spendable_epoch` and `active_epoch_no` are
+Cardano epochs, as in Koios. The Koios API version mirrored is fixed with the normative vectors.
+Further queries, with no Koios counterpart, return:
 
 * per-block reward records;
 * reward-parameter values and version;
@@ -741,12 +746,12 @@ selection and utilization are uncertain and that past performance does not guara
 
 A verifier recomputes a payout using only finalized public data:
 
-1. identify the epoch's stake snapshot record and reward-parameter version;
+1. identify the stake snapshot record and the reward-parameter version of the Cardano epoch;
 2. derive each finalized block author from consensus data;
-3. recompute every `BlockRewardRecordV1` and the pool epoch totals;
+3. recompute every `BlockRewardRecordV1` and the pool totals of the Cardano epoch;
 4. read the split form's identifier and, from the identified snapshot record, the pool's terms,
    locks and delegators;
-5. recompute the policy-defined epoch split in canonical order;
+5. recompute the policy-defined split of the Cardano epoch in canonical order;
 6. verify finalized Cardano Reserve releases and the resulting `unassigned_released`; and
 7. compare the result with Midnight's settlement records, claimable balances, and withdrawals.
 
@@ -798,7 +803,7 @@ requirement to lengthen Midnight epochs solely to make those folds practical.
 MIP-0024 remains relevant design input. This proposal retains or adapts its:
 
 * per-block integer reward calculation and logical outstanding Reserve model;
-* consensus-derived block author and epoch pool accumulator;
+* consensus-derived block author and pool accumulator per Cardano epoch;
 * direct protocol allocation to operators and delegators rather than discretionary SPO payment;
 * use of the committee-selection stake snapshot and Cardano pool parameters;
 * stake-credential authentication for both key and script credentials;
@@ -814,9 +819,9 @@ recipient payout (`C.R -> C.U`) to protocol-locked backing for native Midnight s
 (`C.R -> C.L`, mirrored by `M.R -> M.L`, followed by settlement into `M.U`). No MIP-0024 code or contract is assumed reusable until
 its state transition, destination, trust boundary, and target-version compatibility are re-audited.
 
-Claimable balances are chosen instead of automatically creating one UTXO per recipient each epoch.
-Recipients control consolidation timing, small amounts can accumulate, and settlement does not
-produce dust UTXOs. The existing claim transaction already authenticates the owner and creates
+Claimable balances are chosen instead of automatically creating one UTXO per recipient each Cardano
+epoch. Recipients control consolidation timing, small amounts can accumulate, and settlement does
+not produce dust UTXOs. The existing claim transaction already authenticates the owner and creates
 spendable unshielded NIGHT.
 
 The pool registration, the lock and the stake snapshot are taken from the required staking MIP
@@ -921,8 +926,8 @@ mainnet:
 2. Read each pool's Midnight registration and each lock from the snapshot record of the required
    staking MIP, and mark the initial permissioned authorities reward-ineligible.
 3. Activate or replace the block-reward pallet path, derive block authors from consensus, and add
-   versioned parameters, per-block records, epoch accumulators, escrow, and the bounded settlement
-   queue.
+   versioned parameters, per-block records, accumulators per Cardano epoch, escrow, and the bounded
+   settlement queue.
 4. Consume the bridge's `ReserveReleaseObservationV1` records, add the supply identities, coverage
    check and halt rules, and connect bounded settlement out of `block_reward_pool` to the existing
    distribution, treasury, unclaimed-reward, and claim mechanisms.
@@ -930,7 +935,7 @@ mainnet:
    and withdrawal construction.
 6. Publish an independent calculation library and cross-implementation conformance vectors.
 7. Run migration rehearsals, cross-chain and internal economic-invariant tests, load tests at the
-   maximum supported stake distribution, and at least two public-testnet epochs.
+   maximum supported stake distribution, and at least two Cardano epochs on a public test network.
 8. Activate through a coordinated runtime and node upgrade after operator tooling and documentation
    are released.
 
@@ -1022,15 +1027,18 @@ fails (staking rule 26, Determinism).
 
 **Arithmetic manipulation.** Consensus integers, checked wide intermediates, specified rounding,
 fixed monetary parameters, and normative vectors prevent platform-dependent results. Governance
-cannot alter an already settled epoch.
+cannot alter an already settled Cardano epoch.
 
 **Snapshot flooding.** The required staking MIP reads Cardano in bounded units (staking rule 27,
 Bounded units), and each lock holds a refundable ADA deposit of at least `lock_deposit_lovelace`, so
 filling a snapshot with locks costs locked ADA, not only Cardano fees.
 
-**Snapshot timing.** The snapshot record is taken before the committees of its Cardano epoch can be
-known, and a pool's margin and fixed cost are read in the same state (staking rule 16, Snapshot
-point), so neither stake nor terms can be moved after the committee is known.
+**Snapshot timing.** The stake of the snapshot record is read before the committees of the Midnight
+epochs of its Cardano epoch can be known, and a pool's margin and fixed cost are read in the same
+state (staking rule 16, Snapshot points), so neither stake nor terms can be moved after the
+committees are known. The registrations and their keys are read later, and a pool that registers
+then enters with the fixed cost of its Create and with no lock (staking rule 18, Pools at the
+snapshot).
 
 **Settlement denial of service.** Work is bounded per block and ordered deterministically. A large
 delegator set delays availability but cannot change entitlement amounts or block all later block
@@ -1087,7 +1095,7 @@ The following components change:
   replay protection, and supply checks; add an atomic reward-chunk entry point or equivalent
   temporary-state commit boundary, accepted only from the reward-specific executor, without
   widening any other caller's allow-list.
-* **`midnight-indexer`**: persist block reward records, epoch splits, settlement
+* **`midnight-indexer`**: persist block reward records, the split of each Cardano epoch, settlement
   progress, claimable projections, and withdrawals; expose batch GraphQL queries.
 * **`midnight-wallet` and `midnight-js`**: typed reward queries, forecasting, claim construction,
   offline signing, submission, and confirmation.
@@ -1109,8 +1117,8 @@ Testing includes:
   tests;
 * payee tests for a stake credential with no lock for its pool, with one lock, with several locks
   that name one address and with several that name different addresses, for a change of reward
-  address between two snapshots, and for escrow release, with and without a share in the epoch of
-  the release;
+  address between two snapshots, and for escrow release, with and without a share in the Cardano
+  epoch of the release;
 * settlement-queue tests in which a stake address without a lock sits ahead of other recipients,
   asserting that the other entries settle whenever `unassigned_released` covers them, that
   `block_reward_pool` equals its activation baseline plus total escrow plus `unassigned_released`
@@ -1127,8 +1135,9 @@ Testing includes:
   `reserve_pool` movement halts settlement;
 * split tests for the fixed cost: zero, below, equal to and above the pool's reward, and a change
   after the selecting snapshot, which must not apply;
-* snapshot tests proving that the split of an epoch uses the record that selected its committees,
-  and that stake, terms and reward addresses changed after that snapshot do not count for the epoch;
+* snapshot tests proving that the split of a Cardano epoch uses the record that selected its
+  committees, and that stake, terms and reward addresses changed after that snapshot do not count
+  for that Cardano epoch;
 * golden vectors for every Koios-shaped query response;
 * eligibility tests proving that initial permissioned-authority blocks draw zero Reserve reward;
 * indexer reprocessing, pagination, retention, and runtime/indexer consistency tests;
@@ -1196,16 +1205,15 @@ maintainers. Blocks: `Proposed`.
 
 Work per block is bounded, but runtime state is not bounded over time. Per-block reward records are
 events and add nothing to runtime state, but escrow balances that never expire, per-recipient
-entitlements and epoch split records all accumulate. Options include keeping per-epoch records in
-runtime state
-only until every entitlement they produced has been settled, with the indexer preserving them; and
-a cap on unsettled queue length that halts new epochs rather than growing without limit. Escrow is
-bounded by the number of stake addresses and is not removed, because entitlements do not expire.
-Pruning interacts with **Independent payout verification**: the decision must name which records
-must stay obtainable for as long as an entitlement can be claimed (at least the per-block records,
-epoch splits, snapshot identifiers and parameter history), where they are kept, and who is
-responsible for keeping them available. Decides: authors, with the node maintainers. Blocks:
-`Proposed`.
+entitlements and the split records of each Cardano epoch all accumulate. Options include keeping the
+records of each Cardano epoch in runtime state only until every entitlement they produced has been
+settled, with the indexer preserving them; and a cap on unsettled queue length that halts the split
+of new Cardano epochs rather than growing without limit. Escrow is bounded by the number of stake
+addresses and is not removed, because entitlements do not expire. Pruning interacts with
+**Independent payout verification**: the decision must name which records must stay obtainable for
+as long as an entitlement can be claimed (at least the per-block records, the split of each Cardano
+epoch, snapshot identifiers and parameter history), where they are kept, and who is responsible for
+keeping them available. Decides: authors, with the node maintainers. Blocks: `Proposed`.
 
 ### 6. Reward balances below the claim minimum
 
@@ -1224,13 +1232,14 @@ with the ledger maintainers. Blocks: `Proposed`.
 ### 7. Order of work within a block
 
 This MIP does not order a block's work, or say which of it a valid block must contain. The decision
-must fix the order of Cardano observations (mirrored Reserve releases), epoch activation (the
-snapshot record and the committee), settlement chunks with their escrow releases, user transactions,
-and the block's own reward record. It must also say which work is mandatory, so that a block
-omitting an available settlement chunk is invalid, and how block weight is reserved for it. A
-proposed order: Cardano observations; epoch activation; settlement chunks; user transactions; then
-the block's reward record. Under it, a release mirrored in a block can be settled in the same block.
-Decides: authors, with the node maintainers. Blocks: `Proposed`.
+must fix the order of Cardano observations (mirrored Reserve releases), the activation of the
+snapshot record of a Cardano epoch and of the committee of a Midnight epoch, settlement chunks with
+their escrow releases, user transactions, and the block's own reward record. It must also say which
+work is mandatory, so that a block omitting an available settlement chunk is invalid, and how block
+weight is reserved for it. A proposed order: Cardano observations; the activation of a snapshot
+record or a committee; settlement chunks; user transactions; then the block's reward record. Under
+it, a release mirrored in a block can be settled in the same block. Decides: authors, with the node
+maintainers. Blocks: `Proposed`.
 
 ### 8. The value of `pi`
 
