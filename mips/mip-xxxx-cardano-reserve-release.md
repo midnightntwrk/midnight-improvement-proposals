@@ -842,9 +842,9 @@ maintainers. Blocks: `Proposed`.
   `519e002f38574fa455cf9e763bd88abee4b50598ae6c0769484a2fcf0312258d` (stable URL to be supplied by
   the Foundation)
 - [Midnight Tokenomics and Incentives Whitepaper, version 1.81 (May 2026)](https://45047878.fs1.hubspotusercontent-na1.net/hubfs/45047878/Midnight-Tokenomics-And-Incentives-Whitepaper.pdf)
-- [MPS-0019: Block Production Rewards in NIGHT](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0019-block-production-rewards-night.md)
-- [MIP-0001: Midnight Improvement Proposal Process](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0001-mip-process.md)
-- [MIP-0024: Block Production Rewards Payout on Cardano](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0024-block-production-rewards.md)
+- [MPS-0019: Block Production Rewards in NIGHT](../mps/mps-0019-block-production-rewards-night.md)
+- [MIP-0001: Midnight Improvement Proposal Process](./mip-0001-mip-process.md)
+- [MIP-0024: Block Production Rewards Payout on Cardano](./mip-0024-block-production-rewards.md)
 - [Working draft: Native NIGHT Block Production Rewards: Accrual and
   Claims](./mip-xxxx-native-night-block-rewards.md)
 - [Midnight reserve contracts, mainnet address report](https://github.com/midnightntwrk/midnight-reserve-contracts/blob/6310b16cad5bc5431a2dee9887545e1cf6ee4f79/release/mainnet/address-report.md)
