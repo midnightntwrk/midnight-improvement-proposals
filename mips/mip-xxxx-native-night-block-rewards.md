@@ -731,38 +731,6 @@ Queries by pool ID and reward address are also supported. Historical pagination 
 declares the retention window. The node runtime API remains authoritative for current state; the
 indexer is a convenient historical projection.
 
-### Forecasting
-
-The SDK and CLI expose a pure forecast function taking published reward parameters, the current
-`reward_reserve_outstanding`, the pool's expected number of blocks over the range (derived from its
-share of committee seats and the number of slots, with the selection model stated), expected
-utilization, the pool's margin and fixed cost, operator
-stake, delegated stake, locked cNIGHT and `cnight_weight`, and a time range. The result shows assumptions, low/base/high scenarios,
-gross pool rewards, and the policy-defined operator and delegator allocations.
-
-A forecast never changes consensus and MUST be labelled as an estimate. Default assumptions are
-versioned and displayed rather than hidden. The implementation includes examples showing that slot
-selection and utilization are uncertain and that past performance does not guarantee rewards.
-
-### Independent payout verification
-
-A verifier recomputes a payout using only finalized public data:
-
-1. identify the stake snapshot record and the reward-parameter version of the Cardano epoch;
-2. derive each finalized block author from consensus data;
-3. recompute every `BlockRewardRecordV1` and the pool totals of the Cardano epoch;
-4. read the split form's identifier and, from the identified snapshot record, the pool's terms,
-   locks and delegators;
-5. recompute the policy-defined split of the Cardano epoch in canonical order;
-6. verify finalized Cardano Reserve releases and the resulting `unassigned_released`; and
-7. compare the result with Midnight's settlement records, claimable balances, and withdrawals.
-
-A public conformance repository linked from this MIP publishes normative JSON and SCALE test
-vectors for every step. At least one
-independent reference implementation, maintained outside the node runtime crate, MUST reproduce the
-vectors before activation. An indexer response is not itself proof of correctness; operators can
-verify against their own Midnight and Cardano nodes.
-
 ### Versioning
 
 All new records and canonical encodings carry version 1, denoted by the `V1` suffix of the type
@@ -1272,6 +1240,38 @@ Decides: Foundation and economics owner. Blocks: `Proposed`.
   request 421](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/421)
 * [MIP-0001: Midnight Improvement Proposal
   Process](./mip-0001-mip-process.md)
+
+## Appendix A: Forecasting
+
+The SDK and CLI expose a pure forecast function taking published reward parameters, the current
+`reward_reserve_outstanding`, the pool's expected number of blocks over the range (derived from its
+share of committee seats and the number of slots, with the selection model stated), expected
+utilization, the pool's margin and fixed cost, operator
+stake, delegated stake, locked cNIGHT and `cnight_weight`, and a time range. The result shows assumptions, low/base/high scenarios,
+gross pool rewards, and the policy-defined operator and delegator allocations.
+
+A forecast never changes consensus and MUST be labelled as an estimate. Default assumptions are
+versioned and displayed rather than hidden. The implementation includes examples showing that slot
+selection and utilization are uncertain and that past performance does not guarantee rewards.
+
+## Appendix B: Independent payout verification
+
+A verifier recomputes a payout using only finalized public data:
+
+1. identify the stake snapshot record and the reward-parameter version of the Cardano epoch;
+2. derive each finalized block author from consensus data;
+3. recompute every `BlockRewardRecordV1` and the pool totals of the Cardano epoch;
+4. read the split form's identifier and, from the identified snapshot record, the pool's terms,
+   locks and delegators;
+5. recompute the policy-defined split of the Cardano epoch in canonical order;
+6. verify finalized Cardano Reserve releases and the resulting `unassigned_released`; and
+7. compare the result with Midnight's settlement records, claimable balances, and withdrawals.
+
+A public conformance repository linked from this MIP publishes normative JSON and SCALE test
+vectors for every step. At least one
+independent reference implementation, maintained outside the node runtime crate, MUST reproduce the
+vectors before activation. An indexer response is not itself proof of correctness; operators can
+verify against their own Midnight and Cardano nodes.
 
 ## Acknowledgements
 
