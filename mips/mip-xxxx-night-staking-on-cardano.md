@@ -547,10 +547,10 @@ No hard fork: the change is a node release, a Midnight runtime upgrade and three
 
 ## References
 
-- [MPS-0019: Block Production Rewards in NIGHT](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0019-block-production-rewards-night.md)
+- [MPS-0019: Block Production Rewards in NIGHT](../mps/mps-0019-block-production-rewards-night.md)
 - [midnight-improvement-proposals PR 406](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/406): Native NIGHT Block Production Rewards: Accrual and Claims, and Cardano Reserve Release. `operator_id`, `snapshot_id`.
-- [MIP-0024: Block Production Rewards Payout on Cardano](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0024-block-production-rewards.md). The virtual account the lock descends from.
-- [MIP-0023: Committee Bridge Consensus Integration](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0023-committee-bridge-consensus.md). Not required by this proposal.
+- [MIP-0024: Block Production Rewards Payout on Cardano](./mip-0024-block-production-rewards.md). The virtual account the lock descends from.
+- [MIP-0023: Committee Bridge Consensus Integration](./mip-0023-committee-bridge-consensus.md). Not required by this proposal.
 - NIGHT staking and block rewards: decisions for review. The snapshot point, operator terms and the seat fraction; this revision keeps the snapshot point only.
 - Backing Midnight Pools with cNIGHT, dzajkowski, draft problem statement, 2026-11-04, not yet submitted to this repository. The decisions it records and its success criteria; criterion 6 on reproducible per-pool totals.
 - Review of midnight-improvement-proposals PR 406. Findings 1.6 and 1.7 on registration cost and the snapshot clock.
