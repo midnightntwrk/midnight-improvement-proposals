@@ -1028,10 +1028,9 @@ cannot alter an already settled epoch.
 Bounded units), and each lock holds a refundable ADA deposit of at least `lock_deposit_lovelace`, so
 filling a snapshot with locks costs locked ADA, not only Cardano fees.
 
-**Snapshot timing.** The snapshot record is taken at the start of Cardano epoch `E - 3`, before the
-nonce that seeds the committees of epoch `E` is known, and a pool's margin and fixed cost are read
-in the same state (staking rule 16, Snapshot point), so neither stake nor terms can be moved after
-the committee is known.
+**Snapshot timing.** The snapshot record is taken before the committees of its Cardano epoch can be
+known, and a pool's margin and fixed cost are read in the same state (staking rule 16, Snapshot
+point), so neither stake nor terms can be moved after the committee is known.
 
 **Settlement denial of service.** Work is bounded per block and ordered deterministically. A large
 delegator set delays availability but cannot change entitlement amounts or block all later block
