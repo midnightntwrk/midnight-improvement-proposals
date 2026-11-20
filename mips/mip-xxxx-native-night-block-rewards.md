@@ -519,7 +519,7 @@ which is `unassigned_released`. While Cardano controls the Reserve, observation 
 the bridge's mirroring. After a handover under the required Reserve MIP, a later MIP supplies it
 from the computed schedule instead; nothing else in this MIP changes.
 
-**State.** Midnight keeps, in finalized state:
+**State.** Midnight keeps, in chain state:
 
 - `B_o`, the canonical outstanding reward Reserve, used for the next reward calculation;
 - `D`, the cumulative finalized base draw earned by eligible Midnight blocks;
