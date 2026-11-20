@@ -698,9 +698,10 @@ midnight-cli query stake-pool-rewards --reward-address ... [--epoch ...]
 midnight-cli transaction withdraw-rewards --reward-address ... --amount all|STAR --out-file ...
 ```
 
-A recipient creates, updates, unbonds and unlocks a lock with Cardano transactions, with the tooling
-of the required staking MIP, and this MIP adds no command for it. The SDK provides typed equivalents
-for reward queries, offline claim construction, external signing, submission, and confirmation.
+A recipient creates, updates, unbonds and unlocks a lock with Cardano transactions, as the required
+staking MIP defines them (staking rules 1 to 4), with that MIP's tooling, and this MIP adds no
+command for it. The SDK provides typed equivalents for reward queries, offline claim construction,
+external signing, submission, and confirmation.
 
 ### Public query interface
 
