@@ -580,9 +580,6 @@ unlock unbacked NIGHT, because settlement never exceeds `unassigned_released`.
 drew the curve's maximum. It sits in `block_reward_pool`, unassigned, and can be settled only
 against later earned entitlements.
 
-At the best-chain head, `B_o` also reflects draws by blocks that are not yet finalized. Fork choice
-may roll those draws back, so the identities above are required only of finalized state.
-
 **Halt and reconciliation.** Settlement halts closed, and stays halted until a published incident
 reconciliation resolves the cause, if any of the following occurs:
 
