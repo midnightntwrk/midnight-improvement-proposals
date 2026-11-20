@@ -580,10 +580,12 @@ unlock unbacked NIGHT, because settlement never exceeds `unassigned_released`.
 drew the curve's maximum. It sits in `block_reward_pool`, unassigned, and can be settled only
 against later earned entitlements.
 
-**Halt and reconciliation.** Settlement halts closed, and stays halted until a published incident
-reconciliation resolves the cause, if any of the following occurs:
+### Halt and reconciliation
 
-- a finalized state fails one of the identities above;
+Settlement halts closed, and stays halted until a published incident reconciliation resolves the
+cause, if any of the following occurs:
+
+- a finalized state fails one of the identities of **Settlement gate and supply invariant**;
 - coverage fails;
 - the Cardano Reserve has an unexpected spend, as the required Reserve MIP defines it;
 - a previously stable release is later absent because of an exceptional rollback or consensus
@@ -880,7 +882,8 @@ mainnet:
    `reserve_pool`.
 8. The live system continuously demonstrates every identity in **Settlement gate and supply
    invariant**, coverage, and the Midnight ledger's internal supply invariant across settlement,
-   interruption, rollback, and upgrade scenarios, and halts closed on each condition listed there.
+   interruption, rollback, and upgrade scenarios, and halts closed on each condition of **Halt and
+   reconciliation**.
 9. Independent implementations reproduce every normative vector and a representative sample of
    mainnet payouts from finalized Midnight and Cardano data.
 10. Locks that name different addresses, a missing lock, a change of reward address, settlement
