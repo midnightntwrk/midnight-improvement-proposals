@@ -109,5 +109,5 @@ Client-side verification of Midnight is outside this MPS. The reward mechanism m
 
 * [Midnight Tokenomics and Incentives Whitepaper, version 1.81 (May 2026)](https://45047878.fs1.hubspotusercontent-na1.net/hubfs/45047878/Midnight-Tokenomics-And-Incentives-Whitepaper.pdf)
 * NIGHT MiCA White Paper, notified 2026-07-28, SHA-256 `519e002f38574fa455cf9e763bd88abee4b50598ae6c0769484a2fcf0312258d` (stable URL to be supplied by the Foundation)
-* [MIP-0024: Block Production Rewards Payout on Cardano](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0024-block-production-rewards.md)
+* [MIP-0024: Block Production Rewards Payout on Cardano](../mips/mip-0024-block-production-rewards.md)
 * [Discussion #273](https://github.com/midnightntwrk/midnight-improvement-proposals/discussions/273)
