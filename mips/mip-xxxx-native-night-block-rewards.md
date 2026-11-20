@@ -1262,17 +1262,17 @@ Decides: Foundation and economics owner. Blocks: `Proposed`.
 * [Midnight Tokenomics and Incentives Whitepaper, version 1.81 (May
   2026)](https://45047878.fs1.hubspotusercontent-na1.net/hubfs/45047878/Midnight-Tokenomics-And-Incentives-Whitepaper.pdf)
 * [MPS-0019: Block Production Rewards in
-  NIGHT](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mps/mps-0019-block-production-rewards-night.md)
+  NIGHT](../mps/mps-0019-block-production-rewards-night.md)
 * [Discussion #273 acceptance
   criteria](https://github.com/midnightntwrk/midnight-improvement-proposals/discussions/273)
 * [MIP-0024: Block Production Rewards Payout on
-  Cardano](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0024-block-production-rewards.md)
+  Cardano](./mip-0024-block-production-rewards.md)
 * [Working draft: Native NIGHT Block Production Rewards: Cardano Reserve
   Release](./mip-xxxx-cardano-reserve-release.md)
 * [Working draft: NIGHT Staking on Cardano, `mip-xxxx-night-staking-on-cardano.md`, in pull
   request 421](https://github.com/midnightntwrk/midnight-improvement-proposals/pull/421)
 * [MIP-0001: Midnight Improvement Proposal
-  Process](https://github.com/midnightntwrk/midnight-improvement-proposals/blob/main/mips/mip-0001-mip-process.md)
+  Process](./mip-0001-mip-process.md)
 
 ## Acknowledgements
 
