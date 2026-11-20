@@ -465,7 +465,7 @@ credential has no lock for the pool, or when its locks for the pool name differe
 because no rule then picks one of them.
 
 Every amount is a non-negative integer number of STAR. The operator, each `delegators` row that is
-not an owner's and each `locks` row is one payee, a `RewardPayeeV1`, and outputs are ordered as the
+not an owner's and each `locks` row is one payee, a `RewardPayee`, and outputs are ordered as the
 payees of a pool are in **Bounded native settlement**. The split's canonical output is the ordered
 collection of non-negative `(payee, amount_star)` entitlements, the operator's among them, and it
 MUST satisfy:
@@ -602,17 +602,17 @@ change who owns an entitlement, or reduce one, only through the actions in **Ent
 The number of delegators cannot determine the weight of one block. The settlement of a Cardano epoch
 therefore uses a deterministic queue. Each block processes no more than `max_updates_per_block`
 entries. Later Cardano epochs may accumulate while an earlier settlement is in progress, but queue
-order is fixed and cannot skip an entry. An entry of the queue is a `SettlementEntryV1` of one
+order is fixed and cannot skip an entry. An entry of the queue is a `SettlementEntry` of one
 Cardano epoch:
 
 ```
-SettlementEntryV1 = enum {
+SettlementEntry = enum {
     Treasury,
-    Pool          { operator_id: [u8; 28], payee: RewardPayeeV1 },
+    Pool          { operator_id: [u8; 28], payee: RewardPayee },
     EscrowRelease { stake_credential: (u8, [u8; 28]) }
 }
 
-RewardPayeeV1 = enum {
+RewardPayee = enum {
     Operator,
     Delegator { stake_credential: (u8, [u8; 28]) },
     Lock      { utxo: ([u8; 32], u16) }
