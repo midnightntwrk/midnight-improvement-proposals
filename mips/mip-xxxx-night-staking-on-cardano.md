@@ -421,7 +421,7 @@ This proposal and the companion NIGHT rewards MIP are accepted and activated tog
 
 This MIP moves from Accepted to Active when all of the following hold on Midnight mainnet:
 
-1. The `night_staking` contract is deployed, its stake credential is registered on Cardano, the runtime upgrade of this proposal carries its hash, and an independent audit of the contract reports no unresolved critical or high finding.
+1. The `night_staking` and `night_registration` contracts are deployed, the stake credential of each is registered on Cardano, the registration set is initialized, the runtime upgrade of this proposal carries the two script hashes, and an independent audit of the two contracts reports no unresolved critical or high finding.
 2. The contract and node tests of the Testing section pass, including every boundary vector: a 27-byte and a 29-byte `pool_id`; a 31-byte and a 33-byte `reward_address`; a node datum of `NODE_DATUM_MAX` bytes without its links, and one byte more; a Create of a node at `NODE_DATUM_MAX` whose two anchors are at `NODE_DATUM_MAX`, in one transaction; ADA of `lock_deposit_lovelace` and one lovelace less; an Update that keeps and one that reduces the cNIGHT; an Unbond whose `unbond_at` is one millisecond below and one millisecond above the validity upper bound; an Unlock one slot before and one slot after `UNBONDING_DELAY`; a Lock without the reference input of its pool's node.
 3. On a public test network, at least three pools register in the registration set and ten locks back them, and cNIGHT-weighted seats are held across at least ten consecutive Cardano epochs, as criterion 4 requires.
 4. For ten consecutive Cardano epochs, an implementation maintained outside the node runtime reproduces every `virtual_stake(O)`, every lock's `cnight` and every `snapshot_id` from Cardano and Midnight chain data alone, and a block whose committee was selected from different totals is rejected.
@@ -496,7 +496,7 @@ No hard fork: the change is a node release, a Midnight runtime upgrade and three
 
 ## Implementation
 
-**`midnight-reserve-contracts`.** `validators/night_staking.ak` with the datum and rules 1 to 8, as one script with spend, mint, withdraw and publish handlers, built from the spike's `virtual_account.ak` without the deposit list and the batcher gate, and reusing `stake_auth` from `lib/rewards/auth.ak`. Blueprint bindings and TypeScript tooling for lock, update, unbond and unlock, golden vectors for the datum and the unbond timing, and the per-network `night_staking` hash in the deployed-scripts record.
+**`midnight-reserve-contracts`.** `validators/night_staking.ak` with the datum and rules 1 to 8, as one script with spend, mint, withdraw and publish handlers, built from the spike's `virtual_account.ak` without the deposit list and the batcher gate, and reusing `stake_auth` from `lib/rewards/auth.ak`. `validators/night_registration.ak` with the `Node` datum and rules 9 and 10, built from the spike's linked list. Blueprint bindings and TypeScript tooling for lock, update, unbond and unlock and for the initialization, create, update and deactivate of the set, golden vectors for the datums and the unbond timing, and the per-network `night_staking` and `night_registration` hashes in the deployed-scripts record.
 
 **`midnight-node`.**
 
