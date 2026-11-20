@@ -1223,6 +1223,18 @@ published `B` and `T` gives `R_a` = 21/250 (8.4% per year); the release interval
 derived from that `R_a`. The value is accepted with this MIP and MUST be settled before the freeze.
 Decides: Foundation and economics owner. Blocks: `Proposed`.
 
+### 9. Whether a Cardano fault halts more than settlement
+
+A condition of **Halt and reconciliation** stops settlement only. Midnight still produces blocks,
+selects committees and calculates rewards. One Cardano fault can reach more than settlement.
+Example: a Cardano block that Midnight read as stable is later absent because of an exceptional
+rollback. A Reserve release in that block is a halt condition. A lock event or a pool registration
+event in the same block is in a snapshot record, and committees are selected and rewards are split
+from that record. It is open whether such a fault must also stop the use of that snapshot record
+until the reconciliation. Staking Open Question 5 asks the same for a snapshot that is late.
+Decides: authors of this MIP and of the required staking and Reserve MIPs, with the node
+maintainers. Blocks: `Proposed`.
+
 ## References (Optional)
 
 * NIGHT MiCA White Paper, notified 2026-07-28, SHA-256
@@ -1275,6 +1287,28 @@ vectors for every step. At least one
 independent reference implementation, maintained outside the node runtime crate, MUST reproduce the
 vectors before activation. An indexer response is not itself proof of correctness; operators can
 verify against their own Midnight and Cardano nodes.
+
+## Appendix C: Halt and reconciliation as a diagram
+
+The diagram shows **Halt and reconciliation**. It is not normative.
+
+```mermaid
+flowchart LR
+    RUN["Settlement runs"]
+    HALT["Settlement is halted<br/>reward calculation may continue,<br/>no new value becomes claimable"]
+    REC["The incident reconciliation is published"]
+    RUN -- "a halt condition occurs" --> HALT
+    HALT --> REC
+    REC -- "the cause is resolved" --> RUN
+```
+
+What Midnight reads from Cardano, and what uses it (Open Question 9):
+
+| Midnight reads | What uses it |
+|---|---|
+| Reserve releases | Settlement: a release fills `block_reward_pool` and raises `L` |
+| Lock events, pool registration events and ADA delegation | The snapshot record, and so committee selection and the reward split |
+| The ADA stake distribution and the nonce of the Cardano epoch | Committee selection |
 
 ## Acknowledgements
 
