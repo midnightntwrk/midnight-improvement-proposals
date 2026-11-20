@@ -1,5 +1,5 @@
 ---
-MIP: 0008
+MIP: "0008"
 Title: CAIP-2 Network Identifiers for Midnight
 Authors:
   - alba-press (alba-press)
@@ -11,6 +11,22 @@ Requires: none
 Replaces: none
 MPS: MPS-0003
 ---
+
+<!--
+ Copyright Midnight Foundation
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     https://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
 
 ## Abstract
 
@@ -173,11 +189,15 @@ Registered references:
 
 The genesis identifier is the hash of block 0, as returned by the node's `chain_getBlockHash(0)` RPC: 32 bytes, written as `0x` followed by 64 lowercase hex digits.
 
-Superseded instances: none recorded. When a registered test network is reset under *Reset and reuse rules*, its previous genesis identifier is listed here with the date it stopped being current.
+Superseded instances: when a registered test network is reset under *Reset and reuse rules*, its previous genesis identifier is listed here with the date it stopped being current. No reset under those rules has happened yet.
 
 | CAIP-2 identifier | Genesis identifier | Current until |
 |---|---|---|
 | — | — | — |
+
+**Pre-MIP exception: Preview, 7 November 2026.** Before this amendment, Preview was relaunched as a new chain on 7 November 2026, with no state carried over from the previous instance. The relaunch reused the previous genesis: the current instance's `chain_getBlockHash(0)` is still `0x3c096de209e06a1a8c52be7bda109ee8c891a42288c0a9db5495f9616dd13796`. So the instance check (step 3 of *Chain-instance verification*) alone cannot tell the pre-relaunch chain from the current one, and the superseded instance cannot be listed by its genesis identifier. A client that must tell them apart, for example one holding Preview state stored before 7 November 2026, SHOULD also compare `chain_getBlockHash(29)` with `0xb05a5b4ce244dd42b827129f3f155dfb13090218b5810bdc69e59edc96e0dbef`. Block 29 is the first block after the relaunch (timestamp 2026-11-07 00:34:47 UTC; hash read 2026-11-20). Blocks 1 to 28 carry timestamps from 16 July 2026, so they do not distinguish the two instances.
+
+Rule 2 of *Reset and reuse rules* applies to every reset after this amendment, so this exception is not repeated.
 
 Unregistered names. These are valid CAIP-2 strings, but no uniqueness is guaranteed for them, and a chain using one is not a registered reference:
 
@@ -322,7 +342,7 @@ The decision was reached in [Discussion #195](https://github.com/midnightntwrk/m
 
 ### Why a reset must change the genesis
 
-The genesis check only detects a reset if the reset produces a new block 0. Relaunching a Substrate chain from an unchanged chain specification reproduces the same genesis hash even though all history is gone. This has happened on Midnight: Preview was relaunched as a new chain in November 2026 with no history carried over, and its `chain_getBlockHash(0)` result is the same as before the relaunch. Rule 2 of *Reset and reuse rules* makes a changed genesis part of what a reset of a registered network is, so the existing `WrongNetwork` check keeps working without a second checkpoint.
+The genesis check only detects a reset if the reset produces a new block 0. Relaunching a Substrate chain from an unchanged chain specification reproduces the same genesis hash even though all history is gone. This has happened on Midnight: Preview was relaunched as a new chain on 7 November 2026, with no state carried over, and its `chain_getBlockHash(0)` result is the same as before the relaunch. That relaunch predates this amendment. It is recorded as a pre-MIP exception under *Canonical network registry*, which tells verifiers to also compare the hash of block 29, the first block after the relaunch. Rule 2 of *Reset and reuse rules* makes a changed genesis part of what a reset of a registered network is, so the existing `WrongNetwork` check keeps working without a second checkpoint.
 
 ### Why the name survives a reset
 
@@ -425,6 +445,7 @@ End users SHOULD NOT need manual migration if wallets auto-canonicalize on upgra
 
 - *Reset and reuse rules*, rule 2: a reset of a registered network MUST produce a new genesis identifier.
 - Applications store the genesis identifier with any state they persist (rule 5).
+- For Preview's 7 November 2026 relaunch, which predates rule 2, verifiers also compare the hash of block 29, the first block after the relaunch (*Canonical network registry*, pre-MIP exception).
 
 ### Registry integrity
 
