@@ -394,16 +394,19 @@ CREATE TABLE capsule (
   PRIMARY KEY (account, contract)
 );
 
--- One transcript per transaction per capsule: the predicted change and the
--- confirmed capture are the same row, reconciled by transaction identity. Each is
--- pinned to the executable whose code produced it, so none can be folded through
--- another version's code.
+-- One transcript per call per capsule.  A "call" is the smallest operational element
+-- that can be rehearsed and applied.  Although it is not elaborated here, the call ID
+-- is assumed to be correlated with transaction and segment IDs, so that the appropriate
+-- transcript can be applied for each observed completion on the blockchain.  In even more
+-- detail, the call is identified by the binding commitment of its intent and the call's
+-- communication commitment.   Each transcript is pinned to the executable whose code 
+-- produced it, so none can be applied through another version's code.
 CREATE TABLE transcript (
-  account              INTEGER NOT NULL,
-  contract             TEXT NOT NULL,
-  transaction_id       TEXT NOT NULL,
+  account              INTEGER NOT NULL REFERENCES account (account_number),
+  contract             TEXT NOT NULL REFERENCES contract (address),
+  call_id              TEXT NOT NULL,
   captured_under       TEXT NOT NULL REFERENCES capsule_executable (content_hash),
-  PRIMARY KEY (account, contract, transaction_id),
+  PRIMARY KEY (account, contract, call_id),
   FOREIGN KEY (account, contract) REFERENCES capsule (account, contract)
 );
 ```
@@ -476,11 +479,12 @@ attested origin, access to the capsule is not granted.
 
 Many Midnight contracts rely on some kind of in-contract authentication, using a previously
 generated secret.  Because this usage pattern is so common, this proposal requires that the capsule
-runtime interact with a wallet to produce a per-capsule secret, independent of the keys holding
-native tokens and derived purely from the wallet seed along a predictable path keyed by the account
-and the contract address.  The capsule never sees the wallet seed itself.  Each capsule accesses its
-per-capsule secret by calling a context API function. A circuit using the secret necessarily
-receives it as a zero-knowledge witness, exactly as in the current model.
+runtime interact with a wallet to produce a "master" per-capsule secret, independent of the keys
+holding native tokens and derived purely from the wallet seed along a predictable path keyed by the
+account and the contract address.  The capsule never sees the wallet seed or even the master
+per-capsule secret itself.  Each capsule can access a derived subkey of its per-capsule secret by
+calling a context API function. A circuit using the derived subkey necessarily receives it as a
+zero-knowledge witness, exactly as in the current model.
 
 ### The Execution Model: Local, Context, and Introspective functions
 
@@ -541,7 +545,8 @@ Additionally, several kinds of functions will be able to be defined in Compact:
    - read-only access to ledger state and local state, but cannot call circuits/ledger functions
 4. **local** functions
    - deterministic, for fixed results of context API calls
-   - no interaction with ledger state
+   - can interact with local state and context as needed
+   - read-only access to ledger state, but cannot call circuits/ledger functions (known-read-only ledger functions would be allowed, if they can be recognized and/or labeled)
    - any uses of `assert` are checked at local execution time only, with no ZK proof
    - may contain computations for which ZK proofs cannot be generated
 
@@ -566,8 +571,8 @@ Here is a summary of the function types and how they are allowed to interact:
 | **circuits:** | YES | YES | YES | YES | YES | - | - | YES |
 | **context API impls:** | read-only | - | YES | - | - | ??? | YES | - |
 | **introspective functions:** | read-only | read-only | YES | YES | - | YES | YES | read-only |
-| **read-only local functions:** | - | read-only | YES | YES | - | YES | YES | read-only |
-| **read/write local functions:** | - | YES | YES | YES | - | YES | YES | YES |
+| **read-only local functions:** | read-only | read-only | YES | YES | - | YES | YES | read-only |
+| **read/write local functions:** | read-only | YES | YES | YES | - | YES | YES | YES |
 
 The settlement-triggered execution point is part of the execution model in its own right: once the
 chain establishes a transaction's relative order, and the runtime applies its transcript, the
@@ -620,18 +625,18 @@ goal is that the whole local state of a contract can be reconstructed from the w
 the capsule identifier (that is, its contract address and account ID), and that capsule's encrypted
 transcript log including snapshots. No code written by the DApp developer takes part in that
 reconstruction, and the user supplies nothing beyond those three inputs. The capsule runtime drives
-the replay, re-running the contract's own local functions as it goes, so those functions dictate
-what is replayable.
+the replay, applying the contract's own local-state transcripts as it goes.
 
 A solution has to cope with three things at once: concurrency, transactions that fail, and users who
 migrate and restore their state on another device. Satisfying all three together is non-trivial, and
 they tend to converge on the same building blocks. Changes to the local state are captured as a
-replayable transcript, encrypted at rest, carrying the status of the transaction that contained the
-contract call. The transcripts are stored as the source of truth, and a snapshot of the local state
-is obtained by replaying them. The capsule's secret unlocks that replay and then takes part in it:
-first to decrypt the transcripts, then as part of the replay context. The secret derives from the
-seed phrase and the capsule identifier, and the transcripts are the material being replayed—the
-three recovery inputs above, and nothing else.
+replayable transcript, encrypted at rest using a deterministically derived subkey of the capsule's
+secret, carrying the status of the transaction that contained the contract call. The transcripts are
+stored as the source of truth, and a snapshot of the local state is obtained by replaying them. The
+capsule's secret unlocks that replay and then takes part in it: first to decrypt the transcripts
+using the appropriate encryption subkey, then as part of the replay in the form of the
+context-available subkey. The secret derives from the seed phrase and the capsule identifier, and the
+transcripts are the material being replayed—the three recovery inputs above, and nothing else.
 
 Those building blocks become part of the runtime, leaving no need for DApp code to handle any of
 them: current local state is directed purely by the application of the transcripts of known
@@ -644,35 +649,39 @@ avoid the risk that a past version's executable is unavailable, the steady state
 snapshot plus incremental application.
 
 A step is the capsule's execution of one call, and its inputs are: 
-1. the prior local state, 
-2. the call's inputs, 
-3. the ledger state which the step reads, and 
-4. the captured results of the context API functions which the step invoked. 
+1. the prior local state,
+2. the call's inputs,
+3. the ledger state which the step reads,
+4. the captured results of the context API functions which the step invoked, and
+5. the captured return values from calls to other contracts.
 
 All but the prior local state are fixed when the call is prepared and captured in its transcript;
 the prior local state is whatever has been reached at the step's position in chain order. Applying a
-step re-executes the call's local functions over those four inputs, at the position dictated by
-chain order.  The operations that the transcript records are the account of that execution rather
-than a replacement for it, since a value computed from a predicted local state can apply cleanly at
-a later position and still be wrong. That ledger state and the step's block time both come from the
-basis block—the chain block the call is prepared against—never from a later height or the host
-clock, so one step reads one ledger height, and the call fails when the basis block is
-unavailable. Capturing context-function results is what makes the incremental reconstruction sound:
-nondeterminism reaches a capsule only through a context0function call, as the execution model
-requires.
+step executes the local-state-updating transcript against the prior local state, where "prior" is
+dictated by the on-chain transaction order.  The operations that the transcript records are
+*changes* to local state, not new values, since a value computed from a predicted local state may be
+different from the one computed from the actual prior state. The ledger state and the step's block
+time both come from the basis block—the chain block the call is prepared against—never from a later
+height or the host clock, so one step reads one ledger height, and the call fails when the basis
+block is unavailable.  Capturing cross-contract call results enables reply for each capsule
+independently, without requiring replay of an entire call tree. Capturing context-function results
+is what makes the incremental reconstruction sound: nondeterminism reaches a capsule only through a
+context-function call, as the execution model requires.
 
-A transaction that does not complete takes its transcript with it—discarded whole—so a failed
+A transaction that fails entirely takes its transcript with it—discarded whole—so a failed
 transaction leaves no local-state change behind.  Any token deduction in a rehearsal disappears
-along with the transcript. Confirmation of a completed transaction re-derives the call in chain
-order, reusing the inputs pinned at preparation, so a reorder changes the order of application and
-re-samples nothing. A locally rehearsed state change and the confirmed transcript for the same
-transaction are one event, reconciled by transaction identity and never by arrival
-order. Concurrency is answered by those same two moves: with several calls in flight at once, chain
-order fixes the sequence, and transaction identity fixes which confirmation belongs to which local
-rehearsal. A capsule may prepare several calls before any of them settles, so a transcript may meet
-a local state later than the one its call was prepared against. A contract's local functions must
-therefore produce a correct result from any reachable local state.  This is obligation on the
-contract author, and it is the condition under which re-derivation always succeeds.
+along with the transcript.  In response to a transaction being fully or partially completed on
+chain, the capsule applies the appropriate portions of the local transcript (full or partial, to
+match on-chain segment completion), reusing the inputs pinned at preparation, so a reorder changes
+the order of application and never re-samples external inputs. A locally rehearsed state change and
+the confirmed transcript for the same transaction are one event, reconciled by transaction identity
+and never by arrival order. Concurrency is answered by those same two moves: with several calls in
+flight at once, chain order fixes the sequence, and transaction identity fixes which confirmation
+belongs to which local rehearsal. A capsule may prepare several calls before any of them settles, so
+a transcript may meet a local state later than the one its call was prepared against. A contract's
+local functions must therefore produce a correct result from any reachable local state.  This is
+obligation on the contract author, and it is the condition under which re-derivation always
+succeeds.
 
 Local state must be durably retained and recoverable. The capsule secret is derived, so the seed
 phrase and the capsule identifier recover it and nothing extra has to be backed up; local state is
@@ -684,10 +693,10 @@ reconstruct it on their own.
 
 Every piece of capsule data at rest—local state, snapshots, and transcripts alike—must be
 encrypted. That is a hard requirement of this specification, not a host quality-of-implementation
-matter: a transcript captures the capsule secret, so anything less exposes it to whoever can read
-the host's storage. The key material derives from the wallet seed phrase and the capsule identifier,
-so those same two inputs re-derive it with no separate backup, and it never leaves the capsule
-runtime.
+matter: a transcript captures the context-provided authentication key, so anything less exposes it
+to whoever can read the host's storage. The key material derives from the wallet seed phrase and the
+capsule identifier, so those same two inputs re-derive it with no separate backup, and it never
+leaves the capsule runtime.
 
 ## Rationale
 
@@ -932,23 +941,24 @@ Three gaps remain:
 
 ## Security Considerations
 
-**The capsule secret.** The secret is deterministically derived from the main seed, separately for
-each capsule, and is available to the capsule from its initialization onward. It belongs to the
-capsule's *context*, not to its local state.  Under this proposal, the secret can be reached only
-though a runtime-provided context API function, and only contract code may call it. Contracts and
-the runtime must *treat* it as a secret key, disclosing it neither to the chain nor to the DApp; it
-is as secret as the binary representation of the wallet spending key. It is also used to derive the
-keys that encrypt the capsule data at rest.
+**The capsule secret.** The primary secret is deterministically derived from the main seed,
+separately for each capsule, and is used to derive subkeys for different purposes from its
+initialization onward.  One such subkey is available to the capsule as part of its *context*, not
+its local state.  Under this proposal, the subkey can be reached only though a runtime-provided
+context API function, and only contract code may call it. Contracts and the runtime must *treat* it
+as a secret key, disclosing it neither to the chain nor to the DApp; it is as secret as the binary
+representation of the wallet spending key. The primary secret is also used to derive the keys that
+encrypt the capsule data at rest.
 
 **Data at rest.** Every foreign-function result is captured in the persisted transcript so that a
 replay reads the pinned value without re-invoking; the capsule secret arrives as one such result,
 and the same uniform rule captures it, so transcript storage is secret-grade. That is what the
 at-rest encryption requirement in [persistence](#persistence-and-correctness) rests on.
 
-**Blast radius.** The secret is per-capsule and contract-specific, its whole role being the
-contract's own authentication; native tokens stay with the wallet and its own keys. Compromising one
-capsule's secret therefore reaches exactly that capsule's authentication, leaving the user's funds,
-the wallet and every other capsule untouched.
+**Blast radius.** The secret is per-capsule and contract-specific, its role being the derivation of
+subkeys for encryption and for the contract's own authentication; native tokens stay with the wallet
+and its own keys. Compromising one capsule's secret therefore reaches exactly that capsule's state,
+leaving the user's funds, the wallet, and every other capsule untouched.
 
 **Reading the on-chain reference.** An inability to retrieve some capsule's executable
 representation is the principal attack surface for the required canonicity of executables.  The
@@ -968,10 +978,12 @@ accordingly of that boundary—where the user grants a DApp access to a capsule�
   attack vector.
 - The context API function set is shared across all contracts, so it could be understand as a single
   point of failure for revealing private state, especially because that API also provides the
-  secret.  Context functions being read-only with respect to state outside the capsule is a
-  requirement the runtime cannot enforce once a function performs I/O. 
-- The contract-author obligation on local functions that [persistence](#persistence-and-correctness)
-  sets out is likewise unenforceable, and its breach breaks local-state correctness. 
+  derived key for the capsule's internal authentication actions.  Context functions being read-only
+  with respect to state outside the capsule is a requirement the runtime cannot enforce once a
+  function performs I/O.
+- The contract-author obligation on local functions described in the
+  [persistence](#persistence-and-correctness) section is likewise unenforceable, and its breach
+  breaks local-state correctness.
 - The granularity at which permissions are granted by the user has been left unspecified by this
   proposal, and coarse granularity is a residual limitation and risk.
 - Local state can be reconstructed only from retained transcripts.  Retention is the capsule
