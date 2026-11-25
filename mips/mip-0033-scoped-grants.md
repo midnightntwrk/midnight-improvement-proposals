@@ -4,7 +4,7 @@ Title: Scoped Grants and dApp Connection for Custody Accounts
 Authors:
   - Hector Bulgarini (hbulgarini)
   - Nicolas Di Prima (NicolasDP)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-09-09
 License: Apache-2.0
