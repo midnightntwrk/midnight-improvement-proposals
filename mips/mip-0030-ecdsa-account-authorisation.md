@@ -3,7 +3,7 @@ MIP: "0030"
 Title: ECDSA Authorisation for Custody Accounts
 Authors:
   - Nicolas Di Prima (NicolasDP)
-Status: Draft
+Status: Proposed
 Category: Standards
 Created: 2026-08-25
 Requires: MIP-0012, MIP-0013
